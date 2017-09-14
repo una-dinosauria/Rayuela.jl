@@ -1,1 +1,9 @@
 julia 0.6
+Clustering
+CUBLAS
+CUDAdrv
+Distributions
+Distances
+Documenter
+HDF5
+IterativeSolvers
