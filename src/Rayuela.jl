@@ -1,17 +1,14 @@
 module Rayuela
 
-using Clustering, Distances
+using Clustering, Distances, Distributions
 
-export func
+# === Utility functions mostly ===
+include("utils.jl")
+include("kmeans.jl")
 
-include("PQ.jl")
-
-"""
-    func(x::Int)
-
-Returns double the number `x` plus `1`.
-"""
-func(x::Int) = 2x + 1
+# === Quantizers ===
+include("PQ.jl")  # Product Quantizer
+include("OPQ.jl") # Optimized Product Quantizer
 
 # package code goes here
 

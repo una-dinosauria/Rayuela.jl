@@ -1,16 +1,5 @@
-#module Product_quantization
-using Clustering
-
-#for computing distances
-using Distances
 
 export train_pq, quantize_pq
-
-#for computing the error with k-means
-# include("../utils.jl")
-# include("../opq/kmeans.jl")
-
-struct ProductQuantizer{T}
 
 """
     quantize_pq(X::Matrix{T}, C::Vector{Matrix{T}}, V::Bool=false) where T <: AbstractFloat
@@ -57,6 +46,7 @@ function train_pq(
   X::Matrix{T},  # d-by-n. Data to learn codebooks from
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
+  maxiter::Integer=25, # Number of k-means iterations for training
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   d, n = size( X )
@@ -68,17 +58,19 @@ function train_pq(
 
   for i = 1:m
     if V print("Working on codebook $i / $m... "); end
-    cluster = kmeans( X[ subdims[i],: ], h, init=:kmpp);
-    C[i], B[i,:] = cluster.centers, cluster.assignments;
+    # FAISS uses 25 iterations by default
+    # See https://github.com/facebookresearch/faiss/blob/master/Clustering.cpp#L28
+    cluster = kmeans( X[ subdims[i],: ], h, init=:kmpp, maxiter=25)
+    C[i], B[i,:] = cluster.centers, cluster.assignments
 
     if V
-      subdim_cost = cluster.totalcost ./ n;
-      nits        = cluster.iterations;
-      converged   = cluster.converged;
+      subdim_cost = cluster.totalcost ./ n
+      nits        = cluster.iterations
+      converged   = cluster.converged
 
-      println("done.");
-      println("  Ran for $nits iterations");
-      println("  Error in subspace is $subdim_cost");
+      println("done.")
+      println("  Ran for $nits iterations")
+      println("  Error in subspace is $subdim_cost")
       println("  Converged: $converged")
     end
   end
