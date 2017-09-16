@@ -55,13 +55,16 @@ function train_opq{T <: AbstractFloat}(
   unused    = Int[]
 
   # Initialize the codes -- B
-  B = zeros( Int64, n, m )
+  B    = Vector{Vector{Int}}(m) # codes
+  for i = 1:m; B[i] = zeros(Int,n); end # Allocate codes
+
   for i=1:m
     dmat = pairwise( SqEuclidean(), C[i], RX[subdims[i],:] )
     dmat = convert(Array{Float32}, dmat)
-    update_assignments!( dmat, true, view( B,:,i ), costs, counts, to_update, unused  )
+    # update_assignments!( dmat, true, view( B,:,i ), costs, counts, to_update, unused  )
+    Clustering.update_assignments!( dmat, true, B[i], costs, counts, to_update, unused  )
 
-    CB[subdims[i],:] = C[i][:, B[:,i]]
+    CB[subdims[i],:] = C[i][:, B[i]]
   end
 
   for iter=0:niter
@@ -78,17 +81,21 @@ function train_opq{T <: AbstractFloat}(
 
     for i=1:m
       # update C
-      C[i] = update_centers!( RX[subdims[i],:], B[:,i], cweights, h )
+      C[i] = update_centers!( RX[subdims[i],:], B[i], cweights, h )
 
       # update B
       dmat = pairwise( SqEuclidean(), C[i], RX[subdims[i],:] )
       dmat = convert(Array{Float32}, dmat)
-      update_assignments!( dmat, false, view(B,:,i), costs, counts, to_update, unused  )
+      # update_assignments!( dmat, false, view(B,:,i), costs, counts, to_update, unused  )
+      Clustering.update_assignments!( dmat, false, B[i], costs, counts, to_update, unused  )
 
       # update D*B
-      CB[ subdims[i], : ] = C[i][:, B[:, i]]
+      CB[ subdims[i], : ] = C[i][:, B[i]]
     end # for i=1:m
   end # for iter=0:niter
+
+  B = hcat(B...)
+  B = convert(Matrix{Int16}, B)
 
   C = convert( Vector{Matrix{T}}, C )
   return C, B', R, obj

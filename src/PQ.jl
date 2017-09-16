@@ -14,8 +14,9 @@ function quantize_pq(
   d, n = size( X )
   m    = length( C )
   h    = size( C[1], 2 )
+  B    = Vector{Vector{Int}}(m) # codes
+  for i = 1:m; B[i] = zeros(Int,n); end # Allocate codes
 
-  B       = zeros(Int, m, n) # codes
   subdims = splitarray( 1:d, m )
 
   # auxiliary variables for update_assignments! function
@@ -26,15 +27,15 @@ function quantize_pq(
 
   for i = 1:m
     if V print("Encoding on codebook $i / $m... ") end
-
     # Find distances from X to codebook
-    dmat = pairwise( SqEuclidean(), C[i], X[subdims[i],:] )
-    dmat = convert(Array{T}, dmat)
-    update_assignments!( dmat, true, view(B,i,:), costs, counts, to_update, unused )
-
+    dmat = Distances.pairwise( Distances.SqEuclidean(), C[i], X[subdims[i],:] )
+    Clustering.update_assignments!( dmat, true, B[i], costs, counts, to_update, unused )
     if V println("done"); end
   end
-  return convert(Matrix{Int16}, B) # return the codes
+
+  B = hcat(B...)
+  B = convert(Matrix{Int16}, B)
+  B'
 end
 
 """
@@ -46,22 +47,22 @@ function train_pq(
   X::Matrix{T},  # d-by-n. Data to learn codebooks from
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
-  maxiter::Integer=25, # Number of k-means iterations for training
+  niter::Integer=25, # Number of k-means iterations for training
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   d, n = size( X )
 
   C = Vector{Matrix{T}}(m); # codebooks
 
-  B        = zeros(Int16, m, n); # codes
+  B        = zeros(Int16, n, m); # codes
   subdims  = splitarray(1:d, m); # subspaces
 
   for i = 1:m
     if V print("Working on codebook $i / $m... "); end
     # FAISS uses 25 iterations by default
     # See https://github.com/facebookresearch/faiss/blob/master/Clustering.cpp#L28
-    cluster = kmeans( X[ subdims[i],: ], h, init=:kmpp, maxiter=25)
-    C[i], B[i,:] = cluster.centers, cluster.assignments
+    cluster = kmeans( X[ subdims[i],: ], h, init=:kmpp, maxiter=niter)
+    C[i], B[:,i] = cluster.centers, cluster.assignments
 
     if V
       subdim_cost = cluster.totalcost ./ n
@@ -74,7 +75,7 @@ function train_pq(
       println("  Converged: $converged")
     end
   end
-
+  B = B'
   error = qerror_pq( X, B, C )
   return C, B, error
 end
