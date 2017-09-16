@@ -60,8 +60,7 @@ function train_opq{T <: AbstractFloat}(
   for i = 1:m; B[i] = zeros(Int,n); end # Allocate codes
 
   for i=1:m
-    dmat = pairwise( SqEuclidean(), C[i], RX[subdims[i],:] )
-    dmat = convert(Array{Float32}, dmat)
+    dmat = Distances.pairwise( Distances.SqEuclidean(), C[i], RX[subdims[i],:] )
     Clustering.update_assignments!( dmat, true, B[i], costs, counts, to_update, unused  )
     CB[subdims[i],:] = C[i][:, B[i]]
   end
@@ -80,12 +79,10 @@ function train_opq{T <: AbstractFloat}(
 
     for i=1:m
       # update C
-      # C[i] = update_centers!( RX[subdims[i],:], B[i], cweights, h )
       Clustering.update_centers!( RX[subdims[i],:], nothing, B[i], to_update2, C[i], cweights )
 
       # update B
-      dmat = pairwise( SqEuclidean(), C[i], RX[subdims[i],:] )
-      dmat = convert(Array{Float32}, dmat)
+      dmat = Distances.pairwise( Distances.SqEuclidean(), C[i], RX[subdims[i],:] )
       Clustering.update_assignments!( dmat, false, B[i], costs, counts, to_update, unused  )
 
       # update D*B

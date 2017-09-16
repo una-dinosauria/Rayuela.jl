@@ -4,7 +4,6 @@ using Clustering, Distances, Distributions
 
 # === Utility functions mostly ===
 include("utils.jl")
-include("kmeans.jl")
 
 # === Quantizers ===
 include("PQ.jl")  # Product Quantizer
