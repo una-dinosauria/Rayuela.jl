@@ -15,6 +15,13 @@ I would not have the time to do so and finish my PhD before 2018. Julia is also
 more accessible (albeit a bit less performant) to quickly try and test new
 research ideas. In the future, successful methods can be ported to [faiss](https://github.com/facebookresearch/faiss).
 
+## Installation
+
+You can install the package via
+
+```julia
+julia> Pkg.clone(https://github.com/una-dinosauria/Rayuela.jl.git)
+```
 
 ## Roadmap
 
