@@ -1,6 +1,6 @@
 # Rayuela.jl
 
-Rayuela.jl is a package for fast search of high-dimensional (d=100-1000s)
+[Rayuela](https://en.wikipedia.org/wiki/Hopscotch#Rayuela).jl is a package for fast search of high-dimensional (d=100-1000s)
 dense vectors. The package is mostly focused on multi-codebook quantization
 techniques, and is loosely inspired by [faiss](https://github.com/facebookresearch/faiss).
 
