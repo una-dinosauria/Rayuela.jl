@@ -37,14 +37,16 @@ Things I'd like to get around implementing / wrapping from faiss some day
 - Inverted Multi-index -- [CPVR'12](https://pdfs.semanticscholar.org/5bfb/5a42483e9b7051fab5e972a3b4627a8d6a76.pdf), implemented in [faiss](https://github.com/facebookresearch/faiss)
 - Non-orthogonal multi-index -- [CVPR'16](http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Babenko_Efficient_Indexing_of_CVPR_2016_paper.pdf), [code](https://github.com/arbabenko/GNOIMI), [project page](http://sites.skoltech.ru/compvision/noimi/)
 - Polysemous codes -- [ECCV'16](https://arxiv.org/pdf/1609.01882.pdf), implemented in [faiss](https://github.com/facebookresearch/faiss)
-- All the GPU code in [faiss](https://github.com/facebookresearch/faiss) :heart_eyes:
+- Improvements to LSQ -- [under review]()
+- All the GPU code in [faiss](https://github.com/facebookresearch/faiss/tree/master/gpu) :heart_eyes:
 
 ### TODO (hard, low priority)
-I would love to implement these methods, but the authors have never released
+I would love to implement these methods. Some of them report really good results but the authors have never released
 code and my time is not infinite so ¯\\\_(ツ)\_/¯
 - Composite Quantization -- [ICML'14](https://pdfs.semanticscholar.org/eb18/329fe6466f36b0dbacd00e405c8f8618e1cf.pdf)
 - Sparse Composite Quantization -- [CVPR'15](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Zhang_Sparse_Composite_Quantization_2015_CVPR_paper.pdf)
 - Tree Quantization with Gurobi optimization -- [CVPR'15](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
+- Competitive Quantization -- [TKDE'16](https://www.researchgate.net/profile/Serkan_Kiranyaz/publication/306046688_Competitive_Quantization_for_Approximate_Nearest_Neighbor_Search/links/57bd58bb08ae6c703bc64909.pdf)
 
 ## Notes
 \* The original implementation of [Tree Quantization](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
