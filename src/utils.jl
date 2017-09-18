@@ -90,7 +90,7 @@ end
 ###########################################
 
 # Get unaries terms
-@everywhere function get_unaries{T <: AbstractFloat}(
+function get_unaries{T <: AbstractFloat}(
   X::Matrix{T},         # data to get unaries from
   C::Vector{Matrix{T}}, # codebooks
   V::Bool=false)        # whether to print progress
@@ -221,7 +221,7 @@ function reconstruct{T <: AbstractFloat}(
 
 end
 
-@everywhere function veccost{T <: AbstractFloat}(
+function veccost{T <: AbstractFloat}(
   X::Matrix{T},
   #B::Union{Matrix{Int16},SharedMatrix{Int16}},
   B::Matrix{Int16},
