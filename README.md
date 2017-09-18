@@ -20,7 +20,7 @@ research ideas. In the future, successful methods can be ported to [faiss](https
 You can install the package via
 
 ```julia
-julia> Pkg.clone(https://github.com/una-dinosauria/Rayuela.jl.git)
+julia> Pkg.clone("https://github.com/una-dinosauria/Rayuela.jl.git")
 ```
 
 ## Roadmap
