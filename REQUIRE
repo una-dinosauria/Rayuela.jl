@@ -4,6 +4,5 @@ CUBLAS
 CUDAdrv
 Distributions
 Distances
-Documenter
 HDF5
 IterativeSolvers

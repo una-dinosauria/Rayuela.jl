@@ -12,6 +12,7 @@ include("codebook_update.jl")
 include("PQ.jl")  # Product Quantizer
 include("OPQ.jl") # Optimized Product Quantizer
 include("ChainQ.jl") # Chain (Tree) Quantization
+include("LSQ.jl") # Local search quantization
 
 # package code goes here
 

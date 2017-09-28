@@ -1,7 +1,7 @@
 
 
 # Update a dimension of a codebook using LSQR or LSMR
-@everywhere function updatecb!(
+function updatecb!(
   K::SharedMatrix{Float32},
   C::SparseMatrixCSC{Int32,Int32},
   X::Matrix{Float32},
@@ -21,7 +21,7 @@
   end
 end
 
-@everywhere function updatecb!(
+function updatecb!(
   K::SharedMatrix{Float32},
   C::SparseMatrixCSC{Float32,Int32},
   X::Matrix{Float32},
