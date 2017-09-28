@@ -15,10 +15,6 @@ I would not have the time to do so and finish my PhD before 2018. Julia is also
 more accessible (albeit a bit less performant) to quickly try and test new
 research ideas. In the future, savvier C++ programmers can port the most useful methods to [faiss](https://github.com/facebookresearch/faiss).
 
-[//]: ## Reasons to use Rayuela instead of [faiss](https://github.com/facebookresearch/faiss)
-[//]: - You want to
-[//]: - You do not (give up the right to sue facebook)[https://github.com/facebook/react/issues/10191].
-
 ## Installation
 
 You can install the package via
