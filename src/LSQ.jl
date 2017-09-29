@@ -152,7 +152,7 @@ function encoding_icm{T <: AbstractFloat}(
   if nworkers() == 1
     B = zeros(Int16, m, n)
   else
-    B = SharedArray(Int16, m, n)
+    B = SharedArray{Int16}(m, n)
   end
 
   @inbounds @simd for i = 1:m*n

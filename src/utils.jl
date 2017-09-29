@@ -1,5 +1,5 @@
 
-export qerror_pq, qerror_opq
+export qerror, qerror_pq, qerror_opq, quantize_norms
 
 # Quantize the norms of an encoding
 function quantize_norms(
