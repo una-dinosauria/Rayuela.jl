@@ -1,5 +1,6 @@
 
 # function quantize_chainq
+export train_chainq, quantize_chainq
 
 function quantize_chainq!{T <: AbstractFloat}(
   CODES::SharedMatrix{Int16},  # out. Where to save the result

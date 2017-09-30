@@ -15,58 +15,58 @@ function encode_icm_fully!{T <: AbstractFloat}(
   V::Bool)                      # in. whether to print progress
 
   # Compute unaries
-  unaries = get_unaries( X, C, V );
+  unaries = get_unaries( X, C, V )
 
-  h, n = size( unaries[1] );
-  m, _ = size( B );
+  h, n = size( unaries[1] )
+  m, _ = size( B )
 
-  ncbi = length( binaries );
+  ncbi = length( binaries )
 
   # Create a transposed copy of the binaries
-  binaries_t = similar( binaries );
+  binaries_t = similar( binaries )
   for i = 1:ncbi
-    binaries_t[i] = binaries[i]';
+    binaries_t[i] = binaries[i]'
   end
 
   # Create an index from codebook pairs to indices
-  cbpair2binaryidx   = zeros(Int32, m, m);
+  cbpair2binaryidx   = zeros(Int32, m, m)
   for i = 1:ncbi
-    cbpair2binaryidx[ cbi[1,i], cbi[2,i] ] = i;
+    cbpair2binaryidx[ cbi[1,i], cbi[2,i] ] = i
   end
 
   # For codebook i, we have to condition on these codebooks
-  to_look      = 1:m;
-  to_condition = zeros(Int32, m-1, m);
+  to_look      = 1:m
+  to_condition = zeros(Int32, m-1, m)
   for i = 1:m
-    tmp = collect(1:m);
-    splice!( tmp, i );
-    to_condition[:,i] = tmp;
+    tmp = collect(1:m)
+    splice!( tmp, i )
+    to_condition[:,i] = tmp
   end
 
   # Make the order random
   if randord
-    to_look      = randperm( m );
-    to_condition = to_condition[:, to_look];
+    to_look      = randperm( m )
+    to_condition = to_condition[:, to_look]
   end
 
   # Preallocate some space
-  bb = Matrix{T}( h, h );
-  ub = Matrix{T}( h, n );
+  bb = Matrix{T}( h, h )
+  ub = Matrix{T}( h, n )
 
   # Sample the indices to perturb in each code
-  pertidx  = Matrix{Integer}( npert, n );
+  pertidx  = Matrix{Integer}( npert, n )
   for i = 1:n
-    sampleidx = sample(1:m, npert, replace=false, ordered=true);
+    sampleidx = sample(1:m, npert, replace=false, ordered=true)
     for j = 1:npert
-      pertidx[j, i] = sampleidx[j];
+      pertidx[j, i] = sampleidx[j]
     end
   end
-  pertvals = rand( 1:h, npert, n );
+  pertvals = rand( 1:h, npert, n )
 
   # Perturb the solutions
   for i = 1:n
     for j = 1:npert
-      B[ pertidx[j,i], IDX[i] ] = pertvals[j,i];
+      B[ pertidx[j,i], IDX[i] ] = pertvals[j,i]
     end
   end
 
@@ -76,34 +76,34 @@ function encode_icm_fully!{T <: AbstractFloat}(
     jidx = 1;
     for j = to_look
       # Get the unaries that we will work on
-      uj = unaries[j];
+      uj = unaries[j]
       @simd for k = 1:h*n
-        ub[k] = uj[k];
+        ub[k] = uj[k]
       end
 
       # These are all the nodes that we are conditioning on (i.e., the edges to 'absorb')
-      for k = to_condition[:, jidx];
+      for k = to_condition[:, jidx]
 
         # Determine the pairwise interactions that we'll use (for cache-friendliness)
         if j < k
-          binariidx = cbpair2binaryidx[ j, k ];
-          bb = binaries[ binariidx ];
+          binariidx = cbpair2binaryidx[ j, k ]
+          bb = binaries[ binariidx ]
         else
-          binariidx = cbpair2binaryidx[ k, j ];
-          bb = binaries_t[ binariidx ];
+          binariidx = cbpair2binaryidx[ k, j ]
+          bb = binaries_t[ binariidx ]
         end
 
         # Traverse the unaries, absorbing the appropriate binaries
         for l=1:n
-          codek = B[k, IDX[l]];
+          codek = B[k, IDX[l]]
           @simd for ll = 1:h
-            ub[ll, l] += bb[ ll, codek ];
+            ub[ll, l] += bb[ ll, codek ]
           end
         end
       end #for k=to_condition
 
       # Once we are done conditioning, traverse the absorbed unaries to find mins
-      inidx = 1;
+      inidx = 1
       for idx=IDX
         minv = ub[1, inidx]
         mini = 1
@@ -115,11 +115,11 @@ function encode_icm_fully!{T <: AbstractFloat}(
           end
         end
 
-        B[j, idx] = mini;
-        inidx = inidx + 1;
+        B[j, idx] = mini
+        inidx = inidx .+ 1
       end
 
-      jidx = jidx + 1;
+      jidx = jidx .+ 1
 
 
     end # for j=to_look
@@ -160,15 +160,15 @@ function encoding_icm{T <: AbstractFloat}(
   end
 
   if nworkers() == 1
-    encode_icm_fully!( B, X, C, binaries, cbi, niter, randord, npert, 1:n, V );
+    encode_icm_fully!( B, X, C, binaries, cbi, niter, randord, npert, 1:n, V )
     #encode_icm_cpp!( B, X, C, binaries, cbi, niter, randord, npert, 1:n, V );
   else
-    paridx = splitarray( 1:n, nworkers() );
+    paridx = splitarray( 1:n, nworkers() )
     @sync begin
       for (i,wpid) in enumerate(workers())
         @async begin
-          Xw = X[:,paridx[i]];
-          remotecall_wait(encode_icm_fully!, wpid, B, Xw, C, binaries, cbi, niter, randord, npert, paridx[i], V );
+          Xw = X[:,paridx[i]]
+          remotecall_wait(encode_icm_fully!, wpid, B, Xw, C, binaries, cbi, niter, randord, npert, paridx[i], V )
         end
       end
     end
@@ -178,10 +178,10 @@ function encoding_icm{T <: AbstractFloat}(
   # Keep only the codes that improved
   newcost = veccost( X, B, C )
 
-  areequal = newcost .== prevcost;
+  areequal = newcost .== prevcost
   if V println("$(sum(areequal)) new codes are equal"); end
 
-  arebetter = newcost .< prevcost;
+  arebetter = newcost .< prevcost
   if V println("$(sum(arebetter)) new codes are better"); end
 
   B[:, .~arebetter] = oldB[:, .~arebetter]
@@ -210,10 +210,10 @@ function train_lsq{T <: AbstractFloat}(
   println("**********************************************************************************************");
   # end
 
-  d, n = size( X );
+  d, n = size( X )
 
   # Update RX
-  RX = R' * X;
+  RX = R' * X
 
   # Initialize C
   C = update_codebooks( RX, B, h, V, "lsqr" )
@@ -222,46 +222,46 @@ function train_lsq{T <: AbstractFloat}(
   for i = 1:m
     C[i] = R * C[i]
   end
-  @printf("%3d %e \n", -2, qerror( X, B, C ));
+  @printf("%3d %e \n", -2, qerror( X, B, C ))
 
   # Initialize B
   for i = 1:ilsiter
-    B = encoding_icm( X, B, C, icmiter, randord, npert, V );
+    B = encoding_icm( X, B, C, icmiter, randord, npert, V )
     @everywhere gc()
   end
-  @printf("%3d %e \n", -1, qerror( X, B, C ));
+  @printf("%3d %e \n", -1, qerror( X, B, C ))
 
-  obj = zeros( Float32, niter );
+  obj = zeros( Float32, niter )
 
   for iter = 1:niter
 
-    obj[iter] = qerror( X, B, C  );
-    @printf("%3d %e \n", iter, obj[iter]);
+    obj[iter] = qerror( X, B, C )
+    @printf("%3d %e \n", iter, obj[iter])
 
     # Update the codebooks
     C = update_codebooks( X, B, h, V, "lsqr" )
 
     # Update the codes with local search
     for i = 1:ilsiter
-      B = encoding_icm( X, B, C, icmiter, randord, npert, V );
+      B = encoding_icm( X, B, C, icmiter, randord, npert, V )
       @everywhere gc()
     end
 
   end
 
   # Get the codebook for norms
-  CB = reconstruct(B, C);
+  CB = reconstruct(B, C)
 
-  dbnorms = zeros(Float32, 1, n);
+  dbnorms = zeros(Float32, 1, n)
   for i = 1:n
      for j = 1:d
-        dbnorms[i] += CB[j,i].^2;
+        dbnorms[i] += CB[j,i].^2
      end
   end
 
   # Quantize the norms with plain-old k-means
-  dbnormsq = kmeans(dbnorms, h);
-  cbnorms  = dbnormsq.centers;
+  dbnormsq = kmeans(dbnorms, h)
+  cbnorms  = dbnormsq.centers
 
   # Add the dbnorms to the codes
   B_norms  = reshape( dbnormsq.assignments, 1, n )
