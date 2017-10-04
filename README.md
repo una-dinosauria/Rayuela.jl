@@ -17,11 +17,19 @@ research ideas. In the future, savvier C++ programmers can port the most useful 
 
 ## Installation
 
-You can install the package via
+You can install the package via 
 
 ```julia
 julia> Pkg.clone("https://github.com/una-dinosauria/Rayuela.jl.git")
 ```
+
+if you do not have a github account, or
+
+```julia
+julia> Pkg.clone("git@github.com:una-dinosauria/Rayuela.jl.git")
+```
+
+if you do.
 
 ## Roadmap
 
