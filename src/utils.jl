@@ -1,5 +1,6 @@
 
-export qerror, qerror_pq, qerror_opq, quantize_norms
+export qerror, qerror_pq, qerror_opq, quantize_norms, splitarray, sparsify_codes,
+      K2vec
 
 # Quantize the norms of an encoding
 function quantize_norms(
