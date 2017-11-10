@@ -239,7 +239,7 @@ function encode_icm_cuda(
 end
 
 "Randomly perturbs the codes"
-function perturb_codes(
+function perturb_codes!(
   B::Union{Matrix{Int16},SharedMatrix{Int16}}, # in/out. Codes to perturb
   npert::Integer,         # in. Number of entries to perturb in each code
   h::Integer,             # in. The number of codewords in each codebook
@@ -327,7 +327,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
   ub = Matrix{T}( h, n )
 
   # Perturb the codes
-  B = perturb_codes(B, npert, h, IDX)
+  B = perturb_codes!(B, npert, h, IDX)
 
   @inbounds for i=1:niter # Do the number of passed iterations
 
