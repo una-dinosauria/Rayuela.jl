@@ -18,6 +18,13 @@ I would not have the time to do so and finish my PhD before 2018. Julia is also
 more accessible (albeit a bit less performant) to quickly try and test new
 research ideas. In the future, savvier C++ programmers can port the most useful methods to [faiss](https://github.com/facebookresearch/faiss).
 
+## Authors
+
+The code in this package was mostly written by
+[Julieta Martinez](https://github.com/una-dinosauria/), with help from
+[Joris Clement](https://github.com/flyingdutchman23), and
+[Shobhit Zakhmi](https://github.com/Shobhit31).
+
 ## Installation
 
 You can install the package via
@@ -53,7 +60,7 @@ Things I'd like to get around implementing / porting / wrapping some day
  [CVPR'16](http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Babenko_Efficient_Indexing_of_CVPR_2016_paper.pdf), [code](https://github.com/arbabenko/GNOIMI), [project page](http://sites.skoltech.ru/compvision/noimi/)
 - Polysemous codes -- [ECCV'16](https://arxiv.org/pdf/1609.01882.pdf), implemented in [faiss](https://github.com/facebookresearch/faiss)
 - Bolt -- [KDD'17](https://pdfs.semanticscholar.org/edae/41dc0b511cd0455388c9fd0720a086078cc6.pdf), [code](https://github.com/dblalock/bolt)
-- Improvements to LSQ -- [under review]()
+- Improvements to LSQ -- under review
 - All the GPU code in [faiss](https://github.com/facebookresearch/faiss/tree/master/gpu) :heart_eyes:
 
 ### TODO (no code, low priority)
