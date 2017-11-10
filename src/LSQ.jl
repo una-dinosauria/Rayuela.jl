@@ -59,7 +59,7 @@ function encode_icm_cuda(
 
   # Initialize the cuda module, and choose the GPU
   gpuid = 0
-  CudaUtilsModule.init( gpuid, cudautils )
+  CudaUtilsModule.init( gpuid, cudautilsptx )
   # CUDArt.device( devlist[gpuid] )
 
   # === Create a state for random number generation ===
