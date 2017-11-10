@@ -246,7 +246,7 @@ function perturb_codes!(
   IDX::UnitRange{Int64})  # in. Subset of codes in B to perturb
 
   m, _ = size(B)
-  n = length( IDX )
+  n    = length(IDX)
 
   # Sample random perturbation indices (places to perturb) in B
   pertidx  = Matrix{Integer}(npert, n)
