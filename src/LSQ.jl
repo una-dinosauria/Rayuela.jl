@@ -1,6 +1,7 @@
 
 export train_lsq, encoding_icm, encode_icm_cuda
 
+# Make a deep copy of the codes
 function get_new_B(
   B::Matrix{Int16},
   m::Int,
@@ -237,6 +238,41 @@ function encode_icm_cuda(
 
 end
 
+"Randomly perturbs the codes"
+function perturb_codes(
+  B::Union{Matrix{Int16},SharedMatrix{Int16}}, # in/out. Codes to perturb
+  npert::Integer,         # in. Number of entries to perturb in each code
+  h::Integer,             # in. The number of codewords in each codebook
+  IDX::UnitRange{Int64})  # in. Subset of codes in B to perturb
+
+  m, _ = size(B)
+  n = length( IDX )
+
+  # Sample random perturbation indices (places to perturb) in B
+  pertidx  = Matrix{Integer}(npert, n)
+  for i = 1:n
+    # Sample npert unique values out of m
+    sampleidx = Distributions.sample(1:m, npert, replace=false, ordered=true)
+
+    # Save them in pert_idx
+    for j = 1:npert
+      pertidx[j, i] = sampleidx[j]
+    end
+  end
+
+  # Sample the values that will replace the new ones
+  pertvals = rand(1:h, npert, n)
+
+  # Perturb the solutions
+  for i = 1:n
+    for j = 1:npert
+      B[ pertidx[j,i], IDX[i] ] = pertvals[j,i]
+    end
+  end
+
+  return B
+end
+
 
 # Encode using iterated conditional modes
 function encode_icm_fully!{T <: AbstractFloat}(
@@ -290,22 +326,8 @@ function encode_icm_fully!{T <: AbstractFloat}(
   bb = Matrix{T}( h, h )
   ub = Matrix{T}( h, n )
 
-  # Sample the indices to perturb in each code
-  pertidx  = Matrix{Integer}( npert, n )
-  for i = 1:n
-    sampleidx = sample(1:m, npert, replace=false, ordered=true)
-    for j = 1:npert
-      pertidx[j, i] = sampleidx[j]
-    end
-  end
-  pertvals = rand( 1:h, npert, n )
-
-  # Perturb the solutions
-  for i = 1:n
-    for j = 1:npert
-      B[ pertidx[j,i], IDX[i] ] = pertvals[j,i]
-    end
-  end
+  # Perturb the codes
+  B = perturb_codes(B, npert, h, IDX)
 
   @inbounds for i=1:niter # Do the number of passed iterations
 

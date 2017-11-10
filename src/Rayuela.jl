@@ -6,6 +6,9 @@ using Clustering, Distances
 # For LSQR
 using IterativeSolvers
 
+# For sampling
+using Distributions
+
 # For LSQ encoding in the GPU
 using CUDAdrv, CUBLAS
 
