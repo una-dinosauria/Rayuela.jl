@@ -1,6 +1,4 @@
 
-using Distances
-
 export linscan_pq, linscan_opq, linscan_lsq, eval_recall
 
 # Linear scan using PQ codebooks no rotation
@@ -28,6 +26,7 @@ function linscan_pq(
 
 end
 
+"My attempt to implement linscan in julia. Very slow because sortperm is slow and no multithreading"
 function linscan_pq_julia(
   B::Matrix{Int16},          # m-by-n. The database, encoded
   X::Matrix{Cfloat},         # d-by-nq. The queries.
@@ -43,14 +42,12 @@ function linscan_pq_julia(
   idx   = zeros(  Cuint, knn, nq )
   Bt = B'
 
-  # Compute distance tables between queries and
+  # Compute distance tables between queries and codebooks
   tables = Vector{Matrix{Cfloat}}(m)
   for i = 1:m
     # tables[i] = Distances.pairwise(Distances.SqEuclidean(), X[subdims[i],:], C[i])
     tables[i] = Distances.pairwise(Distances.SqEuclidean(), C[i], X[subdims[i],:])
   end
-
-
 
   # Compute approximate distances and sort
   @inbounds for i = 1:nq # Loop over each query

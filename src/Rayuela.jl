@@ -6,6 +6,9 @@ using Clustering, Distances
 # For LSQR
 using IterativeSolvers
 
+# For TODO
+using Distances
+
 # For sampling
 using Distributions
 
