@@ -200,13 +200,13 @@ end
 ## Functions that evaluate global objectives ##
 ###############################################
 
-function reconstruct{T <: AbstractFloat}(
-  B::Matrix{Int16},
-  C::Vector{Matrix{T}})
+function reconstruct(
+  B::Matrix{T1},
+  C::Vector{Matrix{T2}}) where {T1<:Integer, T2<:AbstractFloat}
 
   m, n = size( B )
   d, _ = size( C[1] )
-  CB   = zeros( T, d, n )
+  CB   = zeros( T2, d, n )
 
   @inbounds for i = 1:m
     mcb = C[i] # Pick the mth codebook
@@ -219,7 +219,6 @@ function reconstruct{T <: AbstractFloat}(
   end
 
   return CB
-
 end
 
 function veccost{T <: AbstractFloat}(
