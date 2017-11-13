@@ -1,20 +1,6 @@
 
 export train_lsq, encoding_icm, encode_icm_cuda
 
-# Make a deep copy of the codes
-function get_new_B(
-  B::Matrix{Int16},
-  m::Int,
-  n::Int)
-
-  newB = Matrix{Int16}(m, n); # codes
-  @inbounds @simd for j = 1:m*n
-    newB[j] = B[j];
-  end
-
-  return newB
-end
-
 "Encodes a database with ILS in cuda"
 function encode_icm_cuda(
   RX::Matrix{Float32},
@@ -132,7 +118,7 @@ function encode_icm_cuda(
     # prevcost = to_host( d_prevcost )
     prevcost = Array( d_prevcost )
 
-    newB = get_new_B( B, m, n );
+    newB = copy(B)
 
     # Randomize the visit order in ICM
     if randord
