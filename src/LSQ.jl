@@ -315,16 +315,14 @@ function encode_icm_fully!{T <: AbstractFloat}(
   # Perturb the codes
   B = perturb_codes!(B, npert, h, IDX)
 
+  #Profile.@profile begin
   @inbounds for i=1:niter # Do the number of passed iterations
 
     # This is the codebook that we are updating (i.e., the node)
     jidx = 1;
     for j = to_look
       # Get the unaries that we will work on
-      uj = unaries[j]
-      @simd for k = 1:h*n
-        ub[k] = uj[k]
-      end
+      copy!(ub, unaries[j])
 
       # These are all the nodes that we are conditioning on (i.e., the edges to 'absorb')
       for k = to_condition[:, jidx]
@@ -341,7 +339,8 @@ function encode_icm_fully!{T <: AbstractFloat}(
         # Traverse the unaries, absorbing the appropriate binaries
         for l=1:n
           codek = B[k, IDX[l]]
-          @simd for ll = 1:h
+          #@simd for ll = 1:h
+          for ll = 1:h
             ub[ll, l] += bb[ ll, codek ]
           end
         end
@@ -369,6 +368,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
 
     end # for j=to_look
   end # for i=1:niter
+  #end # profile
 
 end
 
