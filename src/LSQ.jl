@@ -36,6 +36,7 @@ function perturb_codes!(
   return B
 end
 
+
 "Get the codebook of the norms with k-means"
 function get_norms_codebooks(
   B::Matrix{T1},                            # In. Codes
@@ -300,5 +301,4 @@ function train_lsq{T <: AbstractFloat}(
   norms_codes, norms_codebook = get_norms_codebooks(B, C)
 
   return C, B, norms_codebook, norms_codes, obj
-
 end

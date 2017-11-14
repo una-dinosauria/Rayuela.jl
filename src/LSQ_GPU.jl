@@ -1,17 +1,17 @@
 
 export encode_icm_cuda
 
+
+
 "Encodes a database with ILS in cuda"
 function encode_icm_cuda(
   RX::Matrix{Float32},         # in. The data to encode
   B::Matrix{Int16},            # in. Initial list of codes
   C::Vector{Matrix{Float32}},  # in. Codebooks
-  cbnorms::Vector{Float32},    # in. h-long vector with the norms of RX approximated with C and B
   ilsiters::Vector{Int64},     # in. ILS iterations to record Bs and obj function. Its max is the total number of iteration we will run.
   icmiter::Integer,            # in. Number of ICM iterations
   npert::Integer,              # in. Number of entries to perturb
-  randord::Bool,               # in. Whether to randomize the order in which nodes are visited in ILS
-  qdbnorms::Bool)              # in. Whether to quantize the norms of the approximation
+  randord::Bool)               # in. Whether to randomize the order in which nodes are visited in ILS
 
   d, n = size( RX )
   m    = length( C )
@@ -186,7 +186,7 @@ function encode_icm_cuda(
     println("$(sum(arebetter)) new codes are better")
 
     newB[:, .~arebetter] = B[:, .~arebetter]
-    B = get_new_B( newB, m, n )
+    B = copy( newB )
     end
 
     # Check if this # of iterations was requested
@@ -198,18 +198,8 @@ function encode_icm_cuda(
       obj = qerror( RX, B, C )
       @show obj
       objs[ ithidx ] = obj
-
-      if qdbnorms
-        dbnormsB = quantize_norms( B, C, cbnorms )
-        # Save B
-        B_with_norms = vcat( B, reshape(dbnormsB, 1, n))
-
-        @show size( B_with_norms )
-        Bs[ ithidx ] = B_with_norms;
-      else
-        @show size( B )
-        Bs[ ithidx ] = B;
-      end
+      @show size(B)
+      Bs[ ithidx ] = B
 
     end # end if i in ilsiters
   end # end for i=1:max(ilsiters)
@@ -261,7 +251,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
 
   # Initialize B
   for i = 1:ilsiter
-    B = encoding_icm( X, B, C, icmiter, randord, npert, V )
+    B = encoding_icm_cuda( X, B, C, icmiter, randord, npert, V )
     @everywhere gc()
   end
   @printf("%3d %e \n", -1, qerror( X, B, C ))
@@ -278,29 +268,14 @@ function train_lsq_cuda{T <: AbstractFloat}(
 
     # Update the codes with local search
     for i = 1:ilsiter
-      B = encoding_icm( X, B, C, icmiter, randord, npert, V )
+      B = encoding_icm_cuda( X, B, C, icmiter, randord, npert, V )
       @everywhere gc()
     end
 
   end
 
   # Get the codebook for norms
-  CB = reconstruct(B, C)
+  norms_codes, norms_codebook = get_norms_codebooks(B, C)
 
-  dbnorms = zeros(Float32, 1, n)
-  for i = 1:n
-     for j = 1:d
-        dbnorms[i] += CB[j,i].^2
-     end
-  end
-
-  # Quantize the norms with plain-old k-means
-  dbnormsq = kmeans(dbnorms, h)
-  cbnorms  = dbnormsq.centers
-
-  # Add the dbnorms to the codes
-  B_norms  = reshape( dbnormsq.assignments, 1, n )
-
-  return C, B, cbnorms, B_norms, obj
-
+  return C, B, norms_codebook, norms_codes, obj
 end
