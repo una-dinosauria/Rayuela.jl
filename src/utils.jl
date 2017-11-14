@@ -221,17 +221,18 @@ function reconstruct(
   return CB
 end
 
-function veccost{T <: AbstractFloat}(
+"Compute cost of encoding in each vector"
+function veccost(
   X::Matrix{T},
-  #B::Union{Matrix{Int16},SharedMatrix{Int16}},
   B::Matrix{Int16},
-  C::Vector{Matrix{T}})
+  C::Vector{Matrix{T}}) where {T <: AbstractFloat}
 
   d, n = size( X )
   m,_ = size(B)
 
   cost = zeros(T, n)
-  CBi = zeros(T,d)
+  CBi  = zeros(T, d)
+
   @inbounds for i = 1:n
 
     for k = 1:m
@@ -244,7 +245,7 @@ function veccost{T <: AbstractFloat}(
 
     @simd for j = 1:d
       cost[i] += (CBi[j] - X[j,i]).^2
-      CBi[j] = 0
+      CBi[j] = 0.0
     end
   end
 

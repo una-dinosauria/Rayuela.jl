@@ -12,16 +12,16 @@ function perturb_codes!(
   n    = length(IDX)
 
   # Sample random perturbation indices (places to perturb) in B
-  pertidx  = Matrix{Integer}(npert, n)
-  for i = 1:n
-    # Sample npert unique values out of m
-    sampleidx = Distributions.sample(1:m, npert, replace=false, ordered=true)
 
-    # Save them in pert_idx
-    for j = 1:npert
-      pertidx[j, i] = sampleidx[j]
-    end
-  end
+  # With replacements this is easy
+  pertidx  = rand(1:m, npert, n)
+
+  # Without replacements this is harder
+  # pertidx  = Matrix{Integer}(npert, n)
+  # for i = 1:n
+  #   # Sample npert unique values out of m
+  #   Distributions.sample!(1:m, view(pertidx,:,i), replace=false, ordered=true)
+  # end
 
   # Sample the values that will replace the new ones
   pertvals = rand(1:h, npert, n)
@@ -116,7 +116,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
   ub = Matrix{T}( h, n )
 
   # Perturb the codes
-  B = perturb_codes!(B, npert, h, IDX)
+  @time B = perturb_codes!(B, npert, h, IDX)
 
   #Profile.@profile begin
   @inbounds for i=1:niter # Do the number of passed iterations
@@ -202,10 +202,7 @@ function encoding_icm{T <: AbstractFloat}(
   else
     B = SharedArray{Int16}(m, n)
   end
-
-  @inbounds @simd for i = 1:m*n
-    B[i] = oldB[i]
-  end
+  copy!(B, oldB)
 
   if nworkers() == 1
     encode_icm_fully!( B, X, C, binaries, cbi, niter, randord, npert, 1:n, V )
