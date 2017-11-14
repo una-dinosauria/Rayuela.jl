@@ -76,6 +76,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
   IDX::UnitRange{Int64},        # in. Index to save the result
   V::Bool)                      # in. whether to print progress
 
+  @time begin
   # Compute unaries
   unaries = get_unaries( X, C, V )
 
@@ -112,13 +113,14 @@ function encode_icm_fully!{T <: AbstractFloat}(
   end
 
   # Preallocate some space
-  bb = Matrix{T}( h, h )
-  ub = Matrix{T}( h, n )
+  bb = zeros(T, h, h)
+  ub = zeros(T, h, n)
 
   # Perturb the codes
-  @time B = perturb_codes!(B, npert, h, IDX)
+  B = perturb_codes!(B, npert, h, IDX)
+  end
 
-  #Profile.@profile begin
+  @time begin
   @inbounds for i=1:niter # Do the number of passed iterations
 
     # This is the codebook that we are updating (i.e., the node)
@@ -142,8 +144,8 @@ function encode_icm_fully!{T <: AbstractFloat}(
         # Traverse the unaries, absorbing the appropriate binaries
         for l=1:n
           codek = B[k, IDX[l]]
-          #@simd for ll = 1:h
-          for ll = 1:h
+          @simd for ll = 1:h
+          #for ll = 1:h
             ub[ll, l] += bb[ ll, codek ]
           end
         end
@@ -171,7 +173,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
 
     end # for j=to_look
   end # for i=1:niter
-  #end # profile
+  end
 
 end
 
