@@ -2,21 +2,21 @@
 export qerror, qerror_pq, qerror_opq, quantize_norms, splitarray,# sparsify_codes,
       K2vec
 
-# Quantize the norms of an encoding
+"Quantize the norms of an encoding"
 function quantize_norms(
-  B::Matrix{Int16},           # Codes
-  C::Vector{Matrix{Float32}}, # Codebooks
-  cbnorms::Vector{Float32})   # codebook for norms
+  B::Matrix{T1},         # Codes
+  C::Vector{Matrix{T2}}, # Codebooks
+  cbnorms::Vector{T2}) where {T1<:Integer, T2<:AbstractFloat} # codebook for norms
 
-  CB   = reconstruct( B, C )
+  CB = reconstruct(B,C)
   d, n = size( CB )
   _, h = size( C[1] )
 
-  dbnormsB = Vector{Int16}(n)
-  dists2norm = Vector{Float32}(h)
+  dbnormsB = Vector{T1}(n)
+  dists2norm = Vector{T2}(h)
 
   @inbounds for i = 1:n
-    ithnorm = 0
+    ithnorm::T2 = 0.0
     @simd for j = 1:d
       ithnorm += CB[j,i].^2
     end
