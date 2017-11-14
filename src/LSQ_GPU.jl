@@ -1,7 +1,5 @@
 
-export encode_icm_cuda
-
-
+export encode_icm_cuda, train_lsq_cuda
 
 "Encodes a database with ILS in cuda"
 function encode_icm_cuda(
@@ -250,10 +248,8 @@ function train_lsq_cuda{T <: AbstractFloat}(
   @printf("%3d %e \n", -2, qerror( X, B, C ))
 
   # Initialize B
-  for i = 1:ilsiter
-    B = encoding_icm_cuda( X, B, C, icmiter, randord, npert, V )
-    @everywhere gc()
-  end
+  B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord)
+  B    = B[end]
   @printf("%3d %e \n", -1, qerror( X, B, C ))
 
   obj = zeros( Float32, niter )
@@ -267,10 +263,9 @@ function train_lsq_cuda{T <: AbstractFloat}(
     C = update_codebooks( X, B, h, V, "lsqr" )
 
     # Update the codes with local search
-    for i = 1:ilsiter
-      B = encoding_icm_cuda( X, B, C, icmiter, randord, npert, V )
-      @everywhere gc()
-    end
+    B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord)
+    B    = B[end]
+    @printf("%3d %e \n", -1, qerror( X, B, C ))
 
   end
 
