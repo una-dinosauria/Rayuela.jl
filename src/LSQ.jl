@@ -63,65 +63,24 @@ function get_norms_codebooks(
 end
 
 
-# Encode using iterated conditional modes
-function encode_icm_fully!{T <: AbstractFloat}(
+"Run iterated conditional modes on N problems"
+function iterated_conditional_modes!{T <: AbstractFloat}(
   B::Union{Matrix{Int16},SharedMatrix{Int16}},  # in/out. Initialization, and the place where the results are saved.
-  X::Matrix{T},                 # in. d-by-n data to encode
-  C::Vector{Matrix{T}},         # in. m-long vector with d-by-h codebooks
-  binaries::Vector{Matrix{T}},  # in. The binary terms
+  unaries::Vector{Matrix{T}},     # in. Unary terms
+  binaries::Vector{Matrix{T}},    # in. The binary terms
+  binaries_t::Vector{Matrix{T}},  # in. Transposed version of the above
+  cbpair2binaryidx::Matrix{Int32},
   cbi::Matrix{Int32},           # in. 2-by-ncbi. indices for inter-codebook interactions
-  niter::Integer,               # in. number of iterations for block-icm
-  randord::Bool,                # in. whether to randomize search order
+  to_look::Union{UnitRange{Int64},Vector{Int64}},
+  to_condition::Matrix{Int32},
+  icmiter::Integer,             # in. number of iterations for block-icm
   npert::Integer,               # in. number of codes to perturb per iteration
   IDX::UnitRange{Int64},        # in. Index to save the result
+  ub::Matrix{T}, bb::Matrix{T}, # in. Preallocated memory
+  h::Integer, n::Integer, m::Integer,
   V::Bool)                      # in. whether to print progress
 
-  @time begin
-  # Compute unaries
-  unaries = get_unaries( X, C, V )
-
-  h, n = size( unaries[1] )
-  m, _ = size( B )
-
-  ncbi = length( binaries )
-
-  # Create a transposed copy of the binaries
-  binaries_t = similar( binaries )
-  for i = 1:ncbi
-    binaries_t[i] = binaries[i]'
-  end
-
-  # Create an index from codebook pairs to indices
-  cbpair2binaryidx   = zeros(Int32, m, m)
-  for i = 1:ncbi
-    cbpair2binaryidx[ cbi[1,i], cbi[2,i] ] = i
-  end
-
-  # For codebook i, we have to condition on these codebooks
-  to_look      = 1:m
-  to_condition = zeros(Int32, m-1, m)
-  for i = 1:m
-    tmp = collect(1:m)
-    splice!( tmp, i )
-    to_condition[:,i] = tmp
-  end
-
-  # Make the order random
-  if randord
-    to_look      = randperm( m )
-    to_condition = to_condition[:, to_look]
-  end
-
-  # Preallocate some space
-  bb = zeros(T, h, h)
-  ub = zeros(T, h, n)
-
-  # Perturb the codes
-  B = perturb_codes!(B, npert, h, IDX)
-  end
-
-  @time begin
-  @inbounds for i=1:niter # Do the number of passed iterations
+  @inbounds for i=1:icmiter # Do the number of passed iterations
 
     # This is the codebook that we are updating (i.e., the node)
     jidx = 1;
@@ -170,13 +129,73 @@ function encode_icm_fully!{T <: AbstractFloat}(
 
       jidx = jidx .+ 1
 
-
     end # for j=to_look
-  end # for i=1:niter
-  end
+  end # for i=1:icmiter
 
 end
 
+# Encode using iterated conditional modes
+function encode_icm_fully!{T <: AbstractFloat}(
+  B::Union{Matrix{Int16},SharedMatrix{Int16}},  # in/out. Initialization, and the place where the results are saved.
+  X::Matrix{T},                 # in. d-by-n data to encode
+  C::Vector{Matrix{T}},         # in. m-long vector with d-by-h codebooks
+  binaries::Vector{Matrix{T}},  # in. The binary terms
+  cbi::Matrix{Int32},           # in. 2-by-ncbi. indices for inter-codebook interactions
+  icmiter::Integer,             # in. number of iterations for block-icm
+  randord::Bool,                # in. whether to randomize search order
+  npert::Integer,               # in. number of codes to perturb per iteration
+  IDX::UnitRange{Int64},        # in. Index to save the result
+  V::Bool)                      # in. whether to print progress
+
+  @time begin
+  # Compute unaries
+  unaries = get_unaries( X, C, V )
+
+  h, n = size( unaries[1] )
+  m, _ = size( B )
+
+  ncbi = length( binaries )
+
+  # Create a transposed copy of the binaries
+  binaries_t = similar( binaries )
+  for i = 1:ncbi
+    binaries_t[i] = binaries[i]'
+  end
+
+  # Create an index from codebook pairs to indices
+  cbpair2binaryidx   = zeros(Int32, m, m)
+  for i = 1:ncbi
+    cbpair2binaryidx[ cbi[1,i], cbi[2,i] ] = i
+  end
+
+  # For codebook i, we have to condition on these codebooks
+  to_look      = 1:m
+  to_condition = zeros(Int32, m-1, m)
+  for i = 1:m
+    tmp = collect(1:m)
+    splice!( tmp, i )
+    to_condition[:,i] = tmp
+  end
+
+  # Make the order random
+  if randord
+    to_look      = randperm(m)
+    to_condition = to_condition[:, to_look]
+  end
+
+  # Preallocate some space
+  bb = zeros(T, h, h)
+  ub = zeros(T, h, n)
+
+  # Perturb the codes
+  B = perturb_codes!(B, npert, h, IDX)
+  end
+
+  @time iterated_conditional_modes!(B, unaries,
+  binaries, binaries_t, cbpair2binaryidx, cbi,
+  to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
+
+end
 
 # Encode a full dataset
 function encoding_icm{T <: AbstractFloat}(
@@ -208,7 +227,6 @@ function encoding_icm{T <: AbstractFloat}(
 
   if nworkers() == 1
     encode_icm_fully!( B, X, C, binaries, cbi, niter, randord, npert, 1:n, V )
-    #encode_icm_cpp!( B, X, C, binaries, cbi, niter, randord, npert, 1:n, V );
   else
     paridx = splitarray( 1:n, nworkers() )
     @sync begin
