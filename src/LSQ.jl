@@ -131,28 +131,29 @@ function iterated_conditional_modes!{T <: AbstractFloat}(
 
     end # for j=to_look
   end # for i=1:icmiter
-
 end
 
 # Encode using iterated conditional modes
 function encode_icm_fully!{T <: AbstractFloat}(
-  B::Union{Matrix{Int16},SharedMatrix{Int16}},  # in/out. Initialization, and the place where the results are saved.
+  oldB::Matrix{Int16},  # in/out. Initialization, and the place where the results are saved.
   X::Matrix{T},                 # in. d-by-n data to encode
   C::Vector{Matrix{T}},         # in. m-long vector with d-by-h codebooks
   binaries::Vector{Matrix{T}},  # in. The binary terms
   cbi::Matrix{Int32},           # in. 2-by-ncbi. indices for inter-codebook interactions
-  icmiter::Integer,             # in. number of iterations for block-icm
+  ilsiter::Integer,             # in. number of ILS iterations
+  icmiter::Integer,             # in. number of ICM iterations
   randord::Bool,                # in. whether to randomize search order
   npert::Integer,               # in. number of codes to perturb per iteration
   IDX::UnitRange{Int64},        # in. Index to save the result
   V::Bool)                      # in. whether to print progress
 
   @time begin
+
   # Compute unaries
   unaries = get_unaries( X, C, V )
 
   h, n = size( unaries[1] )
-  m, _ = size( B )
+  m, _ = size( oldB )
 
   ncbi = length( binaries )
 
@@ -168,32 +169,58 @@ function encode_icm_fully!{T <: AbstractFloat}(
     cbpair2binaryidx[ cbi[1,i], cbi[2,i] ] = i
   end
 
-  # For codebook i, we have to condition on these codebooks
-  to_look      = 1:m
-  to_condition = zeros(Int32, m-1, m)
-  for i = 1:m
-    tmp = collect(1:m)
-    splice!( tmp, i )
-    to_condition[:,i] = tmp
-  end
-
-  # Make the order random
-  if randord
-    to_look      = randperm(m)
-    to_condition = to_condition[:, to_look]
-  end
-
   # Preallocate some space
   bb = zeros(T, h, h)
   ub = zeros(T, h, n)
-
-  # Perturb the codes
-  B = perturb_codes!(B, npert, h, IDX)
   end
 
-  @time iterated_conditional_modes!(B, unaries,
-  binaries, binaries_t, cbpair2binaryidx, cbi,
-  to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
+  B = zeros(Int16, m, n)
+
+  for _ = 1:ilsiter
+
+    prevcost = veccost( X, oldB, C )
+    if nworkers() == 1
+      B = zeros(Int16, m, n)
+    else
+      B = SharedArray{Int16}(m, n)
+    end
+    copy!(B, oldB)
+
+    # For codebook i, we have to condition on these codebooks
+    to_look      = 1:m
+    to_condition = zeros(Int32, m-1, m)
+    for i = 1:m
+      tmp = collect(1:m)
+      splice!( tmp, i )
+      to_condition[:,i] = tmp
+    end
+    # Make the order random
+    if randord
+      to_look      = randperm(m)
+      to_condition = to_condition[:, to_look]
+    end
+
+    # Perturb the codes
+    B = perturb_codes!(B, npert, h, IDX)
+
+    # Run ICM
+    @time iterated_conditional_modes!(B, unaries,
+      binaries, binaries_t, cbpair2binaryidx, cbi,
+      to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
+
+    # Keep only the codes that improved
+    newcost = veccost( X, B, C )
+    areequal = newcost .== prevcost
+    if V println("$(sum(areequal)) new codes are equal"); end
+    arebetter = newcost .< prevcost
+    if V println("$(sum(arebetter)) new codes are better"); end
+    B[:, .~arebetter] = oldB[:, .~arebetter]
+
+    copy!(oldB, B)
+
+  end
+
+  return B
 
 end
 
@@ -202,7 +229,8 @@ function encoding_icm{T <: AbstractFloat}(
   X::Matrix{T},         # d-by-n matrix. Data to encode
   oldB::Matrix{Int16},  # m-by-n matrix. Previous encoding
   C::Vector{Matrix{T}}, # m-long vector with d-by-h codebooks
-  niter::Integer,       # number of ICM iterations
+  ilsiter::Integer,     # in. number of ILS iterations
+  icmiter::Integer,     # in. number of ICM iterations
   randord::Bool,        # whether to use random order
   npert::Integer,       # the number of codes to perturb
   V::Bool=false)        # whether to print progress
@@ -215,41 +243,24 @@ function encoding_icm{T <: AbstractFloat}(
   binaries, cbi = get_binaries( C )
   _, ncbi       = size( cbi )
 
-  # Compute the cost of the previous assignments
-  prevcost = veccost( X, oldB, C )
+
 
   if nworkers() == 1
-    B = zeros(Int16, m, n)
-  else
-    B = SharedArray{Int16}(m, n)
-  end
-  copy!(B, oldB)
-
-  if nworkers() == 1
-    encode_icm_fully!( B, X, C, binaries, cbi, niter, randord, npert, 1:n, V )
+    B = encode_icm_fully!( oldB, X, C, binaries, cbi, ilsiter, icmiter, randord, npert, 1:n, V )
   else
     paridx = splitarray( 1:n, nworkers() )
     @sync begin
       for (i,wpid) in enumerate(workers())
         @async begin
           Xw = X[:,paridx[i]]
-          remotecall_wait(encode_icm_fully!, wpid, B, Xw, C, binaries, cbi, niter, randord, npert, paridx[i], V )
+          remotecall_wait(encode_icm_fully!, wpid, oldB, Xw, C, binaries, cbi, ilsiter, icmiter, randord, npert, paridx[i], V )
         end
       end
     end
   end
-  B = sdata(B)
+  # B = sdata(B)
 
-  # Keep only the codes that improved
-  newcost = veccost( X, B, C )
 
-  areequal = newcost .== prevcost
-  if V println("$(sum(areequal)) new codes are equal"); end
-
-  arebetter = newcost .< prevcost
-  if V println("$(sum(arebetter)) new codes are better"); end
-
-  B[:, .~arebetter] = oldB[:, .~arebetter]
 
   return B
 end
@@ -290,10 +301,11 @@ function train_lsq{T <: AbstractFloat}(
   @printf("%3d %e \n", -2, qerror( X, B, C ))
 
   # Initialize B
-  for i = 1:ilsiter
-    B = encoding_icm( X, B, C, icmiter, randord, npert, V )
-    @everywhere gc()
-  end
+  # for i = 1:ilsiter
+  #   B = encoding_icm( X, B, C, icmiter, randord, npert, V )
+  #   @everywhere gc()
+  # end
+  B = encoding_icm( X, B, C, ilsiter, icmiter, randord, npert, V )
   @printf("%3d %e \n", -1, qerror( X, B, C ))
 
   obj = zeros( Float32, niter )
@@ -307,10 +319,11 @@ function train_lsq{T <: AbstractFloat}(
     C = update_codebooks( X, B, h, V, "lsqr" )
 
     # Update the codes with local search
-    for i = 1:ilsiter
-      B = encoding_icm( X, B, C, icmiter, randord, npert, V )
-      @everywhere gc()
-    end
+    # for i = 1:ilsiter
+    #   B = encoding_icm( X, B, C, icmiter, randord, npert, V )
+    #   @everywhere gc()
+    # end
+    B = encoding_icm( X, B, C, ilsiter, icmiter, randord, npert, V )
 
   end
 
