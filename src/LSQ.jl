@@ -6,26 +6,29 @@ function perturb_codes!(
   B::Union{Matrix{Int16},SharedMatrix{Int16}}, # in/out. Codes to perturb
   npert::Integer,         # in. Number of entries to perturb in each code
   h::Integer,             # in. The number of codewords in each codebook
-  IDX::UnitRange{Int64})  # in. Subset of codes in B to perturb
+  IDX::UnitRange{Int64},  # in. Subset of codes in B to perturb
+  replace::Bool=true)  # in. Whether to sample with replacement
 
   m, _ = size(B)
   n    = length(IDX)
 
   # Sample random perturbation indices (places to perturb) in B
 
-  # With replacements this is easy
-  pertidx  = rand(1:m, npert, n)
-
-  # Without replacements this is harder
-  # pertidx  = Matrix{Integer}(npert, n)
-  # for i = 1:n
-  #   # Sample npert unique values out of m
-  #   Distributions.sample!(1:m, view(pertidx,:,i), replace=false, ordered=true)
-  # end
+  if replace
+    # With replacements this is easy
+    pertidx  = rand(1:m, npert, n)
+  else
+    # Each call to sample has about 8 allocations, so this can results in
+    # several Million alloc calls too.
+    pertidx  = Matrix{Integer}(npert, n)
+    for i = 1:n
+      # Sample npert unique values out of m
+      Distributions.sample!(1:m, view(pertidx,:,i), replace=false, ordered=true)
+    end
+  end
 
   # Sample the values that will replace the new ones
   pertvals = rand(1:h, npert, n)
-
   # Perturb the solutions
   for i = 1:n
     for j = 1:npert
@@ -38,7 +41,7 @@ end
 
 
 "Get the codebook of the norms with k-means"
-function get_norms_codebooks(
+function get_norms_codebook(
   B::Matrix{T1},                            # In. Codes
   C::Vector{Matrix{T2}}) where {T1<:Integer, T2<:AbstractFloat} # In. Codebooks
 
@@ -131,6 +134,7 @@ function iterated_conditional_modes!{T <: AbstractFloat}(
 
     end # for j=to_look
   end # for i=1:icmiter
+
 end
 
 # Encode using iterated conditional modes
@@ -147,9 +151,8 @@ function encode_icm_fully!{T <: AbstractFloat}(
   IDX::UnitRange{Int64},        # in. Index to save the result
   V::Bool)                      # in. whether to print progress
 
-  @time begin
-
   # Compute unaries
+  @time begin
   unaries = get_unaries( X, C, V )
 
   h, n = size( unaries[1] )
@@ -164,7 +167,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
   end
 
   # Create an index from codebook pairs to indices
-  cbpair2binaryidx   = zeros(Int32, m, m)
+  cbpair2binaryidx = zeros(Int32, m, m)
   for i = 1:ncbi
     cbpair2binaryidx[ cbi[1,i], cbi[2,i] ] = i
   end
@@ -246,14 +249,14 @@ function encoding_icm{T <: AbstractFloat}(
 
 
   if nworkers() == 1
-    B = encode_icm_fully!( oldB, X, C, binaries, cbi, ilsiter, icmiter, randord, npert, 1:n, V )
+    B = encode_icm_fully!(oldB, X, C, binaries, cbi, ilsiter, icmiter, randord, npert, 1:n, V)
   else
     paridx = splitarray( 1:n, nworkers() )
     @sync begin
       for (i,wpid) in enumerate(workers())
         @async begin
           Xw = X[:,paridx[i]]
-          remotecall_wait(encode_icm_fully!, wpid, oldB, Xw, C, binaries, cbi, ilsiter, icmiter, randord, npert, paridx[i], V )
+          remotecall_wait(encode_icm_fully!, wpid, oldB, Xw, C, binaries, cbi, ilsiter, icmiter, randord, npert, paridx[i], V)
         end
       end
     end
@@ -301,34 +304,23 @@ function train_lsq{T <: AbstractFloat}(
   @printf("%3d %e \n", -2, qerror( X, B, C ))
 
   # Initialize B
-  # for i = 1:ilsiter
-  #   B = encoding_icm( X, B, C, icmiter, randord, npert, V )
-  #   @everywhere gc()
-  # end
   B = encoding_icm( X, B, C, ilsiter, icmiter, randord, npert, V )
   @printf("%3d %e \n", -1, qerror( X, B, C ))
 
   obj = zeros( Float32, niter )
 
   for iter = 1:niter
-
     obj[iter] = qerror( X, B, C )
     @printf("%3d %e \n", iter, obj[iter])
 
-    # Update the codebooks
-    C = update_codebooks( X, B, h, V, "lsqr" )
-
-    # Update the codes with local search
-    # for i = 1:ilsiter
-    #   B = encoding_icm( X, B, C, icmiter, randord, npert, V )
-    #   @everywhere gc()
-    # end
-    B = encoding_icm( X, B, C, ilsiter, icmiter, randord, npert, V )
-
+    # Update the codebooks C
+    C = update_codebooks(X, B, h, V, "lsqr")
+    # Update the codes B
+    B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, V)
   end
 
   # Get the codebook for norms
-  norms_codes, norms_codebook = get_norms_codebooks(B, C)
+  norms_codes, norms_codebook = get_norms_codebook(B, C)
 
   return C, B, norms_codebook, norms_codes, obj
 end

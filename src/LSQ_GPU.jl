@@ -270,7 +270,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
   end
 
   # Get the codebook for norms
-  norms_codes, norms_codebook = get_norms_codebooks(B, C)
+  norms_codes, norms_codebook = get_norms_codebook(B, C)
 
   return C, B, norms_codebook, norms_codes, obj
 end
