@@ -87,8 +87,11 @@ function iterated_conditional_modes_cpp!{T <: AbstractFloat}(
   to_condition     = convert(Matrix{Int32}, to_condition.-1)
   # to_look = to_look - 1
 
-  binaries   = hcat(map(transpose,binaries)...)
-  binaries_t = hcat(map(transpose,binaries_t)...)
+  binaries   = hcat(binaries...)
+  binaries_t = hcat(binaries_t...)
+
+  # binaries   = hcat(map(transpose,binaries)...)
+  # binaries_t = hcat(map(transpose,binaries_t)...)
 
   @inbounds for i=1:icmiter # Do the number of passed iterations
 
