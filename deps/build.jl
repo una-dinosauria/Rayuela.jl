@@ -6,6 +6,7 @@ deps = [
   cudautils   = library_dependency("cudautils")
   linscan_aqd = library_dependency("linscan_aqd")
   linscan_aqd_pairwise_byte = library_dependency("linscan_aqd_pairwise_byte")
+  encode_icm_so = library_dependency("encode_icm_so")
 ]
 
 prefix=joinpath(BinDeps.depsdir(linscan_aqd))
@@ -35,6 +36,17 @@ provides(BuildProcess,
         end
     end),linscan_aqd_pairwise_byte, os = :Linux, installed_libpath=joinpath(prefix,"builds"))
 
+provides(BuildProcess,
+    (@build_steps begin
+        CreateDirectory(linscan_aqdbuilddir)
+        @build_steps begin
+            ChangeDirectory(linscan_aqdbuilddir)
+            FileRule(joinpath(prefix,"builds","encode_icm_so.so"),@build_steps begin
+                `g++ -O3 -shared -fPIC ../src/encode_icm.cpp -o encode_icm_so.so -fopenmp`
+            end)
+        end
+    end),encode_icm_so, os = :Linux, installed_libpath=joinpath(prefix,"builds"))
+
 # === CUDA code ===
 provides(BuildProcess,
     (@build_steps begin
@@ -53,4 +65,5 @@ provides(BuildProcess,
 
 @BinDeps.install Dict([(:linscan_aqd, :linscan_aqd),
                        (:linscan_aqd_pairwise_byte, :linscan_aqd_pairwise_byte),
+                       (:encode_icm_so, :encode_icm_so),
                        (:cudautils, :cudautils)])

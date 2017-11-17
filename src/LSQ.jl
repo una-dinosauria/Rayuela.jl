@@ -67,6 +67,64 @@ end
 
 
 "Run iterated conditional modes on N problems"
+function iterated_conditional_modes_cpp!{T <: AbstractFloat}(
+  B::Matrix{UInt8},  # in/out. Initialization, and the place where the results are saved.
+  unaries::Vector{Matrix{T}},     # in. Unary terms
+  binaries::Vector{Matrix{T}},    # in. The binary terms
+  binaries_t::Vector{Matrix{T}},  # in. Transposed version of the above
+  cbpair2binaryidx::Matrix{Int32},
+  cbi::Matrix{Int32},           # in. 2-by-ncbi. indices for inter-codebook interactions
+  to_look::Union{UnitRange{Int64},Vector{Int64}},
+  to_condition::Matrix{Int32},
+  icmiter::Integer,             # in. number of iterations for block-icm
+  npert::Integer,               # in. number of codes to perturb per iteration
+  IDX::UnitRange{Int64},        # in. Index to save the result
+  ub::Matrix{T}, bb::Matrix{T}, # in. Preallocated memory
+  h::Integer, n::Integer, m::Integer,
+  V::Bool)                      # in. whether to print progress
+
+  cbpair2binaryidx = convert(Matrix{Int32}, cbpair2binaryidx.-1)
+  to_condition     = convert(Matrix{Int32}, to_condition.-1)
+  # to_look = to_look - 1
+
+  binaries   = hcat(map(transpose,binaries)...)
+  binaries_t = hcat(map(transpose,binaries_t)...)
+
+  @inbounds for i=1:icmiter # Do the number of passed iterations
+
+    # @show i, n, icmiter
+
+    # for j = to_look
+    for j = 1:m
+      # Get the unaries that we will work on
+      copy!(ub, unaries[to_look[j]])
+
+      # condition_fun.argtypes =
+      #  [ndpointer(ctypes.c_ubyte, flags="C_CONTIGUOUS"),
+      #   ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+      #   ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+      #   ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+      #   ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
+      #   ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
+      #   ctypes.c_int, ctypes.c_int, ctypes.c_int]
+
+      # condition_fun(B, ub, binaries, binaries_t, cbpair2binaryidx, \
+      #  to_condition_[j], to_look_[j], n, m)
+
+      # @show cbpair2binaryidx
+
+      ccall(("condition", encode_icm_so), Void,
+        (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
+        Ptr{Cint}, Ptr{Cint}, Cint, Cint, Cint),
+        B, ub, binaries, binaries_t,
+        cbpair2binaryidx, to_condition[:,j], to_look[j]-1, n, m)
+
+    end # for j=to_look
+  end # for i=1:icmiter
+
+end
+
+"Run iterated conditional modes on N problems"
 function iterated_conditional_modes!{T <: AbstractFloat}(
   B::Union{Matrix{Int16},SharedMatrix{Int16}},  # in/out. Initialization, and the place where the results are saved.
   unaries::Vector{Matrix{T}},     # in. Unary terms
@@ -95,19 +153,17 @@ function iterated_conditional_modes!{T <: AbstractFloat}(
       for k = to_condition[:, jidx]
 
         # Determine the pairwise interactions that we'll use (for cache-friendliness)
+        binariidx = cbpair2binaryidx[ j, k ]
         if j < k
-          binariidx = cbpair2binaryidx[ j, k ]
           bb = binaries[ binariidx ]
         else
-          binariidx = cbpair2binaryidx[ k, j ]
           bb = binaries_t[ binariidx ]
         end
 
         # Traverse the unaries, absorbing the appropriate binaries
         for l=1:n
           codek = B[k, IDX[l]]
-          @simd for ll = 1:h
-          #for ll = 1:h
+          for ll = 1:h
             ub[ll, l] += bb[ ll, codek ]
           end
         end
@@ -136,6 +192,7 @@ function iterated_conditional_modes!{T <: AbstractFloat}(
   end # for i=1:icmiter
 
 end
+
 
 # Encode using iterated conditional modes
 function encode_icm_fully!{T <: AbstractFloat}(
@@ -170,6 +227,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
   cbpair2binaryidx = zeros(Int32, m, m)
   for i = 1:ncbi
     cbpair2binaryidx[ cbi[1,i], cbi[2,i] ] = i
+    cbpair2binaryidx[ cbi[2,i], cbi[1,i] ] = i
   end
 
   # Preallocate some space
@@ -207,9 +265,16 @@ function encode_icm_fully!{T <: AbstractFloat}(
     B = perturb_codes!(B, npert, h, IDX)
 
     # Run ICM
-    @time iterated_conditional_modes!(B, unaries,
+    # @time iterated_conditional_modes!(B, unaries,
+    #   binaries, binaries_t, cbpair2binaryidx, cbi,
+    #   to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
+
+    B = convert(Matrix{UInt8}, B .- one(Int16))
+    @time iterated_conditional_modes_cpp!(B, unaries,
       binaries, binaries_t, cbpair2binaryidx, cbi,
       to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
+    B = convert(Matrix{Int16}, B) .+ one(Int16)
+    # @show cbpair2binaryidx
 
     # Keep only the codes that improved
     newcost = veccost( X, B, C )
@@ -224,7 +289,6 @@ function encode_icm_fully!{T <: AbstractFloat}(
   end
 
   return B
-
 end
 
 # Encode a full dataset
@@ -245,8 +309,6 @@ function encoding_icm{T <: AbstractFloat}(
   # Compute binaries between all codebook pairs
   binaries, cbi = get_binaries( C )
   _, ncbi       = size( cbi )
-
-
 
   if nworkers() == 1
     B = encode_icm_fully!(oldB, X, C, binaries, cbi, ilsiter, icmiter, randord, npert, 1:n, V)
