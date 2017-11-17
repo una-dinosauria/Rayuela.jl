@@ -22,7 +22,7 @@ void _condition(
   float ubi  = 0;
   unsigned char mini = 0;
 
-  // #pragma omp parallel for private(codek,mini,minv)
+  #pragma omp parallel for private(codek,mini,minv)
   for (int l=0; l<n; l++) {
     // Pointer to the binaries we'll use
     for (int kidx=0; kidx<m-1; kidx++) {

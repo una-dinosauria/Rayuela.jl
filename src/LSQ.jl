@@ -85,36 +85,16 @@ function iterated_conditional_modes_cpp!{T <: AbstractFloat}(
 
   cbpair2binaryidx = convert(Matrix{Int32}, cbpair2binaryidx.-1)
   to_condition     = convert(Matrix{Int32}, to_condition.-1)
-  # to_look = to_look - 1
 
   binaries   = hcat(binaries...)
   binaries_t = hcat(binaries_t...)
 
-  # binaries   = hcat(map(transpose,binaries)...)
-  # binaries_t = hcat(map(transpose,binaries_t)...)
-
   @inbounds for i=1:icmiter # Do the number of passed iterations
-
-    # @show i, n, icmiter
 
     # for j = to_look
     for j = 1:m
       # Get the unaries that we will work on
       copy!(ub, unaries[to_look[j]])
-
-      # condition_fun.argtypes =
-      #  [ndpointer(ctypes.c_ubyte, flags="C_CONTIGUOUS"),
-      #   ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-      #   ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-      #   ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-      #   ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
-      #   ndpointer(ctypes.c_int, flags="C_CONTIGUOUS"),
-      #   ctypes.c_int, ctypes.c_int, ctypes.c_int]
-
-      # condition_fun(B, ub, binaries, binaries_t, cbpair2binaryidx, \
-      #  to_condition_[j], to_look_[j], n, m)
-
-      # @show cbpair2binaryidx
 
       ccall(("condition", encode_icm_so), Void,
         (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
@@ -122,7 +102,7 @@ function iterated_conditional_modes_cpp!{T <: AbstractFloat}(
         B, ub, binaries, binaries_t,
         cbpair2binaryidx, to_condition[:,j], to_look[j]-1, n, m)
 
-    end # for j=to_look
+    end # for j = 1:m
   end # for i=1:icmiter
 
 end
@@ -209,7 +189,8 @@ function encode_icm_fully!{T <: AbstractFloat}(
   randord::Bool,                # in. whether to randomize search order
   npert::Integer,               # in. number of codes to perturb per iteration
   IDX::UnitRange{Int64},        # in. Index to save the result
-  V::Bool)                      # in. whether to print progress
+  cpp::Bool=true,               # in. Whether to use the cpp implementation
+  V::Bool=true)                 # in. whether to print progress
 
   # Compute unaries
   @time begin
@@ -267,17 +248,18 @@ function encode_icm_fully!{T <: AbstractFloat}(
     # Perturb the codes
     B = perturb_codes!(B, npert, h, IDX)
 
-    # Run ICM
-    # @time iterated_conditional_modes!(B, unaries,
-    #   binaries, binaries_t, cbpair2binaryidx, cbi,
-    #   to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
-
-    B = convert(Matrix{UInt8}, B .- one(Int16))
-    @time iterated_conditional_modes_cpp!(B, unaries,
-      binaries, binaries_t, cbpair2binaryidx, cbi,
-      to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
-    B = convert(Matrix{Int16}, B) .+ one(Int16)
-    # @show cbpair2binaryidx
+    # Run iterated conditional modes
+    if cpp
+      B = convert(Matrix{UInt8}, B .- one(Int16))
+      @time iterated_conditional_modes_cpp!(B, unaries,
+        binaries, binaries_t, cbpair2binaryidx, cbi,
+        to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
+      B = convert(Matrix{Int16}, B) .+ one(Int16)
+    else
+      @time iterated_conditional_modes!(B, unaries,
+        binaries, binaries_t, cbpair2binaryidx, cbi,
+        to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
+    end
 
     # Keep only the codes that improved
     newcost = veccost( X, B, C )
@@ -288,7 +270,6 @@ function encode_icm_fully!{T <: AbstractFloat}(
     B[:, .~arebetter] = oldB[:, .~arebetter]
 
     copy!(oldB, B)
-
   end
 
   return B
@@ -303,7 +284,8 @@ function encoding_icm{T <: AbstractFloat}(
   icmiter::Integer,     # in. number of ICM iterations
   randord::Bool,        # whether to use random order
   npert::Integer,       # the number of codes to perturb
-  V::Bool=false)        # whether to print progress
+  cpp::Bool=true,        # whether to use the cpp implementation
+  V::Bool=true)        # whether to print progress
 
   d, n =    size( X )
   m    =  length( C )
@@ -313,22 +295,7 @@ function encoding_icm{T <: AbstractFloat}(
   binaries, cbi = get_binaries( C )
   _, ncbi       = size( cbi )
 
-  if nworkers() == 1
-    B = encode_icm_fully!(oldB, X, C, binaries, cbi, ilsiter, icmiter, randord, npert, 1:n, V)
-  else
-    paridx = splitarray( 1:n, nworkers() )
-    @sync begin
-      for (i,wpid) in enumerate(workers())
-        @async begin
-          Xw = X[:,paridx[i]]
-          remotecall_wait(encode_icm_fully!, wpid, oldB, Xw, C, binaries, cbi, ilsiter, icmiter, randord, npert, paridx[i], V)
-        end
-      end
-    end
-  end
-  # B = sdata(B)
-
-
+  B = encode_icm_fully!(oldB, X, C, binaries, cbi, ilsiter, icmiter, randord, npert, 1:n, cpp, V)
 
   return B
 end
@@ -346,7 +313,8 @@ function train_lsq{T <: AbstractFloat}(
   icmiter::Integer,     # number of iterations in local search
   randord::Bool,        # whether to use random order
   npert::Integer,       # The number of codes to perturb
-  V::Bool=false)        # whether to print progress
+  cpp::Bool=true,       # whether to use ICM's cpp implementation
+  V::Bool=true)        # whether to print progress
 
   # if V
   println("**********************************************************************************************");
@@ -369,7 +337,7 @@ function train_lsq{T <: AbstractFloat}(
   @printf("%3d %e \n", -2, qerror( X, B, C ))
 
   # Initialize B
-  B = encoding_icm( X, B, C, ilsiter, icmiter, randord, npert, V )
+  B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
   @printf("%3d %e \n", -1, qerror( X, B, C ))
 
   obj = zeros( Float32, niter )
@@ -381,7 +349,7 @@ function train_lsq{T <: AbstractFloat}(
     # Update the codebooks C
     C = update_codebooks(X, B, h, V, "lsqr")
     # Update the codes B
-    B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, V)
+    B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
   end
 
   # Get the codebook for norms
