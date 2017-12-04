@@ -160,6 +160,8 @@ function update_codebooks_chain(
   h::Integer,         # number of entries per codebook.
   V::Bool=false)      # whether to print progress
 
-  return update_codebooks_generic(X, B, h, get_cbdims_chain, V)
+  tic()
+  C = update_codebooks_generic(X, B, h, get_cbdims_chain, V)
 
+  return C, toq()
 end

@@ -58,7 +58,12 @@ void _condition(
     B[ l*m + j ] = mini;
   }
 
+} // end _condition
+
+void _viterbi_encoding() {
+
 }
+
 
 extern "C"
 {
@@ -73,5 +78,11 @@ extern "C"
     const int n,
     const int m) {
     _condition( B, ub, binaries, binaries_t, cbpair2binaryidx, to_condition, j, n, m );
+  };
+
+  void viterbi_encoding(
+
+  ) {
+    _viterbi_encoding();
   };
 }

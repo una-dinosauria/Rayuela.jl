@@ -81,7 +81,7 @@ function quantize_chainq!{T <: AbstractFloat}(
     # Backward trace
     backpath = [ mini ]
     for i = (m-1):-1:1
-      push!( backpath, minidx[ backpath[end], i ] )
+      push!(backpath, minidx[ backpath[end], i ])
     end
 
     # Save the inferred code
@@ -97,6 +97,7 @@ function quantize_chainq(
   X::Matrix{Float32},         # d-by-n matrix. Data to encode
   C::Vector{Matrix{Float32}}) # m-long vector with d-by-h codebooks
 
+  tic()
   d, n = size( X );
   m    = length( C );
 
@@ -105,7 +106,7 @@ function quantize_chainq(
   for i = 1:(m-1)
     binaries[i] = 2 * C[i]' * C[i+1]
   end
-  CODES = SharedArray{Int16,2}((m, n))
+  CODES = SharedArray{Int16,2}(m, n)
 
   if nworkers() == 1
     quantize_chainq!( CODES, X, C, binaries, 1:n )
@@ -121,7 +122,27 @@ function quantize_chainq(
     end
   end
 
-  return sdata(CODES)
+  return sdata(CODES), toq()
+end
+
+# Cpp version of the above function
+function quantize_chainq_cpp(
+  X::Matrix{Float32},         # d-by-n matrix. Data to encode
+  C::Vector{Matrix{Float32}}) # m-long vector with d-by-h codebooks
+
+  d, n = size( X );
+  m    = length( C );
+
+  # Compute binary tables
+  binaries = Vector{Matrix{Float32}}(m-1)
+  for i = 1:(m-1)
+    binaries[i] = 2 * C[i]' * C[i+1]
+  end
+  CODES = SharedArray{UInt8,2}(m, n)
+
+  # Call the cpp function
+  quantize_chainq_cpp!(CODES, X, C, binaries, 1:n)
+
 end
 
 # Train a chain quantizer with viterbi decoding
@@ -144,17 +165,17 @@ function train_chainq{T <: AbstractFloat}(
   RX = R' * X
 
   # Initialize C
-  C = update_codebooks_chain( RX, B, h, V )
-  if V; @printf("%3d %e\n", -2, qerror( RX, B, C )); end
+  C, Ctime = update_codebooks_chain( RX, B, h )
+  if V; @printf("%3d %e... %.2f secs updating C\n", -2, qerror( RX, B, C ), Ctime); end
 
   # Initialize B
-  B   = quantize_chainq( RX, C )
-  if V; @printf("%3d %e\n", -1, qerror( RX, B, C )); end
+  B, Btime = quantize_chainq( RX, C )
+  if V; @printf("%3d %e... %.2f secs updating B\n", -1, qerror( RX, B, C ), Btime); end
 
   for iter = 0:niter
     if V; tic(); end # Take time if asked to
 
-    obj[iter+1] = qerror( RX, B, C  )
+    obj[iter+1] = qerror( RX, B, C )
     if V; @printf("%3d %e... ", iter, obj[iter+1]); end
 
     # update CB
@@ -169,11 +190,14 @@ function train_chainq{T <: AbstractFloat}(
     RX = R' * X
 
     # Update the codebooks #
-    C = update_codebooks_chain( RX, B, h, V )
+    C, Ctime = update_codebooks_chain( RX, B, h )
 
     # Update the codes with lattice search
-    B = quantize_chainq( RX, C )
-      if V; @printf("done in %.2f secs\n", toq()); end
+    B, Btime = quantize_chainq( RX, C )
+    if V
+      @printf("done in %.2f secs. %.2f secs updating B. %.2f secs updating C\n", toq(), Btime, Ctime)
+    end
+
   end
 
   return C, B, R, obj
