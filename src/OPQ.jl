@@ -13,12 +13,14 @@ function quantize_opq{T <: AbstractFloat}(
 end
 
 function train_opq{T <: AbstractFloat}(
-  X::Matrix{T},         # d-by-n matrix of data points to train on.
-  m::Integer,           # number of codebooks
-  h::Integer,           # number of entries per codebook
-  niter::Integer,       # number of optimization iterations
-  init::AbstractString, # how to initialize the optimization
+  X::Matrix{T},      # d-by-n matrix of data points to train on.
+  m::Integer,        # number of codebooks
+  h::Integer,        # number of entries per codebook
+  niter::Integer,    # number of optimization iterations
+  init::String,      # how to initialize the optimization
   V::Bool=false )    # wheter to print progress
+
+  if V; @printf("Training an optimized product quantizer\n"); end
 
   d, n = size( X )
 
@@ -48,6 +50,7 @@ function train_opq{T <: AbstractFloat}(
     C[i] = RX[ subdims[i], perm ]
   end
 
+  # Variables needed for methods in Clustering.kmeans
   costs      = zeros(Float32, n)
   counts     = zeros(Int, h)
   cweights   = zeros(Float32, h)
@@ -66,13 +69,15 @@ function train_opq{T <: AbstractFloat}(
   end
 
   for iter=0:niter
+    if V; tic(); end # Take time if asked to
 
+    # Compute objective function
     obj[iter+1] = sum( (R*CB - X).^2 ) ./ n
-    @printf("%3d %e   \n", iter, obj[iter+1])
+    if V; @printf("%3d %e... ", iter, obj[iter+1]); end
 
     # update R
-    U, S, V = svd(X * CB', thin=true)
-    R = U * V'
+    U, S, VV = svd(X * CB', thin=true)
+    R = U * VV'
 
     # update R*X
     RX = R' * X
@@ -88,6 +93,8 @@ function train_opq{T <: AbstractFloat}(
       # update D*B
       CB[ subdims[i], : ] = C[i][:, B[i]]
     end # for i=1:m
+
+    if V; @printf("done in %.2f secs\n", toq()); end
   end # for iter=0:niter
 
   B = hcat(B...)

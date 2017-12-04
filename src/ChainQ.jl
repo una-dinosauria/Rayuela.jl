@@ -95,8 +95,7 @@ end
 "Function to call that encodes a dataset using dynamic programming"
 function quantize_chainq(
   X::Matrix{Float32},         # d-by-n matrix. Data to encode
-  C::Vector{Matrix{Float32}}, # m-long vector with d-by-h codebooks
-  V::Bool=false)              # whether to print progress
+  C::Vector{Matrix{Float32}}) # m-long vector with d-by-h codebooks
 
   d, n = size( X );
   m    = length( C );
@@ -136,6 +135,8 @@ function train_chainq{T <: AbstractFloat}(
   niter::Integer,           # number of optimization iterations
   V::Bool=false)            # whether to print progress
 
+  if V; @printf("Training a chain quantizer\n"); end
+
   d, n = size( X )
   obj  = zeros(Float32, niter+1)
 
@@ -144,23 +145,25 @@ function train_chainq{T <: AbstractFloat}(
 
   # Initialize C
   C = update_codebooks_chain( RX, B, h, V )
-  @printf("%3d %e\n", -2, qerror( RX, B, C ))
+  if V; @printf("%3d %e\n", -2, qerror( RX, B, C )); end
 
   # Initialize B
-  B   = quantize_chainq( RX, C, V )
-  @printf("%3d %e\n", -1, qerror( RX, B, C ))
+  B   = quantize_chainq( RX, C )
+  if V; @printf("%3d %e\n", -1, qerror( RX, B, C )); end
 
   for iter = 0:niter
+    if V; tic(); end # Take time if asked to
+
     obj[iter+1] = qerror( RX, B, C  )
-    @printf("%3d %e\n", iter, obj[iter+1])
+    if V; @printf("%3d %e... ", iter, obj[iter+1]); end
 
     # update CB
-    CB[:] = 0;
+    CB[:] = 0
     for i = 1:m; CB += C[i][:, vec(B[i,:]) ]; end
 
     # update R
     U, S, VV = svd(X * CB', thin=true)
-    R = U * VV';
+    R = U * VV'
 
     # update R*X
     RX = R' * X
@@ -169,8 +172,8 @@ function train_chainq{T <: AbstractFloat}(
     C = update_codebooks_chain( RX, B, h, V )
 
     # Update the codes with lattice search
-    B = quantize_chainq( RX, C, V )
-
+    B = quantize_chainq( RX, C )
+      if V; @printf("done in %.2f secs\n", toq()); end
   end
 
   return C, B, R, obj
