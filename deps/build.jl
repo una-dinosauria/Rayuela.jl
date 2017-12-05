@@ -42,6 +42,7 @@ provides(BuildProcess,
         @build_steps begin
             ChangeDirectory(linscan_aqdbuilddir)
             FileRule(joinpath(prefix,"builds","encode_icm_so.so"),@build_steps begin
+                `rm -f encode_icm_so.so`
                 `g++ -O3 -shared -fPIC ../src/encode_icm.cpp -o encode_icm_so.so -fopenmp`
             end)
         end

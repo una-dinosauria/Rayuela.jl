@@ -60,7 +60,31 @@ void _condition(
 
 } // end _condition
 
-void _viterbi_encoding() {
+void _viterbi_encoding(
+  unsigned char* B, // In/out. n-by-m matrix of codes that we are working on
+  float* unaries, // In. n-by-h matrix with the unary terms of the code that we are exhaustively exploring
+  float* binaries, // (m(m-1)/2)-by-h matrix with the binary terms of the encoding MRFS
+  float* mincost,
+  float* U,
+  int* minidx,
+  float* cost,
+  const int n, // Number of vectors we are processing in parallel
+  const int m,  // Number of codebooks
+  const int idx
+) {
+
+  const int H = 256;
+
+  // for (int idx=0; idx<n; idx++) { // Loop over datapoints
+
+    // Put all the unaries of this item together
+    for (int i=0; i<m; i++) {
+      for (int j=0; j<H; j++) {
+        U[i*H + j] = unaries[ (n*H)*i + idx*H + j];
+      }
+    }
+
+  // }
 
 }
 
@@ -76,13 +100,22 @@ extern "C"
     int* to_condition,
     const int j,
     const int n,
-    const int m) {
+    const int m ) {
     _condition( B, ub, binaries, binaries_t, cbpair2binaryidx, to_condition, j, n, m );
   };
 
   void viterbi_encoding(
-
+    unsigned char* B, // In/out. n-by-m matrix of codes that we are working on
+    float* unaries, // In. n-by-h matrix with the unary terms of the code that we are exhaustively exploring
+    float* binaries, // (m(m-1)/2)-by-h matrix with the binary terms of the encoding MRFS
+    float* mincost,
+    float* U,
+    int* minidx,
+    float* cost,
+    const int n, // Number of vectors we are processing in parallel
+    const int m, // Number of codebooks
+    const int idx
   ) {
-    _viterbi_encoding();
+    _viterbi_encoding(B, unaries, binaries, mincost, U, minidx, cost, n, m, idx);
   };
 }

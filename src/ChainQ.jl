@@ -27,16 +27,30 @@ function quantize_chainq!{T <: AbstractFloat}(
   minv = typemax(T)
   mini = 1
 
+  CODES2 = convert(Matrix{Cuchar},sdata(CODES))
+  unaries2, binaries2 = hcat(unaries...), hcat(binaries...)
+  minidx2 = convert(Matrix{Int32},minidx)
+  U2 = similar(U)
+
   uidx = 1
   @inbounds for idx = IDX # Loop over the datapoints
 
-    # Put all the unaries of this item together
-    for i = 1:m
-      ui = unaries[i]
-      @simd for j = 1:h
-        U[j,i] = ui[j,uidx]
-      end
-    end
+    # # Put all the unaries of this item together
+    # for i = 1:m
+    #   ui = unaries[i]
+    #   @simd for j = 1:h
+    #     U[j,i] = ui[j,uidx]
+    #   end
+    # end
+
+    # @show minimum(CODES), maximum(CODES)
+    ccall(("viterbi_encoding", encode_icm_so), Void,
+      (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
+      Ptr{Cint}, Ptr{Cfloat}, Cint, Cint, Cint),
+      CODES2, unaries2, binaries2, mincost, U, minidx2, cost, n, m, idx-1)
+
+    # @show U - U2
+    # @show U2
 
     # Forward pass
     for i = 1:(m-1) # Loop over states
@@ -56,12 +70,12 @@ function quantize_chainq!{T <: AbstractFloat}(
           cost[k] = ucost + bcost
         end
 
-        # Writing my own findmin
+        # findmin -- julia's is too slow
         minv = cost[1]
         mini = 1
         for k = 2:h
           costi = cost[k]
-          if costi < minv #|| minv!=minv
+          if costi < minv
             minv = costi
             mini = k
           end
@@ -98,8 +112,8 @@ function quantize_chainq(
   C::Vector{Matrix{Float32}}) # m-long vector with d-by-h codebooks
 
   tic()
-  d, n = size( X );
-  m    = length( C );
+  d, n = size( X )
+  m    = length( C )
 
   # Compute binary tables
   binaries = Vector{Matrix{Float32}}(m-1)
@@ -107,6 +121,7 @@ function quantize_chainq(
     binaries[i] = 2 * C[i]' * C[i+1]
   end
   CODES = SharedArray{Int16,2}(m, n)
+  CODES[:] = 0
 
   if nworkers() == 1
     quantize_chainq!( CODES, X, C, binaries, 1:n )
@@ -130,18 +145,44 @@ function quantize_chainq_cpp(
   X::Matrix{Float32},         # d-by-n matrix. Data to encode
   C::Vector{Matrix{Float32}}) # m-long vector with d-by-h codebooks
 
-  d, n = size( X );
-  m    = length( C );
+  tic()
+  d, n = size( X )
+  m    = length( C )
 
   # Compute binary tables
   binaries = Vector{Matrix{Float32}}(m-1)
   for i = 1:(m-1)
     binaries[i] = 2 * C[i]' * C[i+1]
   end
-  CODES = SharedArray{UInt8,2}(m, n)
+  binaries = hcat(binaries...)
+
+  # Get unaries
+  unaries = get_unaries( X, C )
+  unaries = hcat(unaries...)
+
+  # Make space for the output
+  B = Matrix{UInt8,2}(m, n)
+
+  #
+  h, n = size( unaries[1] )
+  m    = length( binaries ) + 1
+
+  # We need a matrix to keep track of the min and argmin
+  mincost = zeros(T, h, m )
+  minidx  = zeros(Int32, h, m )
+
+  # Allocate memory for brute-forcing each pair
+  cost = zeros( T, h )
+
+  U = zeros(T, h, m)
 
   # Call the cpp function
-  quantize_chainq_cpp!(CODES, X, C, binaries, 1:n)
+  ccall(("viterbi_encoding", encode_icm_so), Void,
+    (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
+    Ptr{Cint}, Ptr{Cfloat}, Cint, Cint),
+    B, unaries, binaries, mincost, U, minidx, cost, n, m)
+
+  return B0, toq()
 
 end
 
@@ -194,9 +235,7 @@ function train_chainq{T <: AbstractFloat}(
 
     # Update the codes with lattice search
     B, Btime = quantize_chainq( RX, C )
-    if V
-      @printf("done in %.2f secs. %.2f secs updating B. %.2f secs updating C\n", toq(), Btime, Ctime)
-    end
+    if V; @printf("done in %.2f secs. %.2f secs updating B. %.2f secs updating C\n", toq(), Btime, Ctime); end
 
   end
 
