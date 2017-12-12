@@ -70,8 +70,7 @@ void _viterbi_encoding(
   float* cost,
   int* backpath,
   const int n, // Number of vectors we are processing in parallel
-  const int m,  // Number of codebooks
-  const int idx
+  const int m  // Number of codebooks
 ) {
 
   const int H = 256;
@@ -80,7 +79,10 @@ void _viterbi_encoding(
   float ucost, bcost, minv, costi;
   int mini;
 
-  // for (int idx=0; idx<n; idx++) { // Loop over datapoints
+  // #pragma omp parallel for private(U,minv,mini,ucost,bcost,bb,costi,cost,backpath,minidx,mincost)
+  // #pragma omp parallel for private(U,ucost,bcost,minv,costi,mincost,minidx,cost,backpath,mini,bb)
+  // #pragma omp parallel for private(U,ucost,bcost,minv,costi,mincost,minidx,cost,backpath,mini,bb) shared(B)
+  for (int idx=0; idx<n; idx++) { // Loop over datapoints
 
     // Put all the unaries of this item together
     for (int i=0; i<m; i++) {
@@ -145,10 +147,10 @@ void _viterbi_encoding(
     }
 
     for (int i=0; i<m; i++) {
-      backpath[i]++;
+      B[idx*m + i] = backpath[(m-1)-i];
     }
 
-  // }
+  }
 
 }
 
@@ -178,9 +180,8 @@ extern "C"
     float* cost,
     int* backpath,
     const int n, // Number of vectors we are processing in parallel
-    const int m, // Number of codebooks
-    const int idx
+    const int m // Number of codebooks
   ) {
-    _viterbi_encoding(B, unaries, binaries, mincost, U, minidx, cost, backpath, n, m, idx);
+    _viterbi_encoding(B, unaries, binaries, mincost, U, minidx, cost, backpath, n, m);
   };
 }

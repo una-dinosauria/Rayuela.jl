@@ -2,6 +2,43 @@
 # function quantize_chainq
 export train_chainq, quantize_chainq
 
+function quantize_chainq_cpp!{T <: AbstractFloat}(
+  CODES::Matrix{Int16},  # out. Where to save the result
+  X::Matrix{T},                # in. d-by-n matrix to encode
+  C::Vector{Matrix{T}},        # in. m-long vector with d-by-h codebooks
+  binaries::Vector{Matrix{T}}, # in. Binary terms
+  IDX::UnitRange{Int64})       # in. Index to save the result
+
+  # Get unaries
+  unaries = get_unaries( X, C )
+
+  h, n = size( unaries[1] )
+  m    = length( binaries ) + 1
+
+  # We need a matrix to keep track of the min and argmin
+  mincost = zeros(T, h, m )
+  minidx  = zeros(Int32, h, m )
+
+  # Allocate memory for brute-forcing each pair
+  cost = zeros( T, h )
+  U = zeros(T, h, m)
+
+  CODES2 = zeros(Cuchar,m,n)
+  unaries2, binaries2 = hcat(unaries...), hcat(binaries...)
+  U2 = similar(U)
+  backpath2 = zeros(Int32, m)
+
+  @time ccall(("viterbi_encoding", encode_icm_so), Void,
+    (Ptr{Int16}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
+    Ptr{Cint}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint),
+    CODES2, unaries2, binaries2, mincost, U, minidx, cost, backpath2, n, m)
+
+  CODES2 = convert(Matrix{Int16}, CODES2+1)
+
+  CODES[:] = CODES2[:]
+end
+
+
 function quantize_chainq!{T <: AbstractFloat}(
   CODES::SharedMatrix{Int16},  # out. Where to save the result
   X::Matrix{T},                # in. d-by-n matrix to encode
@@ -26,23 +63,6 @@ function quantize_chainq!{T <: AbstractFloat}(
 
   minv = typemax(T)
   mini = 1
-
-  CODES2 = similar(sdata(CODES))
-  unaries2, binaries2 = hcat(unaries...), hcat(binaries...)
-  # minidx2 = convert(Matrix{Int32},minidx)
-  U2 = similar(U)
-  backpath2 = zeros(Int32, m)
-
-  @inbounds for idx = IDX # Loop over the datapoints
-
-    ccall(("viterbi_encoding", encode_icm_so), Void,
-      (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
-      Ptr{Cint}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint, Cint),
-      CODES2, unaries2, binaries2, mincost, U, minidx, cost, backpath2, n, m, idx-1)
-
-    # @show idx, backpath2
-    CODES2[:, idx] = reverse( backpath2 )
-  end
 
   uidx = 1
   @inbounds for idx = IDX # Loop over the datapoints
@@ -108,7 +128,6 @@ function quantize_chainq!{T <: AbstractFloat}(
     uidx = uidx + 1;
   end # for idx = IDX
 
-  @show sum(CODES .== CODES2) ./ length(CODES)
 end
 
 
@@ -131,6 +150,7 @@ function quantize_chainq(
 
   if nworkers() == 1
     quantize_chainq!( CODES, X, C, binaries, 1:n )
+    # quantize_chainq_cpp!( sdata(CODES), X, C, binaries, 1:n )
   else
     paridx = splitarray( 1:n, nworkers() )
     @sync begin
@@ -144,53 +164,10 @@ function quantize_chainq(
   end
 
   return sdata(CODES), toq()
-end
 
-# Cpp version of the above function
-function quantize_chainq_cpp(
-  X::Matrix{Float32},         # d-by-n matrix. Data to encode
-  C::Vector{Matrix{Float32}}) # m-long vector with d-by-h codebooks
-
-  tic()
-  d, n = size( X )
-  m    = length( C )
-
-  # Compute binary tables
-  binaries = Vector{Matrix{Float32}}(m-1)
-  for i = 1:(m-1)
-    binaries[i] = 2 * C[i]' * C[i+1]
-  end
-  binaries = hcat(binaries...)
-
-  # Get unaries
-  unaries = get_unaries( X, C )
-  unaries = hcat(unaries...)
-
-  # Make space for the output
-  B = Matrix{UInt8,2}(m, n)
-
-  #
-  h, n = size( unaries[1] )
-  m    = length( binaries ) + 1
-
-  # We need a matrix to keep track of the min and argmin
-  mincost = zeros(T, h, m )
-  minidx  = zeros(Int32, h, m )
-
-  # Allocate memory for brute-forcing each pair
-  cost = zeros( T, h )
-
-  U = zeros(T, h, m)
-
-  # Call the cpp function
-  ccall(("viterbi_encoding", encode_icm_so), Void,
-    (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
-    Ptr{Cint}, Ptr{Cfloat}, Cint, Cint),
-    B, unaries, binaries, mincost, U, minidx, cost, n, m)
-
-  return B0, toq()
 
 end
+
 
 # Train a chain quantizer with viterbi decoding
 function train_chainq{T <: AbstractFloat}(
