@@ -17,7 +17,7 @@ function quantize_chainq!{T <: AbstractFloat}(
 
   # We need a matrix to keep track of the min and argmin
   mincost = zeros(T, h, m )
-  minidx  = zeros(Integer, h, m )
+  minidx  = zeros(Int32, h, m )
 
   # Allocate memory for brute-forcing each pair
   cost = zeros( T, h )
@@ -27,30 +27,33 @@ function quantize_chainq!{T <: AbstractFloat}(
   minv = typemax(T)
   mini = 1
 
-  CODES2 = convert(Matrix{Cuchar},sdata(CODES))
+  CODES2 = similar(sdata(CODES))
   unaries2, binaries2 = hcat(unaries...), hcat(binaries...)
-  minidx2 = convert(Matrix{Int32},minidx)
+  # minidx2 = convert(Matrix{Int32},minidx)
   U2 = similar(U)
+  backpath2 = zeros(Int32, m)
+
+  @inbounds for idx = IDX # Loop over the datapoints
+
+    ccall(("viterbi_encoding", encode_icm_so), Void,
+      (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
+      Ptr{Cint}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint, Cint),
+      CODES2, unaries2, binaries2, mincost, U, minidx, cost, backpath2, n, m, idx-1)
+
+    # @show idx, backpath2
+    CODES2[:, idx] = reverse( backpath2 )
+  end
 
   uidx = 1
   @inbounds for idx = IDX # Loop over the datapoints
 
-    # # Put all the unaries of this item together
-    # for i = 1:m
-    #   ui = unaries[i]
-    #   @simd for j = 1:h
-    #     U[j,i] = ui[j,uidx]
-    #   end
-    # end
-
-    # @show minimum(CODES), maximum(CODES)
-    ccall(("viterbi_encoding", encode_icm_so), Void,
-      (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
-      Ptr{Cint}, Ptr{Cfloat}, Cint, Cint, Cint),
-      CODES2, unaries2, binaries2, mincost, U, minidx2, cost, n, m, idx-1)
-
-    # @show U - U2
-    # @show U2
+    # Put all the unaries of this item together
+    for i = 1:m
+      ui = unaries[i]
+      @simd for j = 1:h
+        U[j,i] = ui[j,uidx]
+      end
+    end
 
     # Forward pass
     for i = 1:(m-1) # Loop over states
@@ -86,6 +89,8 @@ function quantize_chainq!{T <: AbstractFloat}(
       end
     end
 
+    # @show mincost, minidx
+
     @simd for j = 1:h
       U[j,m] += mincost[j,m-1]
     end
@@ -100,9 +105,10 @@ function quantize_chainq!{T <: AbstractFloat}(
 
     # Save the inferred code
     CODES[:, idx] = reverse( backpath )
-
     uidx = uidx + 1;
   end # for idx = IDX
+
+  @show sum(CODES .== CODES2) ./ length(CODES)
 end
 
 

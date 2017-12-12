@@ -68,12 +68,17 @@ void _viterbi_encoding(
   float* U,
   int* minidx,
   float* cost,
+  int* backpath,
   const int n, // Number of vectors we are processing in parallel
   const int m,  // Number of codebooks
   const int idx
 ) {
 
   const int H = 256;
+  float * bb;
+
+  float ucost, bcost, minv, costi;
+  int mini;
 
   // for (int idx=0; idx<n; idx++) { // Loop over datapoints
 
@@ -82,6 +87,65 @@ void _viterbi_encoding(
       for (int j=0; j<H; j++) {
         U[i*H + j] = unaries[ (n*H)*i + idx*H + j];
       }
+    }
+
+    // Forward pass
+    for (int i=0; i<m-1; i++) {
+
+      // If this is not the first iteration, add the precomputed costs
+      if (i>0) {
+        for (int j=0; j<H; j++) {
+          U[i*H + j] += mincost[(i-1)*H + j];
+        }
+      }
+
+      bb = binaries + H*H*i; // bb points to the ith codebook
+      for (int j=0; j<H; j++) { // Loop over the cost of going to j
+        for (int k=0; k<H; k++) { // Loop over the cost of coming from k
+          ucost =  U[i*H + k]; // Pay the unary of coming from k
+          bcost = bb[j*H + k]; // Pay the binary of going from j to k
+          cost[k] = ucost + bcost;
+        }
+
+        // findmin because C++'s is too slow?
+        minv = cost[0];
+        mini = 0;
+        for (int k=1; k<H; k++) {
+          costi = cost[k];
+          if (costi < minv) {
+            minv = costi;
+            mini = k;
+          }
+        }
+
+        mincost[i*H + j] = minv;
+         minidx[i*H + j] = mini;
+      }
+    }
+
+    for (int j=0; j<H; j++) {
+      U[(m-1)*H + j] += mincost[(m-2)*H + j];
+    }
+
+    minv = U[(m-1)*H + 0];
+    mini = 0;
+    for (int j=1; j<H; j++) {
+      if (U[(m-1)*H + j] < minv) {
+        minv = U[(m-1)*H + j];
+        mini = j;
+      }
+    }
+
+    // backward trace
+    backpath[0] = mini;
+    int backpathidx = 1;
+    for (int i=m-2; i>=0; i--) {
+      backpath[ backpathidx ] = minidx[i*H + backpath[backpathidx-1]];
+      backpathidx++;
+    }
+
+    for (int i=0; i<m; i++) {
+      backpath[i]++;
     }
 
   // }
@@ -112,10 +176,11 @@ extern "C"
     float* U,
     int* minidx,
     float* cost,
+    int* backpath,
     const int n, // Number of vectors we are processing in parallel
     const int m, // Number of codebooks
     const int idx
   ) {
-    _viterbi_encoding(B, unaries, binaries, mincost, U, minidx, cost, n, m, idx);
+    _viterbi_encoding(B, unaries, binaries, mincost, U, minidx, cost, backpath, n, m, idx);
   };
 }
