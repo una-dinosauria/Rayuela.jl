@@ -64,7 +64,12 @@ function quantize_chainq!{T <: AbstractFloat}(
   minv = typemax(T)
   mini = 1
 
+
+  # unaries = vcat(unaries...)
+  # @show typeof(unaries)
+
   uidx = 1
+  Profile.@profile begin
   @inbounds for idx = IDX # Loop over the datapoints
 
     # Put all the unaries of this item together
@@ -74,6 +79,8 @@ function quantize_chainq!{T <: AbstractFloat}(
         U[j,i] = ui[j,uidx]
       end
     end
+    # @show idx
+    # U[:] = unaries[:,idx]
 
     # Forward pass
     for i = 1:(m-1) # Loop over states
@@ -127,14 +134,15 @@ function quantize_chainq!{T <: AbstractFloat}(
     CODES[:, idx] = reverse( backpath )
     uidx = uidx + 1;
   end # for idx = IDX
-
+  end # @profile
 end
 
 
 "Function to call that encodes a dataset using dynamic programming"
 function quantize_chainq(
   X::Matrix{Float32},         # d-by-n matrix. Data to encode
-  C::Vector{Matrix{Float32}}) # m-long vector with d-by-h codebooks
+  C::Vector{Matrix{Float32}}, # m-long vector with d-by-h codebooks
+  use_cpp::Bool=false)
 
   tic()
   d, n = size( X )
@@ -149,8 +157,11 @@ function quantize_chainq(
   CODES[:] = 0
 
   if nworkers() == 1
-    quantize_chainq!( CODES, X, C, binaries, 1:n )
-    # quantize_chainq_cpp!( sdata(CODES), X, C, binaries, 1:n )
+    if use_cpp
+      quantize_chainq_cpp!( sdata(CODES), X, C, binaries, 1:n )
+    else
+      quantize_chainq!( CODES, X, C, binaries, 1:n )
+    end
   else
     paridx = splitarray( 1:n, nworkers() )
     @sync begin
