@@ -38,6 +38,18 @@ function quantize_chainq_cpp!{T <: AbstractFloat}(
   CODES[:] = CODES2[:]
 end
 
+function my_findmin(cost::Vector{T}, h) where T <: Real
+  minv = cost[1]
+  mini = 1
+  for k = 2:h
+    costi = cost[k]
+    if costi < minv
+      minv = costi
+      mini = k
+    end
+  end
+  return minv, mini
+end
 
 function quantize_chainq!{T <: AbstractFloat}(
   CODES::SharedMatrix{Int16},  # out. Where to save the result
@@ -141,90 +153,65 @@ function quantize_chainq_batched!{T <: AbstractFloat}(
   IDX::UnitRange{Int64})       # in. Index to save the result
 
   # Get unaries
+  # @Profile.profile begin
   unaries = get_unaries( X, C )
 
   h, n = size( unaries[1] )
   m    = length( binaries ) + 1
 
   # We need a matrix to keep track of the min and argmin
-  mincost = zeros(T, h, m )
-  minidx  = zeros(Int32, h, m )
+  mincost = zeros(T, h, n)
+  minidx  = zeros(Int32, h, m, n)
 
   # Allocate memory for brute-forcing each pair
-  cost = zeros( T, h )
-
-  U = zeros(T, h, m)
+  cost = zeros(T, h, n)
 
   minv = typemax(T)
   mini = 1
 
+  # Put all the unaries of this item together
   # unaries = vcat(unaries...)
-  # @show typeof(unaries)
 
-  uidx = 1
+  # Forward pass
+  @inbounds for i = 1:(m-1) # Loop over states
+
+    if i > 1; unaries[i] .+= mincost; end
+
+    bb = binaries[i]
+    for j = 1:h # Loop over the cost of going to j
+      ucost = unaries[i]
+      bcost = bb[:,j]
+      # cost  = ucost .+ bcost
+
+      for kk = IDX
+        @simd for k=1:h
+          cost[k,kk] = ucost[k,kk] + bcost[k]
+          # ui[k,kk] += bcost[k]
+        end
+      end
+
+      # Findmin
+      minv, mini = findmin(cost,1)
+      mincost[j,:]  = minv
+      minidx[j,i,:] = rem.(mini-1,h) + 1
+    end
+  end
+
+  unaries[m] .+= mincost
+  _, mini = findmin(unaries[m],1)
+  mini = rem.(mini-1,h) + 1
+
   @inbounds for idx = IDX # Loop over the datapoints
-
-    # Put all the unaries of this item together
-    # U[:] = unaries[:,idx]
-    for i = 1:m
-      ui = unaries[i]
-      @simd for j = 1:h
-        U[j,i] = ui[j,uidx]
-      end
-    end
-
-    # Forward pass
-    for i = 1:(m-1) # Loop over states
-
-      # If this is not the first iteration, add the precomputed costs
-      if i > 1
-        @simd for j = 1:h
-          U[j,i] += mincost[j,i-1]
-        end
-      end
-
-      bb = binaries[i]
-      for j = 1:h # Loop over the cost of going to j
-        @simd for k = 1:h # Loop over the cost of coming from k
-          ucost   =  U[k, i] # Pay the unary of coming from k
-          bcost   = bb[k, j] # Pay the binary of going from j-k
-          cost[k] = ucost + bcost
-        end
-
-        # findmin -- julia's is too slow
-        minv = cost[1]
-        mini = 1
-        for k = 2:h
-          costi = cost[k]
-          if costi < minv
-            minv = costi
-            mini = k
-          end
-        end
-
-        mincost[j, i] = minv
-         minidx[j, i] = mini
-      end
-    end
-
-    # @show mincost, minidx
-
-    @simd for j = 1:h
-      U[j,m] += mincost[j,m-1]
-    end
-
-    _, mini = findmin( U[:,m] )
-
     # Backward trace
-    backpath = [ mini ]
+    backpath = [ mini[idx] ]
     for i = (m-1):-1:1
-      push!(backpath, minidx[ backpath[end], i ])
+      push!(backpath, minidx[ backpath[end], i, idx ])
     end
 
     # Save the inferred code
     CODES[:, idx] = reverse( backpath )
-    uidx = uidx + 1;
   end # for idx = IDX
+  # end
 end
 
 "Function to call that encodes a dataset using dynamic programming"
@@ -250,6 +237,7 @@ function quantize_chainq(
       quantize_chainq_cpp!( sdata(CODES), X, C, binaries, 1:n )
     else
       quantize_chainq!( CODES, X, C, binaries, 1:n )
+      # quantize_chainq_batched!( CODES, X, C, binaries, 1:n )
     end
   else
     paridx = splitarray( 1:n, nworkers() )
@@ -264,8 +252,6 @@ function quantize_chainq(
   end
 
   return sdata(CODES), toq()
-
-
 end
 
 
