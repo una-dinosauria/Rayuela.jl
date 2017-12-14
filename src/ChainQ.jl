@@ -24,11 +24,11 @@ function quantize_chainq_cpp!{T <: AbstractFloat}(
   U = zeros(T, h, m)
 
   CODES2 = zeros(Cuchar,m,n)
-  unaries2, binaries2 = hcat(unaries...), hcat(binaries...)
+  unaries2, binaries2 = vcat(unaries...), hcat(binaries...)
   U2 = similar(U)
   backpath2 = zeros(Int32, m)
 
-  @time ccall(("viterbi_encoding", encode_icm_so), Void,
+  ccall(("viterbi_encoding", encode_icm_so), Void,
     (Ptr{Int16}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
     Ptr{Cint}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint),
     CODES2, unaries2, binaries2, mincost, U, minidx, cost, backpath2, n, m)
@@ -64,23 +64,20 @@ function quantize_chainq!{T <: AbstractFloat}(
   minv = typemax(T)
   mini = 1
 
-
   # unaries = vcat(unaries...)
   # @show typeof(unaries)
 
   uidx = 1
-  Profile.@profile begin
   @inbounds for idx = IDX # Loop over the datapoints
 
     # Put all the unaries of this item together
+    # U[:] = unaries[:,idx]
     for i = 1:m
       ui = unaries[i]
       @simd for j = 1:h
         U[j,i] = ui[j,uidx]
       end
     end
-    # @show idx
-    # U[:] = unaries[:,idx]
 
     # Forward pass
     for i = 1:(m-1) # Loop over states
@@ -134,9 +131,101 @@ function quantize_chainq!{T <: AbstractFloat}(
     CODES[:, idx] = reverse( backpath )
     uidx = uidx + 1;
   end # for idx = IDX
-  end # @profile
 end
 
+function quantize_chainq_batched!{T <: AbstractFloat}(
+  CODES::SharedMatrix{Int16},  # out. Where to save the result
+  X::Matrix{T},                # in. d-by-n matrix to encode
+  C::Vector{Matrix{T}},        # in. m-long vector with d-by-h codebooks
+  binaries::Vector{Matrix{T}}, # in. Binary terms
+  IDX::UnitRange{Int64})       # in. Index to save the result
+
+  # Get unaries
+  unaries = get_unaries( X, C )
+
+  h, n = size( unaries[1] )
+  m    = length( binaries ) + 1
+
+  # We need a matrix to keep track of the min and argmin
+  mincost = zeros(T, h, m )
+  minidx  = zeros(Int32, h, m )
+
+  # Allocate memory for brute-forcing each pair
+  cost = zeros( T, h )
+
+  U = zeros(T, h, m)
+
+  minv = typemax(T)
+  mini = 1
+
+  # unaries = vcat(unaries...)
+  # @show typeof(unaries)
+
+  uidx = 1
+  @inbounds for idx = IDX # Loop over the datapoints
+
+    # Put all the unaries of this item together
+    # U[:] = unaries[:,idx]
+    for i = 1:m
+      ui = unaries[i]
+      @simd for j = 1:h
+        U[j,i] = ui[j,uidx]
+      end
+    end
+
+    # Forward pass
+    for i = 1:(m-1) # Loop over states
+
+      # If this is not the first iteration, add the precomputed costs
+      if i > 1
+        @simd for j = 1:h
+          U[j,i] += mincost[j,i-1]
+        end
+      end
+
+      bb = binaries[i]
+      for j = 1:h # Loop over the cost of going to j
+        @simd for k = 1:h # Loop over the cost of coming from k
+          ucost   =  U[k, i] # Pay the unary of coming from k
+          bcost   = bb[k, j] # Pay the binary of going from j-k
+          cost[k] = ucost + bcost
+        end
+
+        # findmin -- julia's is too slow
+        minv = cost[1]
+        mini = 1
+        for k = 2:h
+          costi = cost[k]
+          if costi < minv
+            minv = costi
+            mini = k
+          end
+        end
+
+        mincost[j, i] = minv
+         minidx[j, i] = mini
+      end
+    end
+
+    # @show mincost, minidx
+
+    @simd for j = 1:h
+      U[j,m] += mincost[j,m-1]
+    end
+
+    _, mini = findmin( U[:,m] )
+
+    # Backward trace
+    backpath = [ mini ]
+    for i = (m-1):-1:1
+      push!(backpath, minidx[ backpath[end], i ])
+    end
+
+    # Save the inferred code
+    CODES[:, idx] = reverse( backpath )
+    uidx = uidx + 1;
+  end # for idx = IDX
+end
 
 "Function to call that encodes a dataset using dynamic programming"
 function quantize_chainq(

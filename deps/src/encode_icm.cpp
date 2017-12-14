@@ -85,10 +85,13 @@ void _viterbi_encoding(
   for (int idx=0; idx<n; idx++) { // Loop over datapoints
 
     // Put all the unaries of this item together
-    for (int i=0; i<m; i++) {
-      for (int j=0; j<H; j++) {
-        U[i*H + j] = unaries[ (n*H)*i + idx*H + j];
-      }
+    // for (int i=0; i<m; i++) {
+    //   for (int j=0; j<H; j++) {
+    //     U[i*H + j] = unaries[ (n*H)*i + idx*H + j];
+    //   }
+    // }
+    for (int i=0; i<m*H; i++) {
+      U[i] = unaries[ idx*H*m + i];
     }
 
     // Forward pass
