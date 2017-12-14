@@ -85,11 +85,6 @@ void _viterbi_encoding(
   for (int idx=0; idx<n; idx++) { // Loop over datapoints
 
     // Put all the unaries of this item together
-    // for (int i=0; i<m; i++) {
-    //   for (int j=0; j<H; j++) {
-    //     U[i*H + j] = unaries[ (n*H)*i + idx*H + j];
-    //   }
-    // }
     for (int i=0; i<m*H; i++) {
       U[i] = unaries[ idx*H*m + i];
     }
@@ -100,7 +95,7 @@ void _viterbi_encoding(
       // If this is not the first iteration, add the precomputed costs
       if (i>0) {
         for (int j=0; j<H; j++) {
-          U[i*H + j] += mincost[(i-1)*H + j];
+          U[i*H + j] += mincost[j];
         }
       }
 
@@ -123,13 +118,13 @@ void _viterbi_encoding(
           }
         }
 
-        mincost[i*H + j] = minv;
+        mincost[j] = minv;
          minidx[i*H + j] = mini;
       }
     }
 
     for (int j=0; j<H; j++) {
-      U[(m-1)*H + j] += mincost[(m-2)*H + j];
+      U[(m-1)*H + j] += mincost[j];
     }
 
     minv = U[(m-1)*H + 0];

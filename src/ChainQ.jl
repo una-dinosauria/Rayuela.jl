@@ -16,7 +16,7 @@ function quantize_chainq_cpp!{T <: AbstractFloat}(
   m    = length( binaries ) + 1
 
   # We need a matrix to keep track of the min and argmin
-  mincost = zeros(T, h, m )
+  mincost = zeros(T, h)
   minidx  = zeros(Int32, h, m )
 
   # Allocate memory for brute-forcing each pair
@@ -53,7 +53,7 @@ function quantize_chainq!{T <: AbstractFloat}(
   m    = length( binaries ) + 1
 
   # We need a matrix to keep track of the min and argmin
-  mincost = zeros(T, h, m )
+  mincost = zeros(T, h)
   minidx  = zeros(Int32, h, m )
 
   # Allocate memory for brute-forcing each pair
@@ -85,7 +85,7 @@ function quantize_chainq!{T <: AbstractFloat}(
       # If this is not the first iteration, add the precomputed costs
       if i > 1
         @simd for j = 1:h
-          U[j,i] += mincost[j,i-1]
+          U[j,i] += mincost[j]
         end
       end
 
@@ -108,7 +108,7 @@ function quantize_chainq!{T <: AbstractFloat}(
           end
         end
 
-        mincost[j, i] = minv
+        mincost[j] = minv
          minidx[j, i] = mini
       end
     end
@@ -116,7 +116,7 @@ function quantize_chainq!{T <: AbstractFloat}(
     # @show mincost, minidx
 
     @simd for j = 1:h
-      U[j,m] += mincost[j,m-1]
+      U[j,m] += mincost[j]
     end
 
     _, mini = findmin( U[:,m] )

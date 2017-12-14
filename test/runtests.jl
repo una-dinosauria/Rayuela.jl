@@ -12,11 +12,12 @@ end
 
 # Test cpp viterbi encoding implementation
 @testset "Viterbi encoding" begin
-  d, n, m, h = 128, Int(1e3), 7, 256
+  d, n, m, h = 128, Int(2e3), 7, 256
   X, C, B = generate_random_dataset(Float32,Int16,d,n,m,h)
 
-  Rayuela.quantize_chainq(X, C) # Julia
-  Rayuela.quantize_chainq(X, C, true) # C
+  Rayuela.quantize_chainq(X[:,1:100], C) # Julia
+  Rayuela.quantize_chainq(X[:,1:100], C, true) # C
+  
   @time j_B, _ = Rayuela.quantize_chainq(X, C) # Julia
   @time c_B, _ = Rayuela.quantize_chainq(X, C, true) # C
   @test all(j_B .== c_B)
