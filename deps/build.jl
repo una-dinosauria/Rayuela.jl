@@ -20,7 +20,7 @@ provides(BuildProcess,
         @build_steps begin
             ChangeDirectory(linscan_aqdbuilddir)
             FileRule(joinpath(prefix,"builds","linscan_aqd.so"),@build_steps begin
-                `g++ -O3 -shared -fPIC ../src/linscan_aqd.cpp -o linscan_aqd.so`# -fopenmp`
+                `/usr/local/bin/g++-7 -O3 -shared -fPIC ../src/linscan_aqd.cpp -o linscan_aqd.so -fopenmp`
             end)
         end
     end),linscan_aqd, os = :Unix, installed_libpath=joinpath(prefix,"builds"))
@@ -31,7 +31,7 @@ provides(BuildProcess,
         @build_steps begin
             ChangeDirectory(linscan_aqdbuilddir)
             FileRule(joinpath(prefix,"builds","linscan_aqd_pairwise_byte.so"),@build_steps begin
-                `g++ -O3 -shared -fPIC ../src/linscan_aqd_pairwise_byte.cpp -o linscan_aqd_pairwise_byte.so`# -fopenmp`
+                `/usr/local/bin/g++-7 -O3 -shared -fPIC ../src/linscan_aqd_pairwise_byte.cpp -o linscan_aqd_pairwise_byte.so -fopenmp`
             end)
         end
     end),linscan_aqd_pairwise_byte, os = :Unix, installed_libpath=joinpath(prefix,"builds"))
@@ -43,7 +43,7 @@ provides(BuildProcess,
             ChangeDirectory(linscan_aqdbuilddir)
             FileRule(joinpath(prefix,"builds","encode_icm_so.so"),@build_steps begin
                 `rm -f encode_icm_so.so`
-                `g++ -O3 -shared -fPIC ../src/encode_icm.cpp -o encode_icm_so.so`# -fopenmp`
+                `/usr/local/bin/g++-7 -O3 -shared -fPIC ../src/encode_icm.cpp -o encode_icm_so.so -fopenmp`
             end)
         end
     end),encode_icm_so, os = :Unix, installed_libpath=joinpath(prefix,"builds"))
