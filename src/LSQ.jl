@@ -39,33 +39,6 @@ function perturb_codes!(
   return B
 end
 
-
-"Get the codebook of the norms with k-means"
-function get_norms_codebook(
-  B::Matrix{T1},                            # In. Codes
-  C::Vector{Matrix{T2}}) where {T1<:Integer, T2<:AbstractFloat} # In. Codebooks
-
-  m, n = size(B)
-  d, h = size(C[1])
-
-  # Make sure there are m codebooks
-  @assert m == length(C)
-
-  # Reconstruct the approximation and compute its norms
-  CB      = reconstruct(B, C)
-  dbnorms = sum(CB.^2, 1)
-
-  # Quantize the norms with k-means
-  dbnormsq = Clustering.kmeans(dbnorms, h)
-
-  norms_codes     = reshape(dbnormsq.assignments, 1, n)
-  norms_codebook  = dbnormsq.centers
-
-  # Add the dbnorms to the codes
-  return norms_codes, norms_codebook
-end
-
-
 "Run iterated conditional modes on N problems"
 function iterated_conditional_modes_cpp!{T <: AbstractFloat}(
   B::Matrix{UInt8},  # in/out. Initialization, and the place where the results are saved.
@@ -175,7 +148,6 @@ function iterated_conditional_modes!{T <: AbstractFloat}(
   end # for i=1:icmiter
 
 end
-
 
 # Encode using iterated conditional modes
 function encode_icm_fully!{T <: AbstractFloat}(
@@ -300,7 +272,6 @@ function encoding_icm{T <: AbstractFloat}(
   return B
 end
 
-
 function train_lsq{T <: AbstractFloat}(
   X::Matrix{T},         # d-by-n matrix of data points to train on.
   m::Integer,           # number of codebooks
@@ -352,8 +323,5 @@ function train_lsq{T <: AbstractFloat}(
     B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
   end
 
-  # Get the codebook for norms
-  norms_codes, norms_codebook = get_norms_codebook(B, C)
-
-  return C, B, norms_codebook, norms_codes, obj
+  return C, B, obj
 end

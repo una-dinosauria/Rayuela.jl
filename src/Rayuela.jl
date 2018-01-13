@@ -26,13 +26,18 @@ end
 
 # === Utility functions mostly ===
 include("utils.jl")
+include("qerrors.jl")
+
 include("Linscan.jl")
 include("codebook_update.jl")
 
-# === Quantizers ===
+# === Orthogonal quantizers ===
 include("PQ.jl")  # Product Quantizer
 include("OPQ.jl") # Optimized Product Quantizer
+
+# === Non-orthogonal quantizers ===
 include("ChainQ.jl") # Chain (Tree) Quantization
+include("RQ.jl")
 
 # === LSQ Quantizer ===
 # include("CudaUtilsModule.jl")
