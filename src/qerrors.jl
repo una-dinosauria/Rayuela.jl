@@ -34,8 +34,8 @@ function veccost(
   d, n = size( X )
   m,_ = size(B)
 
-  cost = zeros(T, n)
-  CB   = zeros(T, d)
+  cost = zeros(T1, n)
+  CB   = zeros(T1, d)
 
   @inbounds for i = 1:n # Loop over vectors in X
     for k = 1:m # Loop over codebooks

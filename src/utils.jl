@@ -1,6 +1,6 @@
 
 export qerror, qerror_pq, qerror_opq, quantize_norms, splitarray,# sparsify_codes,
-      K2vec, quantize_norms, get_norms_codebooks
+      K2vec, quantize_norms, get_norms_codebook
 
 "Get the codebook of the norms with k-means"
 function get_norms_codebook(
@@ -21,7 +21,7 @@ function get_norms_codebook(
   dbnormsq = Clustering.kmeans(dbnorms, h)
 
   norms_codes     = vec(reshape(dbnormsq.assignments, 1, n)[:])
-  norms_codebook  = dbnormsq.centers
+  norms_codebook  = vec(dbnormsq.centers)
 
   # Add the dbnorms to the codes
   return norms_codes, norms_codebook
