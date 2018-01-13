@@ -79,6 +79,7 @@ void _viterbi_encoding(
   float ucost, bcost, minv, costi;
   int mini;
 
+  // TODO set proper parallel flags if we want a good CPP implementation
   // #pragma omp parallel for private(U,minv,mini,ucost,bcost,bb,costi,cost,backpath,minidx,mincost)
   // #pragma omp parallel for private(U,ucost,bcost,minv,costi,mincost,minidx,cost,backpath,mini,bb)
   // #pragma omp parallel for private(U,ucost,bcost,minv,costi,mincost,minidx,cost,backpath,mini,bb) shared(B)

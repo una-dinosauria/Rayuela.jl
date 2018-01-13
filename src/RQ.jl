@@ -70,7 +70,7 @@ function train_rq(
     if V print("Working on codebook $i / $m... "); end
     # FAISS uses 25 iterations by default
     # See https://github.com/facebookresearch/faiss/blob/master/Clustering.cpp#L28
-    cluster = kmeans( Xr, h, init=:kmpp, maxiter=niter)
+    cluster = kmeans(Xr, h, init=:kmpp, maxiter=niter)
     C[i], B[:,i] = cluster.centers, cluster.assignments
 
     # Update the residual
@@ -83,11 +83,11 @@ function train_rq(
 
       println("done.")
       println("  Ran for $nits iterations")
-      println("  Error in subspace is $subdim_cost")
+      println("  Error after $(m)-codebook is $subdim_cost")
       println("  Converged: $converged")
     end
   end
   B = B'
-  error = qerror( X, B, C )
+  error = qerror(X, B, C)
   return C, B, error
 end

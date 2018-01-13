@@ -1,6 +1,31 @@
 
 export qerror, qerror_pq, qerror_opq, quantize_norms, splitarray,# sparsify_codes,
-      K2vec, quantize_norms
+      K2vec, quantize_norms, get_norms_codebooks
+
+"Get the codebook of the norms with k-means"
+function get_norms_codebook(
+  B::Matrix{T1},
+  C::Vector{Matrix{T2}}) where {T1<:Integer, T2<:AbstractFloat}
+
+  m, n = size(B)
+  d, h = size(C[1])
+
+  # Make sure there are m codebooks
+  @assert m == length(C)
+
+  # Reconstruct the approximation and compute its norms
+  CB      = reconstruct(B, C)
+  dbnorms = sum(CB.^2, 1)
+
+  # Quantize the norms with k-means
+  dbnormsq = Clustering.kmeans(dbnorms, h)
+
+  norms_codes     = vec(reshape(dbnormsq.assignments, 1, n)[:])
+  norms_codebook  = dbnormsq.centers
+
+  # Add the dbnorms to the codes
+  return norms_codes, norms_codebook
+end
 
 "Quantize the norms of an encoding"
 function quantize_norms(
