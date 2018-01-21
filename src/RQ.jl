@@ -49,7 +49,7 @@ end
 """
     train_rq(X::Matrix{T}, m::Integer, h::Integer, V::Bool=false) where T <: AbstractFloat
 
-Trains a product quantizer.
+Trains a residual quantizer.
 """
 function train_rq(
   X::Matrix{T},  # d-by-n. Data to learn codebooks from
