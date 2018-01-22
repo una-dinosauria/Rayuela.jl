@@ -17,11 +17,7 @@ function quantize_rvq(
   B    = Vector{Vector{Int}}(m) # codes
   for i = 1:m; B[i] = zeros(Int,n); end # Allocate codes
 
-  # auxiliary variables for update_assignments! function
-  costs     = zeros(Float32, n)
-  counts    = zeros(Int, h)
-  to_update = zeros(Bool, h)
-  unused    = Int[]
+  singletons = Vector{Matrix{T}}(m)
 
   # Residual after encoding the ith codebook
   Xr = copy(X)
@@ -30,10 +26,22 @@ function quantize_rvq(
     if V print("Encoding on codebook $i / $m... ") end
 
     # Find distances from X to codebook
-    dmat = Distances.pairwise( Distances.SqEuclidean(), C[i], Xr )
+    dmat = Distances.pairwise(Distances.SqEuclidean(), C[i], Xr)
 
     # Update the codes
+    costs     = zeros(T, n)
+    counts    = zeros(Int, h)
+    to_update = zeros(Bool, h)
+    unused    = Int[]
+
     Clustering.update_assignments!( dmat, true, B[i], costs, counts, to_update, unused )
+
+    # Create new codebook entries that we are missing
+    if !isempty(unused)
+      C_copy = zeros(T,size(C[i]))
+      Clustering.repick_unused_centers(Xr, costs, C_copy, unused)
+      singletons[i] = C_copy[:,unused]
+    end
 
     # Update the residual
     Xr .-= C[i][:,B[i]]
@@ -43,7 +51,7 @@ function quantize_rvq(
 
   B = hcat(B...)
   B = convert(Matrix{Int16}, B)
-  B'
+  B', singletons
 end
 
 """

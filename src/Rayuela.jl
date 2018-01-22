@@ -38,6 +38,7 @@ include("OPQ.jl") # Optimized Product Quantizer
 # === Non-orthogonal quantizers ===
 include("ChainQ.jl") # Chain (Tree) Quantization
 include("RVQ.jl")
+include("ERVQ.jl")
 
 # === LSQ Quantizer ===
 # include("CudaUtilsModule.jl")

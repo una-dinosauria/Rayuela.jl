@@ -23,6 +23,14 @@ function reconstruct(
   return CB
 end
 
+function reconstruct(
+  B::Vector{T1},
+  C::Matrix{T2}) where {T1<:Integer, T2<:AbstractFloat}
+
+  CB = C[:,B[:]]
+  return CB
+end
+
 "Compute cost of encoding in each vector"
 function veccost(
   X::Matrix{T1},
