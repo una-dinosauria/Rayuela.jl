@@ -1,12 +1,12 @@
 
-export train_rq, quantize_rq
+export train_rvq, quantize_rvq
 
 """
     quantize_rq(X::Matrix{T}, C::Vector{Matrix{T}}, V::Bool=false) where T <: AbstractFloat
 
 Quantize using a residual quantizer
 """
-function quantize_rq(
+function quantize_rvq(
   X::Matrix{T},         # d-by-n. Data to encode
   C::Vector{Matrix{T}}, # codebooks
   V::Bool=false) where T <: AbstractFloat # whether to print progress
@@ -51,7 +51,7 @@ end
 
 Trains a residual quantizer.
 """
-function train_rq(
+function train_rvq(
   X::Matrix{T},  # d-by-n. Data to learn codebooks from
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook

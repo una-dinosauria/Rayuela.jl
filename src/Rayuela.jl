@@ -37,11 +37,11 @@ include("OPQ.jl") # Optimized Product Quantizer
 
 # === Non-orthogonal quantizers ===
 include("ChainQ.jl") # Chain (Tree) Quantization
-include("RQ.jl")
+include("RVQ.jl")
 
 # === LSQ Quantizer ===
 # include("CudaUtilsModule.jl")
 include("LSQ.jl") # Local search quantization
-# include("LSQ_GPU.jl") # Local search quantization
+include("LSQ_GPU.jl") # Local search quantization
 
 end # module

@@ -1,8 +1,8 @@
 julia 0.6
 Clustering
 BinDeps
-#CUBLAS
-#CUDAdrv
+CUBLAS
+CUDAdrv
 Distances
 HDF5
 IterativeSolvers
