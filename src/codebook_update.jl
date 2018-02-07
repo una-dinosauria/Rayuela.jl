@@ -1,4 +1,6 @@
 
+### Methods for updating codebooks in ChainQ, LSQ, and LSQ++
+### Julieta
 
 # Update a dimension of a codebook using conjugate gradient either LSQR or LSMR
 function updatecb!(
