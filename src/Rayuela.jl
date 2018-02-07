@@ -43,6 +43,8 @@ include("ERVQ.jl")
 # === LSQ Quantizer ===
 # include("CudaUtilsModule.jl")
 include("LSQ.jl") # Local search quantization
+include("SR_perturbations.jl")
+include("SR.jl")
 # include("LSQ_GPU.jl") # Local search quantization
 
 end # module
