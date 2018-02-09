@@ -13,7 +13,7 @@ using Distances
 using Distributions
 
 # For LSQ encoding in the GPU
-# using CUDAdrv, CUBLAS # NO GPU in this branch
+using CUDAdrv, CUBLAS # NO GPU in this branch
 
 ### Load and initialize the linscan binaries ###
 const depsfile = joinpath(dirname(@__DIR__), "deps", "deps.jl")
@@ -41,10 +41,10 @@ include("RVQ.jl")
 include("ERVQ.jl")
 
 # === LSQ Quantizer ===
-# include("CudaUtilsModule.jl")
 include("LSQ.jl") # Local search quantization
 include("SR_perturbations.jl")
 include("SR.jl")
-# include("LSQ_GPU.jl") # Local search quantization
+include("CudaUtilsModule.jl")
+include("LSQ_GPU.jl") # Local search quantization
 
 end # module
