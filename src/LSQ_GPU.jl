@@ -239,10 +239,10 @@ function encode_icm_cuda(
 
   # Run encoding in the GPU for each split
   for i = 1:nsplits
-    Bs, objs = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord)
-    gc() # <-- collect gpu garbage
-    append!(all_Bs, Bs)
-    append!(all_objs, objs)
+    aaBs, aaobjs = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord)
+    gc()
+    append!(all_Bs, aaBs)
+    append!(all_objs, aaobjs)
   end
 
   # Merge all the results
