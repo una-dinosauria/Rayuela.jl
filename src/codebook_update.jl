@@ -12,11 +12,11 @@ function updatecb!(
 
   if codebook_upd_method == "lsqr"
     for i = IDX
-      K[i,:] = IterativeSolvers.lsqr( C, vec(X[i, :]) );
+      K[i,:] = IterativeSolvers.lsqr( C, vec(X[i, :]) )
     end
   elseif codebook_upd_method == "lsmr"
     for i = IDX
-      K[i,:] = IterativeSolvers.lsmr( C, vec(X[i, :]) );
+      K[i,:] = IterativeSolvers.lsmr( C, vec(X[i, :]) )
     end
   else
     error("Codebook update method unknown: ", codebook_upd_method)
@@ -33,11 +33,11 @@ function updatecb!(
 
   if codebook_upd_method == "lsqr"
     for i = IDX
-      K[i,:] = IterativeSolvers.lsqr( C, vec(X[i, :]) );
+      K[i,:] = IterativeSolvers.lsqr( C, vec(X[i, :]) )
     end
   elseif codebook_upd_method == "lsmr"
     for i = IDX
-      K[i,:] = IterativeSolvers.lsmr( C, vec(X[i, :]) );
+      K[i,:] = IterativeSolvers.lsmr( C, vec(X[i, :]) )
     end
   else
     error("Codebook update method unknown: ", codebook_upd_method)
@@ -206,7 +206,7 @@ function update_codebooks(
     m, _   = size(B)
     C = sparsify_codes( B, h )
 
-    K = SharedArray(Float32, d, size(C,2))
+    K = SharedArray{Float32}(d, size(C,2))
     if nworkers() == 1
       updatecb!( K, C, X, 1:d )
     else

@@ -1,25 +1,13 @@
-
 # Methods that add perturbations
 
-# TODO leave just one schedule
 # Scales the standard deviation according to the passed schedule
 function apply_schedule(
-  stdev::Vector{Float32},
-  schedule::Integer,
+  stdev::Vector{Float32},     # Standard deviation
   iter::Integer,              # Iteration number
   niter::Integer,             # Total number of iterations
-  p::Float32,
-  alpha::Float32)
+  p::Float32)
 
-  if schedule == 1 # Schedule 1
-    stdev = stdev * (1 - (iter/niter)).^p # -- deep1b hack on
-  elseif schedule == 2 # Schedule 2
-    stdev = stdev / ((1 + iter).^p)
-  elseif schedule == 3 # Schedule 3
-    stdev = stdev * alpha^(iter/2)
-  else
-    error("Schedule unknown: ", schedule )
-  end
+  stdev = stdev * (1 - (iter/niter)).^p
 
   return stdev
 end
@@ -29,16 +17,14 @@ function SR_D_perturb(
   C::Vector{Matrix{Float32}}, # The codebooks
   iter::Integer,              # Iteration number
   niter::Integer,             # Total number of iterations
-  schedule::Integer,   # Choose the schedule expression
-  p::Float32=0.5,              # Power parameter in equation (18)
-  alpha::Float32=0.5 )        # Scaling factor in the third schedule
+  p::Float32=0.5)              # Power parameter in equation (18)
 
   m = length( C )
   d, h = size( C[1] )
 
   # Compute the standard deviation
-  stdc = std( cat(2, C...), 2 ) ./ m # For sift1b
-  stdc = apply_schedule( stdc[:], schedule, iter, niter, p, alpha )
+  stdc = std( cat(2, C...), 2 ) ./ m
+  stdc = apply_schedule( stdc[:], iter, niter, p )
 
   for i = 1:m # Loop through each codebook
     for j = 1:d # Loop through each dimension
@@ -55,15 +41,13 @@ function SR_C_perturb(
   X::Matrix{Float32},         # d-by-n matrix of data points to train on.
   iter::Integer,              # Iteration number
   niter::Integer,             # Total number of iterations
-  schedule::Integer,          # Choose the schedule expression
-  p::Float32=0.5,              # Power parameter in equation (18)
-  alpha::Float32=0.5 )        # Scaling factor in the third schedule
+  p::Float32=0.5)              # Power parameter in equation (18)
 
   d, n = size( X )
 
   # Compute the standard deviation
   stdx = std( X, 2 )
-  stdx = apply_schedule( stdx[:], schedule, iter, niter, p, alpha )
+  stdx = apply_schedule( stdx[:], iter, niter, p )
 
   Y = zeros(Float32,size(X))
 
