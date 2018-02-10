@@ -242,9 +242,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
   C = update_codebooks( RX, B, h, V, "lsqr" )
 
   # Apply the rotation to the codebooks
-  for i = 1:m
-    C[i] = R * C[i]
-  end
+  for i = 1:m; C[i] = R * C[i]; end
   @printf("%3d %e \n", -2, qerror( X, B, C ))
 
   # Initialize B
@@ -255,22 +253,15 @@ function train_lsq_cuda{T <: AbstractFloat}(
   obj = zeros( Float32, niter )
 
   for iter = 1:niter
-
     obj[iter] = qerror( X, B, C )
     @printf("%3d %e \n", iter, obj[iter])
 
     # Update the codebooks
     C = update_codebooks( X, B, h, V, "lsqr" )
-
-    # Update the codes with local search
+    # Update the codes B
     B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord)
     B    = B[end]
-    @printf("%3d %e \n", -1, qerror( X, B, C ))
-
   end
 
-  # Get the codebook for norms
-  norms_codes, norms_codebook = get_norms_codebook(B, C)
-
-  return C, B, norms_codebook, norms_codes, obj
+  return C, B, obj
 end

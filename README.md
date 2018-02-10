@@ -6,7 +6,7 @@ These methods are used for fast search of high-dimensional (d=100s-1000s) dense 
 Rayuela is written in [Julia](https://github.com/JuliaLang/julia).
 
 This is not a production-ready library -- if you are looking for something
-like that, take a look at [faiss](https://github.com/facebookresearch/faiss).
+like that, maybe look at [faiss](https://github.com/facebookresearch/faiss).
 
 Rayuela implements the main contributions that I made to this problem during my
 PhD at UBC, as well as multiple baselines and indexing structures for very
@@ -15,10 +15,10 @@ and accessible, and to make it easier for other people, specially newcomers, to
 contribute to this field, where lack of reproducibility is a major barrier of entry.
 
 I originally intended to incorporate these contributions on top of [faiss](https://github.com/facebookresearch/faiss)
-(see [#185](https://github.com/facebookresearch/faiss/issues/185)), but I realized that
-I would not have the time to do so and finish my PhD before 2018. Julia is also
-more accessible (albeit a bit less performant) to quickly try and test new
-research ideas.
+(see [#185](https://github.com/facebookresearch/faiss/issues/185)),
+but I soon realized that doing so would considerably delay the completion of my PhD.
+Julia is also more accessible (albeit a bit less performant) to quickly try and
+test new research ideas.
 In the future, savvier C++ programmers may port the most useful methods to faiss.
 
 ## Authors

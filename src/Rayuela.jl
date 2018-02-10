@@ -22,7 +22,7 @@ if isfile(depsfile)
 else
   error("Rayuela is not properly installed. Please run Pkg.build(\"Rayuela\")")
 end
-# cudautilsptx = cudautils[1:end-2] * "ptx"
+cudautilsptx = cudautils[1:end-2] * "ptx"
 
 # === Utility functions mostly ===
 include("utils.jl")

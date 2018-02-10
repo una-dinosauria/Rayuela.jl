@@ -302,9 +302,7 @@ function train_lsq{T <: AbstractFloat}(
   C = update_codebooks( RX, B, h, V, "lsqr" )
 
   # Apply the rotation to the codebooks
-  for i = 1:m
-    C[i] = R * C[i]
-  end
+  for i = 1:m; C[i] = R * C[i]; end
   @printf("%3d %e \n", -2, qerror( X, B, C ))
 
   # Initialize B
