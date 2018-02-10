@@ -2,7 +2,7 @@
 export encode_icm_cuda, train_lsq_cuda
 
 "Encodes a database with ILS in cuda"
-function encode_icm_cuda(
+function encode_icm_cuda_single(
   RX::Matrix{Float32},         # in. The data to encode
   B::Matrix{Int16},            # in. Initial list of codes
   C::Vector{Matrix{Float32}},  # in. Codebooks
@@ -16,31 +16,31 @@ function encode_icm_cuda(
   _, h = size( C[1] )
 
   # Number of results to keep track of
-  nr   = length( ilsiters );
+  nr   = length( ilsiters )
 
   # Make space for the outputs
-  Bs   = Vector{Matrix{Int16}}(nr);
-  objs = Vector{Float32}(nr);
+  Bs   = Vector{Matrix{Int16}}(nr)
+  objs = Vector{Float32}(nr)
 
   # === Compute binary terms (products between all codebook pairs) ===
-  binaries, cbi = Rayuela.get_binaries( C );
-  _, ncbi       = size( cbi );
+  binaries, cbi = Rayuela.get_binaries( C )
+  _, ncbi       = size( cbi )
 
   # Create a transposed copy of the binaries for cache-friendliness
-  binaries_t = similar( binaries );
+  binaries_t = similar( binaries )
   for j = 1:ncbi
-    binaries_t[j] = binaries[j]';
+    binaries_t[j] = binaries[j]'
   end
 
   # Create an index from codebook pairs to indices
-  cbpair2binaryidx   = zeros(Int32, m, m);
+  cbpair2binaryidx   = zeros(Int32, m, m)
   for j = 1:ncbi
-    cbpair2binaryidx[ cbi[1,j], cbi[2,j] ] = j;
+    cbpair2binaryidx[ cbi[1,j], cbi[2,j] ] = j
   end
 
   # CUDArt.devices( dev->true ) do devlist
-  dev = CuDevice(0);
-  ctx = CuContext(dev);
+  dev = CuDevice(0)
+  ctx = CuContext(dev)
 
   # Initialize the cuda module, and choose the GPU
   gpuid = 0
@@ -77,27 +77,27 @@ function encode_icm_cuda(
   end
 
   # === Get binaries to the GPU ===
-  d_binaries  = Vector{CuArray{Float32}}( ncbi );
-  d_binariest = Vector{CuArray{Float32}}( ncbi );
+  d_binaries  = Vector{CuArray{Float32}}( ncbi )
+  d_binariest = Vector{CuArray{Float32}}( ncbi )
   for j = 1:ncbi
     d_binaries[j]  = CuArray( binaries[j] )
     d_binariest[j] = CuArray( binaries_t[j] )
   end
 
   # Allocate space for temporary results
-  bbs = Vector{Matrix{Cfloat}}(m-1);
+  bbs = Vector{Matrix{Cfloat}}(m-1)
 
   # Initialize the previous cost
-  prevcost = Rayuela.veccost( RX, B, C );
+  prevcost = Rayuela.veccost( RX, B, C )
   IDX = 1:n;
 
   # For codebook i, we have to condition on these codebooks
-  to_look      = 1:m;
-  to_condition = zeros(Int32, m-1, m);
+  to_look      = 1:m
+  to_condition = zeros(Int32, m-1, m)
   for j = 1:m
-    tmp = collect(1:m);
-    splice!( tmp, j );
-    to_condition[:,j] = tmp;
+    tmp = collect(1:m)
+    splice!( tmp, j )
+    to_condition[:,j] = tmp
   end
 
   # Loop for the number of requested ILS iterations
@@ -106,12 +106,12 @@ function encode_icm_cuda(
     @show i, ilsiters
     @time begin
 
-    to_look_r      = to_look;
-    to_condition_r = to_condition;
+    to_look_r      = to_look
+    to_condition_r = to_condition
 
     # Compute the cost of the previous assignments
-    # CudaUtilsModule.veccost(n, (1, d), d_RX, d_C, CuArray( convert(Matrix{Cuchar}, (B')-1) ), d_prevcost, Cint(m), Cint(n));
-    CudaUtilsModule.veccost2(n, (1, d), d_RX, d_C, CuArray( convert(Matrix{Cuchar}, (B')-1) ), d_prevcost, Cint(d), Cint(m), Cint(n));
+    # CudaUtilsModule.veccost(n, (1, d), d_RX, d_C, CuArray( convert(Matrix{Cuchar}, (B')-1) ), d_prevcost, Cint(m), Cint(n))
+    CudaUtilsModule.veccost2(n, (1, d), d_RX, d_C, CuArray( convert(Matrix{Cuchar}, (B')-1) ), d_prevcost, Cint(d), Cint(m), Cint(n))
     CUDAdrv.synchronize(ctx)
     # prevcost = to_host( d_prevcost )
     prevcost = Array( d_prevcost )
@@ -120,8 +120,8 @@ function encode_icm_cuda(
 
     # Randomize the visit order in ICM
     if randord
-      to_look_r      = randperm( m );
-      to_condition_r = to_condition[:, to_look_r];
+      to_look_r      = randperm( m )
+      to_condition_r = to_condition[:, to_look_r]
     end
 
     d_newB = CuArray( convert(Matrix{Cuchar}, newB-1 ) )
@@ -130,8 +130,8 @@ function encode_icm_cuda(
     CudaUtilsModule.perturb( n, (1,m), d_state, d_newB, Cint(n), Cint(m), Cint(npert) )
 
     newB = Array( d_newB )
-    Bt   = newB';
-    d_Bs = CuArray( Bt );
+    Bt   = newB'
+    d_Bs = CuArray( Bt )
 
     CUDAdrv.synchronize(ctx)
 
@@ -156,11 +156,11 @@ function encode_icm_cuda(
         end
 
         # Transfer pairwise tables to the GPU
-        d_bbs = CuArray( convert(Matrix{Cfloat}, cat(2,bbs...)) );
+        d_bbs = CuArray( convert(Matrix{Cfloat}, cat(2,bbs...)) )
         # Sum binaries (condition) and minimize
         CudaUtilsModule.condition_icm3(
           n, (1, h),
-          d_unaries[k], d_bbs, d_Bs, Cint(k-1), Cint(m), Cint(n) );
+          d_unaries[k], d_bbs, d_Bs, Cint(k-1), Cint(m), Cint(n) )
         CUDAdrv.synchronize(ctx)
 
         kidx = kidx + 1;
@@ -185,7 +185,7 @@ function encode_icm_cuda(
 
     newB[:, .~arebetter] = B[:, .~arebetter]
     B = copy( newB )
-    end
+    end # @time
 
     # Check if this # of iterations was requested
     if i in ilsiters
@@ -209,7 +209,61 @@ function encode_icm_cuda(
   # end # do devlist
 
   return Bs, objs
+end
 
+function encode_icm_cuda(
+  RX::Matrix{Float32},         # in. The data to encode
+  B::Matrix{Int16},            # in. Initial list of codes
+  C::Vector{Matrix{Float32}},  # in. Codebooks
+  ilsiters::Vector{Int64},     # in. ILS iterations to record Bs and obj function. Its max is the total number of iteration we will run.
+  icmiter::Integer,            # in. Number of ICM iterations
+  npert::Integer,              # in. Number of entries to perturb
+  randord::Bool,               # in. Whether to randomize the order in which nodes are visited in ILS
+  nsplits::Integer=1)          # in. Number of splits of the data (for limited memory GPUs)
+
+  # TODO check that splits >= 1
+
+  if nsplits == 1
+    return encode_icm_cuda_single(RX, B, C, ilsiters, icmiter, npert, randord)
+  end
+
+  # Split the data
+  d, n = size( RX )
+  splits = splitarray(1:n, nsplits)
+  nr = length(ilsiters)
+
+  Bs   = Vector{Matrix{Int16}}(nr)
+  objs = Vector{Float32}(nr)
+
+  all_Bs, all_objs = [], []
+
+  # Run encoding in the GPU for each split
+  for i = 1:nsplits
+    Bs, objs = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord)
+    gc() # <-- collect gpu garbage
+    append!(all_Bs, Bs)
+    append!(all_objs, objs)
+  end
+
+  # Merge all the results
+  for i = 1:nr
+    Bsi  = Matrix{Int16}(size(B))
+    obji = Vector{Float32}(nsplits)
+
+    for j = 1:nsplits
+      # Copy the codes
+      @show j, splits[j]
+      Bsi[:, splits[j] ] =   all_Bs[j][i]
+
+      # Average the
+      obji[j] = all_objs[j][i]
+    end
+
+    Bs[i]   = Bsi
+    objs[i] = mean(obji)
+  end
+
+  return Bs, objs
 end
 
 "LSQ training but some things happen in the GPU"
