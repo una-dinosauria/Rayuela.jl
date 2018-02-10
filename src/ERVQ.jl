@@ -80,7 +80,7 @@ function train_ervq(
       B[j:end,:], singletons = quantize_ervq(Xr, C[j:end], V)
       if V print("done. "); end
       error = qerror(X, B, C)
-      print("Qerror is $error.\n");
+      print("Qerror is $error.\n")
 
     end # End loop over codebooks
 

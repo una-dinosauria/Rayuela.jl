@@ -1,22 +1,25 @@
 # Rayuela.jl
 
-[Rayuela](https://en.wikipedia.org/wiki/Hopscotch#Rayuela).jl is a package for
-large-scale, fast search of high-dimensional (d=100s-1000s) dense vectors
-written in [Julia](https://github.com/JuliaLang/julia).
-The package is mostly focused on multi-codebook quantization techniques, and is
-loosely inspired by [faiss](https://github.com/facebookresearch/faiss).
+[Rayuela](https://en.wikipedia.org/wiki/Hopscotch#Rayuela).jl is a package
+that implements non-orthogonal multi-codebook quantization methods.
+These methods are used for fast search of high-dimensional (d=100s-1000s) dense vectors.
+Rayuela is written in [Julia](https://github.com/JuliaLang/julia).
+
+This is not a production-ready library -- if you are looking for something
+like that, take a look at [faiss](https://github.com/facebookresearch/faiss).
 
 Rayuela implements the main contributions that I made to this problem during my
 PhD at UBC, as well as multiple baselines and indexing structures for very
 large-scale datasets. The package is my attempt to make my research reproducible
 and accessible, and to make it easier for other people, specially newcomers, to
-contribute to this field.
+contribute to this field, where lack of reproducibility is a major barrier of entry.
 
 I originally intended to incorporate these contributions on top of [faiss](https://github.com/facebookresearch/faiss)
 (see [#185](https://github.com/facebookresearch/faiss/issues/185)), but I realized that
 I would not have the time to do so and finish my PhD before 2018. Julia is also
 more accessible (albeit a bit less performant) to quickly try and test new
-research ideas. In the future, savvier C++ programmers can port the most useful methods to [faiss](https://github.com/facebookresearch/faiss).
+research ideas.
+In the future, savvier C++ programmers may port the most useful methods to faiss.
 
 ## Authors
 
@@ -46,22 +49,23 @@ if you do.
 ### Implemented
 - Product Quantization -- [TPAMI'11](https://hal.archives-ouvertes.fr/file/index/docid/514462/filename/paper_hal.pdf)
 - Optimized Product Quantization / Cartesian K-means. [CVPR'13](http://www.cv-foundation.org/openaccess/content_cvpr_2013/papers/Norouzi_Cartesian_K-Means_2013_CVPR_paper.pdf), [CVPR'13](http://www.cv-foundation.org/openaccess/content_cvpr_2013/papers/Ge_Optimized_Product_Quantization_2013_CVPR_paper.pdf), [TPAMI'14](https://www.microsoft.com/en-us/research/wp-content/uploads/2013/11/pami13opq.pdf)
-- Tree Quantization* -- [CVPR'15](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
+- Tree Quantization -- [CVPR'15](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
+- Residual Vector Quantization -- [Sensors'10](http://www.mdpi.com/1424-8220/10/12/11259/htm)
+- Stacked Quantizers (aka Enhanced Residual Vector Quantization) -- [arxiv](https://arxiv.org/abs/1411.2173)/[CBMI'14 (paywalled)](http://ieeexplore.ieee.org/abstract/document/6849842/)
 - Local Search Quantization -- [ECCV'16](https://www.cs.ubc.ca/~julm/papers/eccv16.pdf)
+- Composite Quantization -- [ICML'14](https://pdfs.semanticscholar.org/eb18/329fe6466f36b0dbacd00e405c8f8618e1cf.pdf), [original code](https://github.com/hellozting/CompositeQuantization) (released late 2017, written in c++ with Microsoft's extensions)
+- Competitive Quantization -- []
 - Recall evaluation code
 
 ### TODO
 Things I'd like to get around implementing / porting / wrapping some day
 - Inverted Index -- [TPAMI'11](https://hal.archives-ouvertes.fr/file/index/docid/514462/filename/paper_hal.pdf), implemented in [faiss](https://github.com/facebookresearch/faiss)
 - Inverted Multi-index -- [CPVR'12](https://pdfs.semanticscholar.org/5bfb/5a42483e9b7051fab5e972a3b4627a8d6a76.pdf), implemented in [faiss](https://github.com/facebookresearch/faiss)
-- Composite Quantization -- [ICML'14](https://pdfs.semanticscholar.org/eb18/329fe6466f36b0dbacd00e405c8f8618e1cf.pdf), [code](https://github.com/hellozting/CompositeQuantization) (released late 2017, written in c++ with Microsoft's extensions)
 - Locally optimized product quantization [CVPR'14](http://image.ntua.gr/iva/files/lopq.pdf), [code](https://github.com/yahoo/lopq), [project page](http://image.ntua.gr/iva/research/lopq/)
 - Non-orthogonal multi-index --
  [CVPR'16](http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Babenko_Efficient_Indexing_of_CVPR_2016_paper.pdf), [code](https://github.com/arbabenko/GNOIMI), [project page](http://sites.skoltech.ru/compvision/noimi/)
-- Polysemous codes -- [ECCV'16](https://arxiv.org/pdf/1609.01882.pdf), implemented in [faiss](https://github.com/facebookresearch/faiss)
 - Bolt -- [KDD'17](https://pdfs.semanticscholar.org/edae/41dc0b511cd0455388c9fd0720a086078cc6.pdf), [code](https://github.com/dblalock/bolt)
 - Improvements to LSQ -- under review
-- All the GPU code in [faiss](https://github.com/facebookresearch/faiss/tree/master/gpu) :heart_eyes:
 
 ### TODO (no code, low priority)
 I would like to implement these methods. Some of them report really good results but, to the best of my knowledge, the authors have never released code. Also, my time is not infinite so ¯\\\_(ツ)\_/¯
