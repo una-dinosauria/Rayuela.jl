@@ -222,7 +222,6 @@ function encode_icm_cuda(
   nsplits::Integer=1)          # in. Number of splits of the data (for limited memory GPUs)
 
   # TODO check that splits >= 1
-
   if nsplits == 1
     return encode_icm_cuda_single(RX, B, C, ilsiters, icmiter, npert, randord)
   end
@@ -233,34 +232,23 @@ function encode_icm_cuda(
   nr = length(ilsiters)
 
   Bs   = Vector{Matrix{Int16}}(nr)
-  objs = Vector{Float32}(nr)
+  objs = zeros(Float32,nr)
 
-  all_Bs, all_objs = [], []
+  # Create storage space for the codes
+  for i = 1:nr; Bs[i] = Matrix{Int16}(size(B)); end
 
   # Run encoding in the GPU for each split
   for i = 1:nsplits
     aaBs, aaobjs = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord)
-    gc()
-    append!(all_Bs, aaBs)
-    append!(all_objs, aaobjs)
+    for j = 1:nr
+      # Save the codes
+      Bs[j][:,splits[i]] = aaBs[j]
+    end
   end
 
-  # Merge all the results
-  for i = 1:nr
-    Bsi  = Matrix{Int16}(size(B))
-    obji = Vector{Float32}(nsplits)
-
-    for j = 1:nsplits
-      # Copy the codes
-      @show j, splits[j]
-      Bsi[:, splits[j] ] =   all_Bs[j][i]
-
-      # Average the
-      obji[j] = all_objs[j][i]
-    end
-
-    Bs[i]   = Bsi
-    objs[i] = mean(obji)
+  # Compute the cost again
+  for j = 1:nr
+    objs[j] = qerror(RX, Bs[j], C)
   end
 
   return Bs, objs
