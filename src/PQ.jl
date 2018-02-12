@@ -65,14 +65,10 @@ function train_pq(
     C[i], B[:,i] = cluster.centers, cluster.assignments
 
     if V
-      subdim_cost = cluster.totalcost ./ n
-      nits        = cluster.iterations
-      converged   = cluster.converged
-
       println("done.")
-      println("  Ran for $nits iterations")
-      println("  Error in subspace is $subdim_cost")
-      println("  Converged: $converged")
+      println("  Ran for $(cluster.iterations) iterations")
+      println("  Error in subspace is $(cluster.totalcost ./ n)")
+      println("  Converged: $(cluster.converged)")
     end
   end
   B = B'
