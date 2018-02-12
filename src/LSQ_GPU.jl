@@ -302,7 +302,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
     # Update the codebooks
     C = update_codebooks( X, B, h, V, "lsqr" )
     # Update the codes B
-    B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplit)
+    B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplits)
     B    = B[end]
   end
 
