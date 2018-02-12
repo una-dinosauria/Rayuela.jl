@@ -6,9 +6,6 @@ using Clustering, Distances
 # For LSQR
 using IterativeSolvers
 
-# For TODO
-using Distances
-
 # For sampling
 using Distributions
 
@@ -44,6 +41,8 @@ include("ERVQ.jl")
 include("LSQ.jl") # Local search quantization
 include("SR_perturbations.jl")
 include("SR.jl")
+
+# === CUDA ports ===
 include("CudaUtilsModule.jl")
 include("LSQ_GPU.jl") # Local search quantization
 
