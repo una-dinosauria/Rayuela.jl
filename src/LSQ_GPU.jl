@@ -239,7 +239,7 @@ function encode_icm_cuda(
 
   # Run encoding in the GPU for each split
   for i = 1:nsplits
-    aaBs, aaobjs = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord)
+    aaBs, _ = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord)
     for j = 1:nr
       # Save the codes
       Bs[j][:,splits[i]] = aaBs[j]
@@ -267,6 +267,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
   icmiter::Integer,     # number of iterations in local search
   randord::Bool,        # whether to use random order
   npert::Integer,       # The number of codes to perturb
+  nsplits::Integer=1,   # The number of splits for icm encoding (for limited memory GPUs)
   V::Bool=false)        # whether to print progress
 
   # if V
@@ -288,7 +289,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
   @printf("%3d %e \n", -2, qerror( X, B, C ))
 
   # Initialize B
-  B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord)
+  B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplits)
   B    = B[end]
   @printf("%3d %e \n", -1, qerror( X, B, C ))
 
@@ -301,7 +302,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
     # Update the codebooks
     C = update_codebooks( X, B, h, V, "lsqr" )
     # Update the codes B
-    B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord)
+    B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplit)
     B    = B[end]
   end
 
