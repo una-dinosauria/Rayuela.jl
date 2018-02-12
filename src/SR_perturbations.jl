@@ -17,7 +17,7 @@ function SR_D_perturb(
   C::Vector{Matrix{Float32}}, # The codebooks
   iter::Integer,              # Iteration number
   niter::Integer,             # Total number of iterations
-  p::Float32=0.5)              # Power parameter in equation (18)
+  p::Float32=0.5)             # Power parameter in equation (18)
 
   m = length( C )
   d, h = size( C[1] )
@@ -41,7 +41,7 @@ function SR_C_perturb(
   X::Matrix{Float32},         # d-by-n matrix of data points to train on.
   iter::Integer,              # Iteration number
   niter::Integer,             # Total number of iterations
-  p::Float32=0.5)              # Power parameter in equation (18)
+  p::Float32=0.5)             # Power parameter in equation (18)
 
   d, n = size( X )
 

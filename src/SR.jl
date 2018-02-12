@@ -13,7 +13,7 @@ function train_sr(
   icmiter::Integer,           # number of iterations in local search
   randord::Bool,              # whether to use random order
   npert::Integer,             # The number of codes to perturb
-  method::AbstractString,     # The SR method to use
+  method::AbstractString,     # The SR method to use. Either SR_C or SR_D
   p::Float32,                 # SR-D power parameter
   cpp::Bool=true,             # whether to use ICM's cpp implementation
   V::Bool=false)              # whether to print progress
@@ -25,33 +25,21 @@ function train_sr(
   # end
 
   if !(method in ["SR_C", "SR_D"]); error("SR method unknown"); end
-
   d, n = size( X )
 
-  # RX = zeros( Float32, size(X) )
-  # B  = zeros( Int16, m, n )
-  # C  = Vector{Matrix{Float32}}(m)
-  # CB = zeros( Float32, size(X) )
-
-  # [[ Random initialization ]]
   RX = R' * X
-  # B = randinit(n, m, h)
-  # C = update_codebooks_fast_bin( RX, B, h, V )
   @printf("Random error: %e\n", qerror( RX, B, C ))
 
-  # Add noise to X
   if method == "SR_C"
+    # In SR-C we add noise to X
     RX_noisy = SR_C_perturb( RX, 0, niter, p )
     C = update_codebooks_fast_bin( RX_noisy, B, h, V )
   else
+    # In SR-D we add noise to C
     C = update_codebooks_fast_bin( RX, B, h, V )
-
     obj = qerror( RX, B, C )
     @printf("%3d %e \n", -1, obj)
-
-    if method == "SR_D"
-      C = SR_D_perturb( C, 1, niter, p )
-    end
+    C = SR_D_perturb( C, 1, niter, p )
   end
 
   obj = qerror( RX, B, C );
@@ -59,13 +47,11 @@ function train_sr(
 
   # Initialize B
   @time B = encoding_icm( RX, B, C, ilsiter, icmiter, randord, npert, cpp, V )
-
   obj = qerror( RX, B, C )
-
   @printf("%3d %e \n", -1, obj)
 
-  obj     = Inf;
-  objlast = Inf;
+  obj     = Inf
+  objlast = Inf
   objarray = zeros( Float32, niter+1 )
 
   for iter = 1:niter
@@ -75,19 +61,16 @@ function train_sr(
     objarray[iter] = obj
     @printf("%3d %e (%e better) \n", iter, obj, objlast - obj)
 
-    # Add noise to X
     if method == "SR_C"
+      # In SR-C we add noise to X
       RX_noisy = SR_C_perturb( RX, iter, niter, p )
       C = update_codebooks_fast_bin( RX_noisy, B, h, V )
     else
       C = update_codebooks_fast_bin( RX, B, h, V )
-      if method == "SR_D"
-        C = SR_D_perturb( C, iter, niter, p )
-      end
+      C = SR_D_perturb( C, iter, niter, p )
     end
 
     # Update the codes with local search
-    # B = randinit(n, m, h)
     @time B = encoding_icm( RX, B, C, ilsiter, icmiter, randord, npert, cpp, V )
 
   end
