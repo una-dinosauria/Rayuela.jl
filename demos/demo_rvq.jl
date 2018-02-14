@@ -1,8 +1,6 @@
 
 using Rayuela
 
-include("../src/read/read_datasets.jl")
-
 function demo_rq(
   dataset_name="SIFT1M",
   nread::Integer=Int(1e5)) # Increase this to 1e5 to use the full dataset
