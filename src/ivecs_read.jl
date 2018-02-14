@@ -6,6 +6,8 @@
 #   v = fvecs_read (filename, n)      -> read n vectors
 #   v = fvecs_read (filename, [a b]) -> read the vectors from a to b (indices starts from 1)
 
+export ivecs_read
+
 function ivecs_read(
   bounds::UnitRange,
   filename::String="./data/deep_babenko/deep1M_groundtruth.ivecs")

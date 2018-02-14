@@ -1,9 +1,6 @@
 using HDF5
 
-#to read SIFT1B
-include("./bvecs_read.jl")
-include("./ivecs_read.jl")
-include("./fvecs_read.jl")
+export read_dataset
 
 function read_dataset(
   dname::AbstractString,  # name of the dataset to load

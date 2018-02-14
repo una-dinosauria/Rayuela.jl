@@ -1,8 +1,6 @@
 
 using Rayuela
 
-include("../src/read/read_datasets.jl")
-
 function demo_pq(
   dataset_name="SIFT1M",
   ntrain::Integer=Int(1e5))

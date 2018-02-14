@@ -6,6 +6,8 @@
 #   v = bvecs_read (filename, n)      -> read n vectors
 #   v = bvecs_read (filename, [a b]) -> read the vectors from a to b (indices starts from 1)
 
+export bvecs_read
+
 function bvecs_read(
   bounds::UnitRange,
   filename::AbstractString="./data/sift1b/bigann_base.bvecs")
