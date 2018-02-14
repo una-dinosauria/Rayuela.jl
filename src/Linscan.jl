@@ -111,7 +111,7 @@ function linscan_lsq(
   _, h  = size( C[1] );
 
   dists = zeros( Cfloat, k, nq );
-  res   = zeros(  Cint,  k, nq  );
+  res   = zeros(  Cuint, k, nq  );
 
   ccall(("linscan_aqd_query_extra_byte", linscan_aqd_pairwise_byte), Void,
     (Ptr{Cfloat}, Ptr{Cint},

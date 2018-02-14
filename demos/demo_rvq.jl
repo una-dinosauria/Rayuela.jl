@@ -53,7 +53,6 @@ function demo_rq(
   @time dists, idx = linscan_lsq(B_base, x_query, C, db_norms, eye(Float32, d), knn)
   println("done")
 
-  idx = convert(Matrix{UInt32}, idx);
   rec = eval_recall(gt, idx, knn)
 
 end
