@@ -21,6 +21,13 @@ else
 end
 cudautilsptx = cudautils[1:end-2] * "ptx"
 
+# === Functions to read data ===
+# TODO refactor these with metaprogrammming
+include("bvecs_read.jl")
+include("fvecs_read.jl")
+include("ivecs_read.jl")
+include("read_datasets.jl")
+
 # === Utility functions mostly ===
 include("utils.jl")
 include("qerrors.jl")
