@@ -23,7 +23,17 @@ function linscan_pq(
     Cint(b), Cint(k), Cint(m), Cint(d), Cint(d/m) )
 
   return dists, (res.+=1)
+end
 
+function linscan_pq(
+  B::Matrix{Int16},          # m-by-n. The database, encoded
+  X::Matrix{Cfloat},         # d-by-nq. The queries.
+  C::Vector{Matrix{Cfloat}}, # The cluster centers
+  b:: Int,                   # Number of bits per code -- log2(h) * m
+  k:: Int = 10000)
+
+  B_uint8 = convert(Matrix{UInt8},B-1)
+  return linscan_pq(B_uint8, X, C, b, k)
 end
 
 "My attempt to implement linscan in julia. Very slow because sortperm is slow and no multithreading"
@@ -93,6 +103,18 @@ function linscan_opq(
 
   # And call the function as usual
   return linscan_pq( B, RX, C, b, k )
+end
+
+function linscan_opq(
+  B::Matrix{Int16},           # m-by-n. The database, encoded
+  X::Matrix{Cfloat},         # d-by-nq. The queries.
+  C::Vector{Matrix{Cfloat}}, # The cluster centers
+  b::Int,                     # Number of bits per code -- log2(h) * m
+  R::Matrix{Cfloat},         # Rotation matrix
+  k::Int = 10000)             # Number of knn results to return
+
+  B_uint8 = convert(Matrix{UInt8},B-1)
+  return linscan_opq( B_uint8, X, C, b, R, k )
 end
 
 # Linear scan using LSQ, with dbnorms not encoded.

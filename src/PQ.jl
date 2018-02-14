@@ -75,3 +75,34 @@ function train_pq(
   error = qerror_pq( X, B, C )
   return C, B, error
 end
+
+
+function experiment_pq(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  # === Train ===
+  C, B, train_error = train_pq(Xt, m, h, niter, V)
+  if V; @printf("Error in training is %e\n", train_error); end
+
+  # === Encode the base set ===
+  B_base     = quantize_pq( Xb, C, V )
+  base_error = qerror_pq( Xb, B_base, C )
+  if V; @printf("Error in base is %e\n", base_error); end
+
+  # === Compute recall ===
+  println("Querying m=$m ... ")
+  b = Int(log2(h) * m)
+  @time dists, idx = linscan_pq(B_base, Xq, C, b, knn)
+  println("done")
+
+  rec = eval_recall( gt, idx, knn )
+
+end
