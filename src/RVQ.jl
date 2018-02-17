@@ -1,5 +1,5 @@
 
-export train_rvq, quantize_rvq
+export train_rvq, quantize_rvq, experiment_rvq
 
 """
     quantize_rq(X::Matrix{T}, C::Vector{Matrix{T}}, V::Bool=false) where T <: AbstractFloat
@@ -85,17 +85,50 @@ function train_rvq(
     Xr .-= C[i][:,B[:,i]]
 
     if V
-      subdim_cost = cluster.totalcost ./ n
-      nits        = cluster.iterations
-      converged   = cluster.converged
-
       println("done.")
-      println("  Ran for $nits iterations")
-      println("  Error after $(m)-codebook is $subdim_cost")
-      println("  Converged: $converged")
+      println("  Ran for $(cluster.iterations) iterations")
+      println("  Error after $(i)-codebook is $(cluster.totalcost ./ n)")
+      println("  Converged: $(cluster.converged)")
     end
   end
   B = B'
   error = qerror(X, B, C)
   return C, B, error
+end
+
+
+function experiment_rvq(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  # === RQ train ===
+  d, _ = size(Xt)
+  C, B, obj = Rayuela.train_rvq(Xt, m, h, niter, V)
+	norms_B, norms_C = get_norms_codebook(B, C)
+
+  # === Encode the base set ===
+  B_base, _ = Rayuela.quantize_rvq(Xb, C, V)
+  base_error = qerror(Xb, B_base, C)
+  if V; @printf("Error in base is %e\n", base_error); end
+
+  # Compute and quantize the database norms
+  B_base_norms = quantize_norms( B_base, C, norms_C )
+  db_norms     = vec( norms_C[ B_base_norms ] )
+
+  # === Compute recall ===
+  # B_base       = convert(Matrix{UInt8}, B_base-1)
+  # B_base_norms = convert(Vector{UInt8}, B_base_norms-1)
+
+  if V; print("Querying m=$m ... "); end
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  rec = eval_recall(gt, idx, knn)
 end

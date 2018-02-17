@@ -48,31 +48,14 @@ function run_demos(
 
   # PQ & OPQ
   Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
   # ==============================
   # === Non-orthogonal methods ===
   # ==============================
-  m = 7
-  Rayuela.experiment_rvq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  begin
-    # RVQ
-    # begin
-    #   C_rvq, B_rvq, obj = Rayuela.train_rvq(x_train, m, h, niter, verbose)
-    #   norms_B_rvq, norms_C_rvq = get_norms_codebook(B_rvq, C_rvq)
-    #   B_base_rvq, _ = Rayuela.quantize_rvq(x_base, C_rvq, verbose)
-    #   base_error_rvq = qerror(x_base, B_base_rvq, C_rvq)
-    #   B_base_norms_rvq = quantize_norms( B_base_rvq, C_rvq, norms_C_rvq )
-    #   db_norms_rvq     = vec( norms_C_rvq[ B_base_norms_rvq ] )
-
-    #   B_base_rvq       = convert(Matrix{UInt8}, B_base_rvq-1)
-    #   B_base_norms_rvq = convert(Vector{UInt8}, B_base_norms_rvq-1)
-    #   dists, idx = linscan_lsq(B_base_rvq, x_query, C_rvq, db_norms_rvq, eye(Float32, d), knn)
-    #   recall_at_n = eval_recall( gt, idx, knn )
-    # end
-
-    # ERVQ
-  end
+  m = m - 1
+  # Rayuela.experiment_rvq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # ERVQ
 
 end
 

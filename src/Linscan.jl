@@ -26,11 +26,11 @@ function linscan_pq(
 end
 
 function linscan_pq(
-  B::Matrix{Int16},          # m-by-n. The database, encoded
+  B::Matrix{T},          # m-by-n. The database, encoded
   X::Matrix{Cfloat},         # d-by-nq. The queries.
   C::Vector{Matrix{Cfloat}}, # The cluster centers
   b:: Int,                   # Number of bits per code -- log2(h) * m
-  k:: Int = 10000)
+  k:: Int = 10000)  where T <: Integer
 
   B_uint8 = convert(Matrix{UInt8},B-1)
   return linscan_pq(B_uint8, X, C, b, k)
@@ -106,12 +106,12 @@ function linscan_opq(
 end
 
 function linscan_opq(
-  B::Matrix{Int16},           # m-by-n. The database, encoded
+  B::Matrix{T},           # m-by-n. The database, encoded
   X::Matrix{Cfloat},         # d-by-nq. The queries.
   C::Vector{Matrix{Cfloat}}, # The cluster centers
   b::Int,                     # Number of bits per code -- log2(h) * m
   R::Matrix{Cfloat},         # Rotation matrix
-  k::Int = 10000)             # Number of knn results to return
+  k::Int = 10000) where T <: Integer # Number of knn results to return
 
   B_uint8 = convert(Matrix{UInt8},B-1)
   return linscan_opq( B_uint8, X, C, b, R, k )
@@ -144,7 +144,19 @@ function linscan_lsq(
     Cint(nq), Cint(n), Cint(m), Cint(h), Cint(d), Cint(k) );
 
   return dists, res
+end
 
+# Linear scan using LSQ, with dbnorms not encoded.
+function linscan_lsq(
+  B::Matrix{T},           # m-by-n. The database, encoded
+  X::Matrix{Cfloat},         # d-by-nq. The queries.
+  C::Vector{Matrix{Cfloat}}, # (m-1)-long. The cluster centers
+  dbnorms::Vector{Cfloat},   # h-long. Table with database norms
+  R::Matrix{Cfloat},         # Rotation matrix
+  k::Int = 10000) where T <: Integer # Number of knn results to return
+
+  B_uint8 = convert(Matrix{UInt8},B-1)
+  return linscan_lsq(B_uint8, X, C, dbnorms, R, k)
 end
 
 # Evaluate ANN search vs ground truth. Produces a recall@N curve.
