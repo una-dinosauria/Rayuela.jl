@@ -1,5 +1,5 @@
 
-export train_ervq, quantize_ervq
+export train_ervq, quantize_ervq, experiment_ervq
 
 """
     quantize_ervq(X::Matrix{T}, C::Vector{Matrix{T}}, V::Bool=false) where T <: AbstractFloat
@@ -22,16 +22,18 @@ Trains a residual quantizer.
 """
 function train_ervq(
   X::Matrix{T},  # d-by-n. Data to learn codebooks from
+  B::Matrix{T2}, # codes
+  C::Vector{Matrix{T}}, # codebooks
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
   niter::Integer=25, # Number of k-means iterations for training
-  V::Bool=false) where T <: AbstractFloat # whether to print progress
+  V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
 
-  # ERVQ starts with RVQ
-  C, B, error = train_rvq(X,m,h,niter,V)
   B = convert(Matrix{Int64}, B)
 
   # Then we do the fine-tuning part of https://arxiv.org/abs/1411.2173
+  # TODO make sure that C is full-dimensional
+  error = qerror(X, B, C)
   if V print("Error after init is $error \n"); end
 
   for i = 1:niter
@@ -91,4 +93,70 @@ function train_ervq(
 
   end
   return C, B, 0.0
+end
+
+function train_ervq(
+  X::Matrix{T},  # d-by-n. Data to learn codebooks from
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  V::Bool=false) where T <: AbstractFloat# whether to print progress
+
+  # Initialize with RVQ
+  C, B, _ = train_rvq(X, m, h, niter, V)
+  train_ervq(X, B, C, m, h, niter, V)
+end
+
+
+function experiment_ervq(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  B::Matrix{T2}, # codes
+  C::Vector{Matrix{T}}, # codebooks
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
+
+  # === ERVQ train ===
+  d, _ = size(Xt)
+  C, B, obj = Rayuela.train_ervq(Xt, B, C, m, h, niter, V)
+  norms_B, norms_C = get_norms_codebook(B, C)
+
+  # === Encode the base set ===
+  B_base, _ = Rayuela.quantize_ervq(Xb, C, V)
+  base_error = qerror(Xb, B_base, C)
+  if V; @printf("Error in base is %e\n", base_error); end
+
+  # Compute and quantize the database norms
+  B_base_norms = quantize_norms( B_base, C, norms_C )
+  db_norms     = vec( norms_C[ B_base_norms ] )
+
+  # === Compute recall ===
+  # B_base       = convert(Matrix{UInt8}, B_base-1)
+  # B_base_norms = convert(Vector{UInt8}, B_base_norms-1)
+
+  if V; print("Querying m=$m ... "); end
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  rec = eval_recall(gt, idx, knn)
+end
+
+function experiment_ervq(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  C, B, _ = Rayuela.train_ervq(Xt, m, h, niter, V)
+  experiment_ervq(Xt, B, C, Xb, Xq, gt, m, h, niter, knn, V)
 end

@@ -108,7 +108,7 @@ function experiment_rvq(
   knn::Integer=1000,
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
-  # === RQ train ===
+  # === RVQ train ===
   d, _ = size(Xt)
   C, B, obj = Rayuela.train_rvq(Xt, m, h, niter, V)
 	norms_B, norms_C = get_norms_codebook(B, C)
@@ -131,4 +131,6 @@ function experiment_rvq(
   if V; println("done"); end
 
   rec = eval_recall(gt, idx, knn)
+
+  return C, B
 end
