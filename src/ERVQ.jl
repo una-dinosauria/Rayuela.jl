@@ -18,7 +18,7 @@ end
 """
     train_ervq(X::Matrix{T}, m::Integer, h::Integer, V::Bool=false) where T <: AbstractFloat
 
-Trains a residual quantizer.
+Trains an enhanced residual quantizer.
 """
 function train_ervq(
   X::Matrix{T},  # d-by-n. Data to learn codebooks from

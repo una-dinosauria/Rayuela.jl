@@ -42,16 +42,19 @@ function run_demos(
   gt = convert( Vector{UInt32}, gt[1,1:nquery] )
   d, _    = size( Xt )
 
-  # Orthogonal methods: PQ & OPQ
+  # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
   # Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  # Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # C, B, R = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # C, B, R = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
-  # Non-orthogonal methods:
+  # Cheap non-orthogonal methods: RVQ, ERVQ
   m = m - 1
-  C, B = Rayuela.experiment_rvq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  # Rayuela.experiment_ervq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  Rayuela.experiment_ervq(Xt, B, C, Xb, Xq, gt, m, h, niter, knn, verbose)
-  # ERVQ
+  # C, B = Rayuela.experiment_rvq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # Rayuela.experiment_ervq(Xt, B, C, Xb, Xq, gt, m, h, niter, knn, verbose)
+
+  # More expensive methods
+  Rayuela.experiment_chainq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+
 
 end
 

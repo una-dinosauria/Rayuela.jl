@@ -23,7 +23,6 @@ function demo_lsq(
   @printf("Error after OPQ is %e\n", train_error[end])
 
   # # === ChainQ initialization ===
-  # B                    = convert( Matrix{Int16}, B )
   # C, B, R, train_error = Rayuela.train_chainq( x_train, m, h, R, B, C, niter )
   # @printf("Error after ChainQ is %e\n", train_error[end])
 

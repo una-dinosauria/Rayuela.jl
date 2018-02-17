@@ -1,13 +1,13 @@
 
 # function quantize_chainq
-export train_chainq, quantize_chainq
+export train_chainq, quantize_chainq, experiment_chainq
 
-function quantize_chainq_cpp!{T <: AbstractFloat}(
+function quantize_chainq_cpp!(
   CODES::Matrix{Int16},  # out. Where to save the result
   X::Matrix{T},                # in. d-by-n matrix to encode
   C::Vector{Matrix{T}},        # in. m-long vector with d-by-h codebooks
   binaries::Vector{Matrix{T}}, # in. Binary terms
-  IDX::UnitRange{Int64})       # in. Index to save the result
+  IDX::UnitRange{Int64}) where T <: AbstractFloat # in. Index to save the result
 
   # Get unaries
   unaries = get_unaries( X, C )
@@ -38,25 +38,25 @@ function quantize_chainq_cpp!{T <: AbstractFloat}(
   CODES[:] = CODES2[:]
 end
 
-function my_findmin(cost::Vector{T}, h) where T <: Real
-  minv = cost[1]
-  mini = 1
-  for k = 2:h
-    costi = cost[k]
-    if costi < minv
-      minv = costi
-      mini = k
-    end
-  end
-  return minv, mini
-end
+# function my_findmin(cost::Vector{T}, h) where T <: Real
+#   minv = cost[1]
+#   mini = 1
+#   for k = 2:h
+#     costi = cost[k]
+#     if costi < minv
+#       minv = costi
+#       mini = k
+#     end
+#   end
+#   return minv, mini
+# end
 
-function quantize_chainq!{T <: AbstractFloat}(
+function quantize_chainq!(
   CODES::SharedMatrix{Int16},  # out. Where to save the result
   X::Matrix{T},                # in. d-by-n matrix to encode
   C::Vector{Matrix{T}},        # in. m-long vector with d-by-h codebooks
   binaries::Vector{Matrix{T}}, # in. Binary terms
-  IDX::UnitRange{Int64})       # in. Index to save the result
+  IDX::UnitRange{Int64}) where T <: AbstractFloat # in. Index to save the result
 
   # Get unaries
   unaries = get_unaries( X, C )
@@ -145,12 +145,12 @@ function quantize_chainq!{T <: AbstractFloat}(
   end # for idx = IDX
 end
 
-function quantize_chainq_batched!{T <: AbstractFloat}(
+function quantize_chainq_batched!(
   CODES::SharedMatrix{Int16},  # out. Where to save the result
   X::Matrix{T},                # in. d-by-n matrix to encode
   C::Vector{Matrix{T}},        # in. m-long vector with d-by-h codebooks
   binaries::Vector{Matrix{T}}, # in. Binary terms
-  IDX::UnitRange{Int64})       # in. Index to save the result
+  IDX::UnitRange{Int64}) where T <: AbstractFloat # in. Index to save the result
 
   # Get unaries
   # @Profile.profile begin
@@ -309,4 +309,61 @@ function train_chainq{T <: AbstractFloat}(
   end
 
   return C, B, R, obj
+end
+
+
+function experiment_chainq(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  B::Matrix{T2}, # codes
+  C::Vector{Matrix{T}}, # codebooks
+  R::Matrix{T}, # rotation
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
+
+  # === ChainQ train ===
+  d, _ = size(Xt)
+  C, B, R, train_error = train_chainq( Xt, m, h, R, B, C, niter, V )
+  norms_B, norms_C = get_norms_codebook(B, C)
+  @printf("Error after ChainQ is %e\n", train_error[end])
+
+  # === Encode the base set ===
+  RXb = R' * Xb
+  B_base, _  = quantize_chainq(RXb, C)
+  base_error = qerror(RXb, B_base, C)
+  if V; @printf("Error in base is %e\n", base_error); end
+
+  # Compute and quantize the database norms
+  B_base_norms = quantize_norms( B_base, C, norms_C )
+  db_norms     = vec( norms_C[ B_base_norms ] )
+
+  if V; print("Querying m=$m ... "); end
+  RXq = R' * Xq
+  @time dists, idx = linscan_lsq(B_base, RXq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  rec = eval_recall(gt, idx, knn)
+
+end
+
+function experiment_chainq(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+
+  # OPQ initialization
+  C, B, R, _ = train_opq(Xt, m, h, niter, "natural", V)
+  experiment_chainq(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, V)
 end
