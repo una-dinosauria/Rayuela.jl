@@ -184,7 +184,6 @@ function splitarray(
   n       = length(x)
   perpart = div( n, nparts )
   xtra    = mod( n, nparts )
-  #out     = cell( nparts )
   out     = Array{Any}(nparts)
 
   #fills the parts, which have 1 item more than the other parts,

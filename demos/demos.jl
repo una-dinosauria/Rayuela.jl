@@ -47,8 +47,8 @@ function run_demos(
   # ==========================
 
   # PQ & OPQ
-  Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  # Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
   # ==============================
   # === Non-orthogonal methods ===
