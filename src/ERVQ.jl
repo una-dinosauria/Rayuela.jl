@@ -135,10 +135,6 @@ function experiment_ervq(
   B_base_norms = quantize_norms( B_base, C, norms_C )
   db_norms     = vec( norms_C[ B_base_norms ] )
 
-  # === Compute recall ===
-  # B_base       = convert(Matrix{UInt8}, B_base-1)
-  # B_base_norms = convert(Vector{UInt8}, B_base_norms-1)
-
   if V; print("Querying m=$m ... "); end
   @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
   if V; println("done"); end

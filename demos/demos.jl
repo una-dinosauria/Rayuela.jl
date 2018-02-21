@@ -1,24 +1,24 @@
 using Rayuela
 
-function encode_base_and_test(
-  x_query::Matrix{T1},    # Queries
-  B_base::Matrix{T2},     # encoded base, 1-based still
-  C::Vector{Matrix{T1}},  # Learned codebooks
-  gt::Vector{UInt32},     # Ground truth
-  knn::Integer,           # Largers N in recall@N
-  V::Bool) where {T1 <: AbstractFloat, T2 <: Integer}
-
-  m, h = length(C), size(C[1],2)
-  b = Int(log2(h) * m)
-
-  # === Compute recall ===
-  if V; println("Querying m=$m ... "); end
-  @time dists, idx = linscan_pq(convert(Matrix{UInt8}, B_base-1), x_query, C, b, knn)
-  if V; println("done"); end
-
-  recall_at_n = eval_recall( gt, idx, knn )
-  return recall_at_n
-end
+# function encode_base_and_test(
+#   x_query::Matrix{T1},    # Queries
+#   B_base::Matrix{T2},     # encoded base, 1-based still
+#   C::Vector{Matrix{T1}},  # Learned codebooks
+#   gt::Vector{UInt32},     # Ground truth
+#   knn::Integer,           # Largers N in recall@N
+#   V::Bool) where {T1 <: AbstractFloat, T2 <: Integer}
+#
+#   m, h = length(C), size(C[1],2)
+#   b = Int(log2(h) * m)
+#
+#   # === Compute recall ===
+#   if V; println("Querying m=$m ... "); end
+#   @time dists, idx = linscan_pq(convert(Matrix{UInt8}, B_base-1), x_query, C, b, knn)
+#   if V; println("done"); end
+#
+#   recall_at_n = eval_recall( gt, idx, knn )
+#   return recall_at_n
+# end
 
 
 function run_demos(
@@ -28,14 +28,14 @@ function run_demos(
   # Experiment params
   m, h = 8, 256
   nquery, nbase, knn = Int(1e4), Int(1e6), Int(1e3)
-  niter, verbose = 25, true
+  niter, verbose = 5, true
   b       = Int(log2(h) * m)
 
   # Load data
   Xt = read_dataset(dataset_name, ntrain)
   Xb = read_dataset(dataset_name * "_base", nbase)
   Xq = read_dataset(dataset_name * "_query", nquery, verbose)[:,1:nquery]
-  gt = read_dataset(dataset_name * "_groundtruth", nquery, verbose )
+  gt = read_dataset(dataset_name * "_groundtruth", nquery, verbose)
   if dataset_name == "SIFT1M" || dataset_name == "GIST1M"
     gt = gt .+ 1
   end
@@ -45,15 +45,16 @@ function run_demos(
   # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
   # Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
   # C, B, R = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  # C, B, R = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
   # Cheap non-orthogonal methods: RVQ, ERVQ
   m = m - 1
+
   # C, B = Rayuela.experiment_rvq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
   # Rayuela.experiment_ervq(Xt, B, C, Xb, Xq, gt, m, h, niter, knn, verbose)
 
-  # More expensive methods
-  Rayuela.experiment_chainq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # More expensive non-orthogonal methods
+  # Rayuela.experiment_chainq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  Rayuela.experiment_lsq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
 
 end

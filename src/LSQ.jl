@@ -295,10 +295,8 @@ function train_lsq{T <: AbstractFloat}(
 
   d, n = size( X )
 
-  # Update RX
-  RX = R' * X
-
   # Initialize C
+  RX = R' * X
   C = update_codebooks( RX, B, h, V, "lsqr" )
 
   # Apply the rotation to the codebooks
@@ -322,4 +320,71 @@ function train_lsq{T <: AbstractFloat}(
   end
 
   return C, B, obj
+end
+
+
+function experiment_lsq(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  B::Matrix{T2}, # codes
+  C::Vector{Matrix{T}}, # codebooks
+  R::Matrix{T}, # rotation
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
+
+  # TODO expose these parameters
+  ilsiter = 8
+  icmiter = 4
+  randord = true
+  npert   = 4
+  cpp     = true
+
+  # Train LSQ
+  d, _ = size(Xt)
+  C, B, obj = Rayuela.train_lsq(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, cpp, !V)
+  norms_B, norms_C = get_norms_codebook(B, C)
+
+  # === Encode the base set ===
+  B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
+  B_base = Rayuela.encoding_icm(Xb, B_base, C, ilsiter, icmiter, randord, npert, cpp, V)
+  base_error = qerror(Xb, B_base, C)
+  if V; @printf("Error in base is %e\n", base_error); end
+
+  # Compute and quantize the database norms
+  B_base_norms = quantize_norms( B_base, C, norms_C )
+  db_norms     = vec( norms_C[ B_base_norms ] )
+
+  if V; print("Querying m=$m ... "); end
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  rec = eval_recall(gt, idx, knn)
+
+end
+
+"Runs an lsq experiment/demo"
+function experiment_lsq(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  # OPQ initialization
+  C, B, R, _ = train_opq(Xt, m, h, niter, "natural", V)
+
+  # ChainQ (second initialization)
+  # C, B, R, train_error = train_chainq(Xt, m, h, R, B, C, niter, V)
+
+  # Actual experiment
+  experiment_lsq(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, V)
 end

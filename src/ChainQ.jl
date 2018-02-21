@@ -256,7 +256,7 @@ end
 
 
 # Train a chain quantizer with viterbi decoding
-function train_chainq{T <: AbstractFloat}(
+function train_chainq(
   X::Matrix{T},             # d-by-n matrix of data points to train on.
   m::Integer,               # number of codebooks
   h::Integer,               # number of entries per codebook
@@ -264,14 +264,14 @@ function train_chainq{T <: AbstractFloat}(
   B::Matrix{Int16},         # Init codes
   C::Vector{Matrix{T}},     # Init codebooks
   niter::Integer,           # number of optimization iterations
-  V::Bool=false)            # whether to print progress
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   if V; @printf("Training a chain quantizer\n"); end
 
   d, n = size( X )
-  obj  = zeros(Float32, niter+1)
+  obj  = zeros(T, niter+1)
 
-  CB = zeros( Float32, size(X) )
+  CB = zeros(T, size(X))
   RX = R' * X
 
   # Initialize C
@@ -305,7 +305,6 @@ function train_chainq{T <: AbstractFloat}(
     # Update the codes with lattice search
     B, Btime = quantize_chainq( RX, C )
     if V; @printf("done in %.2f secs. %.2f secs updating B. %.2f secs updating C\n", toq(), Btime, Ctime); end
-
   end
 
   return C, B, R, obj
@@ -362,8 +361,9 @@ function experiment_chainq(
   knn::Integer=1000,
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
-
   # OPQ initialization
   C, B, R, _ = train_opq(Xt, m, h, niter, "natural", V)
+
+  # Actual ChainQ experiment
   experiment_chainq(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, V)
 end
