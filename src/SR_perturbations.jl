@@ -52,8 +52,8 @@ function SR_C_perturb(
   Y = zeros(Float32,size(X))
 
   for i = 1:d # Loop through each dimension
-      noise = randn(n,1)*(stdx[i])
-      Y[i,:] = X[i,:] + noise
+    noise = randn(n,1)*(stdx[i])
+    Y[i,:] = X[i,:] + noise
   end
 
   return Y

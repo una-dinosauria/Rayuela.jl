@@ -54,8 +54,11 @@ function run_demos(
 
   # More expensive non-orthogonal methods
   # Rayuela.experiment_chainq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  Rayuela.experiment_lsq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # Rayuela.experiment_lsq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # Rayuela.experiment_sr(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
+  # GPU methods
+  Rayuela.experiment_lsq_cuda(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
 end
 

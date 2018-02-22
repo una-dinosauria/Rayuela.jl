@@ -346,7 +346,7 @@ function experiment_lsq(
 
   # Train LSQ
   d, _ = size(Xt)
-  C, B, obj = Rayuela.train_lsq(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, cpp, !V)
+  C, B, obj = Rayuela.train_lsq(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, cpp, V)
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===

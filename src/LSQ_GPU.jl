@@ -219,11 +219,12 @@ function encode_icm_cuda(
   icmiter::Integer,            # in. Number of ICM iterations
   npert::Integer,              # in. Number of entries to perturb
   randord::Bool,               # in. Whether to randomize the order in which nodes are visited in ILS
-  nsplits::Integer=1)          # in. Number of splits of the data (for limited memory GPUs)
+  nsplits::Integer=2)          # in. Number of splits of the data (for limited memory GPUs)
 
   # TODO check that splits >= 1
   if nsplits == 1
     return encode_icm_cuda_single(RX, B, C, ilsiters, icmiter, npert, randord)
+    # gc()
   end
 
   # Split the data
@@ -240,6 +241,7 @@ function encode_icm_cuda(
   # Run encoding in the GPU for each split
   for i = 1:nsplits
     aaBs, _ = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord)
+    gc()
     for j = 1:nr
       # Save the codes
       Bs[j][:,splits[i]] = aaBs[j]
@@ -267,7 +269,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
   icmiter::Integer,     # number of iterations in local search
   randord::Bool,        # whether to use random order
   npert::Integer,       # The number of codes to perturb
-  nsplits::Integer=1,   # The number of splits for icm encoding (for limited memory GPUs)
+  nsplits::Integer=2,   # The number of splits for icm encoding (for limited memory GPUs)
   V::Bool=false)        # whether to print progress
 
   # if V
@@ -278,10 +280,8 @@ function train_lsq_cuda{T <: AbstractFloat}(
 
   d, n = size( X )
 
-  # Update RX
-  RX = R' * X
-
   # Initialize C
+  RX = R' * X
   C = update_codebooks( RX, B, h, V, "lsqr" )
 
   # Apply the rotation to the codebooks
@@ -307,4 +307,74 @@ function train_lsq_cuda{T <: AbstractFloat}(
   end
 
   return C, B, obj
+end
+
+
+function experiment_lsq_cuda(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  B::Matrix{T2}, # codes
+  C::Vector{Matrix{T}}, # codebooks
+  R::Matrix{T}, # rotation
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
+
+  # TODO expose these parameters
+  ilsiter = 8
+  icmiter = 4
+  randord = true
+  npert   = 4
+  cpp     = true
+
+  # Train LSQ
+  d, _ = size(Xt)
+  C, B, obj = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, 1)
+  norms_B, norms_C = get_norms_codebook(B, C)
+
+  # === Encode the base set ===
+  B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
+  Bs_base, _ = Rayuela.encode_icm_cuda(Xb, B_base, C, [ilsiter], icmiter, npert, randord)
+
+  B_base = Bs_base[end]
+  # @show( B_base )
+  base_error = qerror(Xb, B_base, C)
+  if V; @printf("Error in base is %e\n", base_error); end
+
+  # Compute and quantize the database norms
+  B_base_norms = quantize_norms( B_base, C, norms_C )
+  db_norms     = vec( norms_C[ B_base_norms ] )
+
+  if V; print("Querying m=$m ... "); end
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  rec = eval_recall(gt, idx, knn)
+
+end
+
+"Runs an lsq experiment/demo"
+function experiment_lsq_cuda(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xb::Matrix{T}, # d-by-n. Base set
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  # OPQ initialization
+  C, B, R, _ = train_opq(Xt, m, h, niter, "natural", V)
+
+  # ChainQ (second initialization)
+  # C, B, R, train_error = train_chainq(Xt, m, h, R, B, C, niter, V)
+
+  # Actual experiment
+  experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, V)
 end
