@@ -9,7 +9,8 @@ function encode_icm_cuda_single(
   ilsiters::Vector{Int64},     # in. ILS iterations to record Bs and obj function. Its max is the total number of iteration we will run.
   icmiter::Integer,            # in. Number of ICM iterations
   npert::Integer,              # in. Number of entries to perturb
-  randord::Bool)               # in. Whether to randomize the order in which nodes are visited in ILS
+  randord::Bool,               # in. Whether to randomize the order in which nodes are visited in ILS
+  V::Bool=false)               # in. Whether to print progress
 
   d, n = size( RX )
   m    = length( C )
@@ -48,14 +49,14 @@ function encode_icm_cuda_single(
   # CUDArt.device( devlist[gpuid] )
 
   # === Create a state for random number generation ===
-  @printf("Creating %d random states... ", n); tic()
+  if V; @printf("Creating %d random states... ", n); tic(); end
   # d_state = CUDArt.malloc( Ptr{Void}, n*64 )
   d_state = CUDAdrv.Mem.alloc( n*64 )
   CudaUtilsModule.setup_kernel( cld(n, 1024), 1024, Cint(n), d_state )
 
   # CUDArt.device_synchronize()
   CUDAdrv.synchronize(ctx)
-  @printf("done in %.2f secnds\n", toq())
+  if V; @printf("done in %.2f seconds\n", toq()); end
 
   # Copy X and C to the GPU
   d_RX = CuArray( RX );
@@ -103,8 +104,8 @@ function encode_icm_cuda_single(
   # Loop for the number of requested ILS iterations
   for i = 1:maximum( ilsiters )
 
-    @show i, ilsiters
-    @time begin
+    # @show i, ilsiters
+    # @time begin
 
     to_look_r      = to_look
     to_condition_r = to_condition
@@ -178,14 +179,15 @@ function encode_icm_cuda_single(
     newcost = Array( d_newcost )
 
     areequal = newcost .== prevcost
-    println("$(sum(areequal)) new codes are equal")
+    if V; @printf(" ILS iteration %d/%d done. ", i, maximum(ilsiters)); end
+    if V; @printf("%5.2f%% new codes are equal. ", 100*sum(areequal)/n ); end
 
     arebetter = newcost .< prevcost
-    println("$(sum(arebetter)) new codes are better")
+    if V; @printf("%5.2f%% new codes are better.\n", 100*sum(arebetter)/n ); end
 
     newB[:, .~arebetter] = B[:, .~arebetter]
     B = copy( newB )
-    end # @time
+    # end # @time
 
     # Check if this # of iterations was requested
     if i in ilsiters
@@ -194,9 +196,9 @@ function encode_icm_cuda_single(
 
       # Compute and save the objective
       obj = qerror( RX, B, C )
-      @show obj
+      # @show obj
       objs[ ithidx ] = obj
-      @show size(B)
+      # @show size(B)
       Bs[ ithidx ] = B
 
     end # end if i in ilsiters
@@ -219,11 +221,12 @@ function encode_icm_cuda(
   icmiter::Integer,            # in. Number of ICM iterations
   npert::Integer,              # in. Number of entries to perturb
   randord::Bool,               # in. Whether to randomize the order in which nodes are visited in ILS
-  nsplits::Integer=2)          # in. Number of splits of the data (for limited memory GPUs)
+  nsplits::Integer=2,          # in. Number of splits of the data (for limited memory GPUs)
+  V::Bool=false)
 
   # TODO check that splits >= 1
   if nsplits == 1
-    return encode_icm_cuda_single(RX, B, C, ilsiters, icmiter, npert, randord)
+    return encode_icm_cuda_single(RX, B, C, ilsiters, icmiter, npert, randord, V)
     # gc()
   end
 
@@ -240,7 +243,7 @@ function encode_icm_cuda(
 
   # Run encoding in the GPU for each split
   for i = 1:nsplits
-    aaBs, _ = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord)
+    aaBs, _ = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord, V)
     gc()
     for j = 1:nr
       # Save the codes
@@ -272,11 +275,12 @@ function train_lsq_cuda{T <: AbstractFloat}(
   nsplits::Integer=2,   # The number of splits for icm encoding (for limited memory GPUs)
   V::Bool=false)        # whether to print progress
 
-  # if V
-  println("**********************************************************************************************");
-  println("Doing local search with $m codebooks, $npert perturbations, $icmiter icm iterations and random order = $randord");
-  println("**********************************************************************************************");
-  # end
+  if V
+    println()
+    println("**********************************************************************************************");
+    println("Doing local search with $m codebooks, $npert perturbations, $icmiter icm iterations and random order = $randord");
+    println("**********************************************************************************************");
+  end
 
   d, n = size( X )
 
@@ -286,23 +290,23 @@ function train_lsq_cuda{T <: AbstractFloat}(
 
   # Apply the rotation to the codebooks
   for i = 1:m; C[i] = R * C[i]; end
-  @printf("%3d %e \n", -2, qerror( X, B, C ))
+  if V; @printf("%3d %e \n", -2, qerror( X, B, C )); end
 
   # Initialize B
-  B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplits)
+  B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplits, V)
   B    = B[end]
-  @printf("%3d %e \n", -1, qerror( X, B, C ))
+  if V; @printf("%3d %e \n", -1, qerror( X, B, C )); end
 
   obj = zeros( Float32, niter )
 
   for iter = 1:niter
     obj[iter] = qerror( X, B, C )
-    @printf("%3d %e \n", iter, obj[iter])
+    if V; @printf("%3d %e \n", iter, obj[iter]); end
 
     # Update the codebooks
     C = update_codebooks( X, B, h, V, "lsqr" )
     # Update the codes B
-    B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplits)
+    B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplits, V)
     B    = B[end]
   end
 
@@ -333,25 +337,31 @@ function experiment_lsq_cuda(
 
   # Train LSQ
   d, _ = size(Xt)
-  C, B, obj = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, 1)
+  @printf("Running CUDA LSQ training... ")
+  C, B, obj = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, 1, V)
+  @printf("done\n")
+
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
   B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
-  Bs_base, _ = Rayuela.encode_icm_cuda(Xb, B_base, C, [ilsiter], icmiter, npert, randord)
+  Bs_base, _ = Rayuela.encode_icm_cuda(Xb, B_base, C, [ilsiter], icmiter, npert, randord, 4, V)
 
   B_base = Bs_base[end]
   # @show( B_base )
   base_error = qerror(Xb, B_base, C)
-  if V; @printf("Error in base is %e\n", base_error); end
+  # if V; @printf("Error in base is %e\n", base_error); end
+  @printf("Error in base is %e\n", base_error)
 
   # Compute and quantize the database norms
   B_base_norms = quantize_norms( B_base, C, norms_C )
   db_norms     = vec( norms_C[ B_base_norms ] )
 
-  if V; print("Querying m=$m ... "); end
+  # if V; print("Querying m=$m ... "); end
+  print("Querying m=$m ... ")
   @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
-  if V; println("done"); end
+  println("done")
+  # if V; println("done"); end
 
   rec = eval_recall(gt, idx, knn)
 
@@ -370,10 +380,14 @@ function experiment_lsq_cuda(
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   # OPQ initialization
+  @printf("Running OPQ initialization... ")
   C, B, R, _ = train_opq(Xt, m, h, niter, "natural", V)
+  @printf("done\n")
 
   # ChainQ (second initialization)
+  @printf("Running ChainQ initialization... ")
   # C, B, R, train_error = train_chainq(Xt, m, h, R, B, C, niter, V)
+  @printf("done\n")
 
   # Actual experiment
   experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, V)
