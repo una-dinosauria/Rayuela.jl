@@ -286,7 +286,8 @@ function train_lsq_cuda{T <: AbstractFloat}(
 
   # Initialize C
   RX = R' * X
-  C = update_codebooks( RX, B, h, V, "lsqr" )
+  # C = update_codebooks( RX, B, h, V, "lsqr" )
+  C = update_codebooks_fast_bin( RX, B, h, V )
 
   # Apply the rotation to the codebooks
   for i = 1:m; C[i] = R * C[i]; end
@@ -304,8 +305,10 @@ function train_lsq_cuda{T <: AbstractFloat}(
     if V; @printf("%3d %e \n", iter, obj[iter]); end
 
     # Update the codebooks
-    C = update_codebooks( X, B, h, V, "lsqr" )
+    # C = update_codebooks( X, B, h, V, "lsqr" )
+    C = update_codebooks_fast_bin( X, B, h, V )
     # Update the codes B
+    # B = convert(Matrix{Int16}, rand(1:h, m, n))
     B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplits, V)
     B    = B[end]
   end
