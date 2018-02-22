@@ -24,7 +24,7 @@ function encode_icm_cuda_single(
   objs = Vector{Float32}(nr)
 
   # === Compute binary terms (products between all codebook pairs) ===
-  binaries, cbi = Rayuela.get_binaries( C )
+  binaries, cbi = get_binaries( C )
   _, ncbi       = size( cbi )
 
   # Create a transposed copy of the binaries for cache-friendliness
@@ -260,7 +260,7 @@ function encode_icm_cuda(
 end
 
 "LSQ training but some things happen in the GPU"
-function train_lsq_cuda{T <: AbstractFloat}(
+function train_lsq_cuda(
   X::Matrix{T},         # d-by-n matrix of data points to train on.
   m::Integer,           # number of codebooks
   h::Integer,           # number of entries per codebook
@@ -273,7 +273,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
   randord::Bool,        # whether to use random order
   npert::Integer,       # The number of codes to perturb
   nsplits::Integer=2,   # The number of splits for icm encoding (for limited memory GPUs)
-  V::Bool=false)        # whether to print progress
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   if V
     println()
@@ -298,7 +298,7 @@ function train_lsq_cuda{T <: AbstractFloat}(
   B    = B[end]
   if V; @printf("%3d %e \n", -1, qerror( X, B, C )); end
 
-  obj = zeros( Float32, niter )
+  obj = zeros( T, niter )
 
   for iter = 1:niter
     obj[iter] = qerror( X, B, C )
@@ -341,15 +341,14 @@ function experiment_lsq_cuda(
   # Train LSQ
   d, _ = size(Xt)
   @printf("Running CUDA LSQ training... ")
-  C, B, obj = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, 1, V)
+  C, B, obj = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, 2, V)
   @printf("done\n")
 
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
   B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
-  Bs_base, _ = Rayuela.encode_icm_cuda(Xb, B_base, C, [ilsiter], icmiter, npert, randord, 4, V)
-
+  Bs_base, _ = Rayuela.encode_icm_cuda(Xb, B_base, C, [32], icmiter, npert, randord, 2, V)
   B_base = Bs_base[end]
   # @show( B_base )
   base_error = qerror(Xb, B_base, C)
@@ -388,9 +387,9 @@ function experiment_lsq_cuda(
   @printf("done\n")
 
   # ChainQ (second initialization)
-  @printf("Running ChainQ initialization... ")
+  # @printf("Running ChainQ initialization... ")
   # C, B, R, train_error = train_chainq(Xt, m, h, R, B, C, niter, V)
-  @printf("done\n")
+  # @printf("done\n")
 
   # Actual experiment
   experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, V)

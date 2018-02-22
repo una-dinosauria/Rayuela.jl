@@ -1,25 +1,5 @@
 using Rayuela
 
-# function encode_base_and_test(
-#   x_query::Matrix{T1},    # Queries
-#   B_base::Matrix{T2},     # encoded base, 1-based still
-#   C::Vector{Matrix{T1}},  # Learned codebooks
-#   gt::Vector{UInt32},     # Ground truth
-#   knn::Integer,           # Largers N in recall@N
-#   V::Bool) where {T1 <: AbstractFloat, T2 <: Integer}
-#
-#   m, h = length(C), size(C[1],2)
-#   b = Int(log2(h) * m)
-#
-#   # === Compute recall ===
-#   if V; println("Querying m=$m ... "); end
-#   @time dists, idx = linscan_pq(convert(Matrix{UInt8}, B_base-1), x_query, C, b, knn)
-#   if V; println("done"); end
-#
-#   recall_at_n = eval_recall( gt, idx, knn )
-#   return recall_at_n
-# end
-
 
 function run_demos(
   dataset_name="SIFT1M",
@@ -28,7 +8,7 @@ function run_demos(
   # Experiment params
   m, h = 8, 256
   nquery, nbase, knn = Int(1e4), Int(1e6), Int(1e3)
-  niter, verbose = 5, true
+  niter, verbose = 25, true
   b       = Int(log2(h) * m)
 
   # Load data
@@ -58,7 +38,16 @@ function run_demos(
   # Rayuela.experiment_sr(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
   # GPU methods
-  Rayuela.experiment_lsq_cuda(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  Rayuela.experiment_lsq_cuda(Xb, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # Rayuela.experiment_sr_cuda( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+
+
+  # GPU methods with random inputs
+  # B = convert(Matrix{Int16}, rand(1:h, m, size(Xt,2)))
+  # C = Vector{Matrix{Float32}}(m); for i=1:m; C[i]=zeros(Float32,d,h); end
+  # R = eye(Float32, d)
+  # Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, verbose)
+  # Rayuela.experiment_sr_cuda( Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, verbose)
 
 end
 
