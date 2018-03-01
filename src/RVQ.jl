@@ -87,7 +87,7 @@ function train_rvq(
     if V
       println("done.")
       println("  Ran for $(cluster.iterations) iterations")
-      println("  Error after $(i)-codebook is $(cluster.totalcost ./ n)")
+      println("  Error after codebook $(i) is $(cluster.totalcost ./ n)")
       println("  Converged: $(cluster.converged)")
     end
   end
