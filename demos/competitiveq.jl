@@ -61,24 +61,43 @@ function update_codebooks(
   return C
 end
 
+function vec_minus_mat!(
+  res::Matrix{T}, # in/out. d-by-h
+  x::Vector{T}, # in. d-long
+  C::Matrix{T}, # in. d-by-h
+  d::Integer, h::Integer) where T <: AbstractFloat
+
+  @inbounds @simd for i=1:h
+    for j=1:d
+      res[j,i] = x[j] - C[j,i]
+    end
+  end
+
+end
+
 # Encoding
 function encode(
-  x::Vector{Float32},
-  C::Vector{Matrix{Float32}},
+  x::Vector{T},
+  C::Vector{Matrix{T}},
+  new_res::Vector{Matrix{T}}, # Buffer for residuals
   m::Integer,
-  H::Integer)
-
-  h = size( C[1], 2 )
+  h::Integer,
+  d::Integer,
+  H::Integer) where T <: AbstractFloat
 
   # Get the first H candidates
-  xrs      = broadcast( -, x, C[1] ) # Get all h residuals
+  # xrs      = broadcast( -, x, C[1] ) # Get all h residuals
+  # xrs = zeros(T, d, h)
+  xrs = x .- C[1]
   qerrs    = vec( sum( xrs.^2, 1 ) ) # Compute the qerrors
   sort_idx = sortperm( qerrs )[1:H]  # Sort and get the top H indices
   xrs      = xrs[:, sort_idx]        # The top H residuals
 
   # Structure for residuals at lth level
-  new_res   = Vector{Matrix{Float32}}(H)
-  new_qerrs = Vector{Vector{Float32}}(H)
+  # new_res   = Vector{Matrix{T}}(H)
+  # for i = 1:H; new_res[i] = zeros(T,d,h); end
+
+  new_qerrs = Vector{Vector{T}}(H)
   new_bs    = zeros( Int16, H*h, m )
   # intiialize the code candidates
   for i = 1:H
@@ -91,7 +110,9 @@ function encode(
     Ci = C[i]
 
     for j = 1:H
-      new_res[j]   = broadcast(-, xrs[:,j], Ci )
+      # new_res[j]   = broadcast(-, xrs[:,j], Ci )
+      # new_res[j]   = xrs[:,j] .- Ci
+      vec_minus_mat!(new_res[j], xrs[:,j], Ci, d, h)
       new_qerrs[j] = vec( sum( new_res[j].^2, 1 ) )
       new_bs[ (j-1)*h+1 : j*h, i ] = 1:h
     end
@@ -119,15 +140,16 @@ end
 
 # Train competitive quantization
 function train_competitiveq(
-  X::Matrix{Float32},         # d-by-n training dataset
-  C::Vector{Matrix{Float32}}, # Initial codebook
+  X::Matrix{T},         # d-by-n training dataset
+  C::Vector{Matrix{T}}, # Initial codebook
   n_its::Integer, # Number of optimization iterations
   H::Integer,
   B::Matrix{Int16},
-  init_lr_total) # Depth of pseudo-beam search for encoding
+  init_lr_total::T) where T <: AbstractFloat# Depth of pseudo-beam search for encoding
 
   d, n = size(X)
   m    = length(C)
+  h    = size(C[1],2)
 
   # Compute the learning rate for each layer (Eq. 26)
   lrs = Vector{Float32}(m)
@@ -142,11 +164,15 @@ function train_competitiveq(
   @show lrs
   @show sum(lrs)
 
-  @profile begin
+  # Structure for residuals at lth level
+  new_res   = Vector{Matrix{T}}(H)
+  for i = 1:H; new_res[i] = zeros(T,d,h); end
+
+  # @profile begin
   for i = 1:n_its
 
     # Encode each vector
-    # for j = 1:n
+    tic()
     for j = 1:n
 
       x  = X[:,j]
@@ -155,7 +181,8 @@ function train_competitiveq(
       code_before = B[:,j]
       #qbefore = qerror(x, C, bj)
 
-      bj, xr = encode(x, C, m, H)
+      bj, xr = encode(x, C, new_res, m, h, d, H);
+      # bj, xr = encode(x, C, new_res, m, h, d, H)
 
       B[:,j] = bj; # Update the code
 
@@ -171,6 +198,7 @@ function train_competitiveq(
         # @printf( "%d, after:%.2f\n", j, qafter )
         qerr = qerror(X, B, C)
         print( "Error after $i iterations / $j samples is $qerr\n" )
+        print( "$(toq()) seconds since last tic\n"); tic()
       end
 
       # Update the codebooks
@@ -192,7 +220,8 @@ function train_competitiveq(
     @show lrs
     @show sum(lrs)
 
-  end end #profile
+  end
+  # end #profile
 
 
 end
