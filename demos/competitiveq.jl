@@ -2,76 +2,54 @@
 using Clustering # For k-meas
 include("../src/xvecs_read.jl")
 include("../src/read_datasets.jl")
+include("../src/qerrors.jl")
+include("../src/RVQ.jl")
 
-# Compute quantization error
-function quant_err(
-  X::Matrix{Float32},
-  C::Vector{Matrix{Float32}},
-  B::Matrix{Int16})
-
-  m, n = size(B)
-  @assert length(C) == m
-
-  # Reconstruct the approximation
-  Xrec = zeros( Float32, size(X) )
-  for i = 1:m
-    Bi = B[i,:]
-    Xrec = Xrec + C[i][:,Bi]
-  end
-
-  return mean( sum((X - Xrec).^2,1) )
-end
-
-# Compute quantization error
-function quant_err(
-  X::Vector{Float32},
-  C::Vector{Matrix{Float32}},
-  B::Vector{Int16})
-
-  m = size(B)
-  m = m[1]
-  @assert length(C) == m
-
-  # Reconstruct the approximation
-  Xrec = zeros( Float32, size(X) )
-  for i = 1:m
-    Bi = B[i]
-    Xrec = Xrec + C[i][:,Bi]
-  end
-
-  return mean( sum((X - Xrec).^2,1) )
-end
-
-# Compute initial codebook using RVQ
-function init_rvq(
-  X::Matrix{Float32}, # d-by-n training dataset
-  m::Integer,         # number of codebooks
-  h::Integer )        # number of entries in each codebook
-
-  d, n = size( X )
-
-  C = Vector{Matrix{Float32}}(m)
-  B = zeros(Int16, m, n)
-
-  Xr = deepcopy(X) # The first residual is the data itself
-  for i = 1:m
-    print("Working on codebook $i/$m...\n")
-    #kmr    = kmeans(Xr, h, maxiter=1)   # Run k-means
-    kmr    = kmeans(Xr, h)   # Run k-means
-    C[i]   = kmr.centers     # Save the codebook
-    B[i,:] = kmr.assignments # Save the assingments
-    Xr     = Xr - C[i][:, kmr.assignments] # Update the residuals
-  end
-
-  return C, B
-end
+# # Compute quantization error
+# function qerror(
+#   X::Matrix{Float32},
+#   C::Vector{Matrix{Float32}},
+#   B::Matrix{Int16})
+#
+#   m, n = size(B)
+#   @assert length(C) == m
+#
+#   # Reconstruct the approximation
+#   Xrec = zeros( Float32, size(X) )
+#   for i = 1:m
+#     Bi = B[i,:]
+#     Xrec = Xrec + C[i][:,Bi]
+#   end
+#
+#   return mean( sum((X - Xrec).^2,1) )
+# end
+#
+# # Compute quantization error
+# function qerror(
+#   X::Vector{Float32},
+#   C::Vector{Matrix{Float32}},
+#   B::Vector{Int16})
+#
+#   m = size(B)
+#   m = m[1]
+#   @assert length(C) == m
+#
+#   # Reconstruct the approximation
+#   Xrec = zeros( Float32, size(X) )
+#   for i = 1:m
+#     Bi = B[i]
+#     Xrec = Xrec + C[i][:,Bi]
+#   end
+#
+#   return mean( sum((X - Xrec).^2,1) )
+# end
 
 # Codebook update with gradient descent
 function update_codebooks(
-  C,
-  m,
-  xr,
-  b,
+  C::Vector{Matrix{Float32}},
+  m::Integer,
+  xr::Vector{Float32},
+  b::Vector{Int16},
   lr::Vector{Float32}) # learning rates
 
   # Update all the codebooks jointly
@@ -106,8 +84,6 @@ function encode(
   for i = 1:H
     new_bs[ (i-1)*h+1 : i*h, 1 ] = sort_idx[i]
   end
-  # @show new_bs
-  # @show new_bs[:,1]
 
   for i = 2:m
 
@@ -119,35 +95,18 @@ function encode(
       new_qerrs[j] = vec( sum( new_res[j].^2, 1 ) )
       new_bs[ (j-1)*h+1 : j*h, i ] = 1:h
     end
-    #@show i, new_bs
 
     # Find the top H candidates
     all_qerrs = vcat( new_qerrs... )
     sort_idx = sortperm( all_qerrs )[1:H]  # Sort and get the top H indices
 
-    #@show all_qerrs[sort_idx]
-    #@show new_bs[sort_idx, 1:i]
-
-    #for j = 1:H
-    #  @show j, new_bs[sort_idx[j],1:i], quant_err(x, C[1:i], new_bs[sort_idx[j],1:i])
-    #end
-
-    #@show all_qerrs[sort_idx ]
-
     all_res = hcat( new_res... )
-    # @show size( all_res )
-    # @show sort_idx
     xrs     = all_res[ :,  sort_idx]
-    #for j = 1:H
-    #  @show j, sum( xrs[:,j].^2, 1)
-    #end
     top_bs  = deepcopy( new_bs[sort_idx, 1:i ] )
-    #@show top_bs
 
     # Reset the candidate bs
     for j = 1:H
       for k = 1:h
-        #new_bs[ (j-1)*H+k, 1:i ] = top_bs[j, :]
         new_bs[ (j-1)*h+k, 1:i ] = top_bs[j, :]
       end
     end
@@ -183,6 +142,7 @@ function train_competitiveq(
   @show lrs
   @show sum(lrs)
 
+  @profile begin
   for i = 1:n_its
 
     # Encode each vector
@@ -193,7 +153,7 @@ function train_competitiveq(
       bj = B[:,j]
 
       code_before = B[:,j]
-      #qbefore = quant_err(x, C, bj)
+      #qbefore = qerror(x, C, bj)
 
       bj, xr = encode(x, C, m, H)
 
@@ -206,10 +166,10 @@ function train_competitiveq(
       #@show code_after
 
       if j % 100 == 0
-        qafter = quant_err(x, C, bj)
+        # qafter = qerror(x, bj, bj)
         #@printf( "%d, before:%.2f, after:%.2f, diff:%.2f\n", j, qbefore, qafter, qbefore-qafter )
         # @printf( "%d, after:%.2f\n", j, qafter )
-        qerr = quant_err(X, C, B)
+        qerr = qerror(X, B, C)
         print( "Error after $i iterations / $j samples is $qerr\n" )
       end
 
@@ -218,7 +178,7 @@ function train_competitiveq(
     end
 
     # Compute overall quantization error
-    qerr = quant_err(X, C, B)
+    qerr = qerror(X, B, C)
     print( "Error after $i iterations is $qerr\n" )
 
     # Decrease the learning rate by 1%
@@ -232,14 +192,14 @@ function train_competitiveq(
     @show lrs
     @show sum(lrs)
 
-  end
+  end end #profile
+
 
 end
 
 
 # === Main
-# X  = read_dataset("SIFT1M", Int(1e5)) # Training set
-Xt = fvecs_read(Int(1e5), "../data/sift/sift_learn.fvecs")
+Xt = fvecs_read(Int(1e4), "../data/sift/sift_learn.fvecs")
 m  = 8   # Number of codebooks
 h  = 256 # Number of entries in each codebook
 lr = 0.5f0 # learning rate
@@ -247,8 +207,8 @@ H  = 32 # depth for search during encoding
 
 n_its = 250
 
-C, B = init_rvq(Xt, m, h)
-qerr = quant_err(Xt, C, B)
+C, B = train_rvq(Xt, m, h, 25, true)
+qerr = qerror(Xt, B, C)
 @show B[:, 1]
 print( "Error after initialization is $qerr\n" )
 
