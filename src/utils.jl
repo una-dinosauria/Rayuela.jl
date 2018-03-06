@@ -38,6 +38,7 @@ function quantize_norms(
   _, h = size( C[1] )
 
   dbnormsB   = Vector{T1}(n)
+  dbnormsX   = Vector{T2}(n)
   dists2norm = Vector{T2}(h)
 
   @inbounds for i = 1:n
@@ -46,6 +47,7 @@ function quantize_norms(
     @simd for j = 1:d
       ithnorm += CB[j,i].^2
     end
+    dbnormsX[i] = ithnorm
 
     for j = 1:h
       dists2norm[j] = (ithnorm - cbnorms[j]).^2
@@ -55,7 +57,7 @@ function quantize_norms(
     _, dbnormsB[i] = findmin( dists2norm )
   end
 
-  return dbnormsB
+  return dbnormsB, dbnormsX
 end
 
 # Compute dot products between codebooks

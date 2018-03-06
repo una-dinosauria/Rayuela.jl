@@ -356,7 +356,7 @@ function experiment_lsq(
   if V; @printf("Error in base is %e\n", base_error); end
 
   # Compute and quantize the database norms
-  B_base_norms = quantize_norms( B_base, C, norms_C )
+  B_base_norms, db_norms_X = quantize_norms( B_base, C, norms_C )
   db_norms     = vec( norms_C[ B_base_norms ] )
 
   if V; print("Querying m=$m ... "); end

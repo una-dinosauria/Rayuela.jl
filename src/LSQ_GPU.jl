@@ -58,6 +58,9 @@ function encode_icm_cuda_single(
   CUDAdrv.synchronize(ctx)
   if V; @printf("done in %.2f seconds\n", toq()); end
 
+  # Measure time for encoding
+  if V; tic(); end
+
   # Copy X and C to the GPU
   d_RX = CuArray( RX );
   d_C  = CuArray( cat(2, C... ))
@@ -114,7 +117,6 @@ function encode_icm_cuda_single(
     # CudaUtilsModule.veccost(n, (1, d), d_RX, d_C, CuArray( convert(Matrix{Cuchar}, (B')-1) ), d_prevcost, Cint(m), Cint(n))
     CudaUtilsModule.veccost2(n, (1, d), d_RX, d_C, CuArray( convert(Matrix{Cuchar}, (B')-1) ), d_prevcost, Cint(d), Cint(m), Cint(n))
     CUDAdrv.synchronize(ctx)
-    # prevcost = to_host( d_prevcost )
     prevcost = Array( d_prevcost )
 
     newB = copy(B)
@@ -210,6 +212,8 @@ function encode_icm_cuda_single(
   destroy!(ctx)
   # end # do devlist
 
+  if V; @printf(" Encoding done in %.2f seconds\n", toq()); end
+
   return Bs, objs
 end
 
@@ -272,7 +276,7 @@ function train_lsq_cuda(
   icmiter::Integer,     # number of iterations in local search
   randord::Bool,        # whether to use random order
   npert::Integer,       # The number of codes to perturb
-  nsplits::Integer=2,   # The number of splits for icm encoding (for limited memory GPUs)
+  nsplits::Integer=1,   # The number of splits for icm encoding (for limited memory GPUs)
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   if V
@@ -328,7 +332,9 @@ function experiment_lsq_cuda(
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
   niter::Integer=25, # Number of k-means iterations for training
-  knn::Integer=1000,
+  knn::Integer=1000, # Compute recall @N for this value of N
+  nsplits_train::Integer=1, # Number of splits for training data so GPU does not run out of memory
+  nsplits_base::Integer=1, # Number of splits for training data so GPU does not run out of memory
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
 
   # TODO expose these parameters
@@ -341,14 +347,14 @@ function experiment_lsq_cuda(
   # Train LSQ
   d, _ = size(Xt)
   @printf("Running CUDA LSQ training... ")
-  C, B, obj = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, 2, V)
+  C, B, obj = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, nsplits_train, V)
   @printf("done\n")
 
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
   B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
-  Bs_base, _ = Rayuela.encode_icm_cuda(Xb, B_base, C, [32], icmiter, npert, randord, 2, V)
+  Bs_base, _ = Rayuela.encode_icm_cuda(Xb, B_base, C, [32], icmiter, npert, randord, nsplits_base, V)
   B_base = Bs_base[end]
   # @show( B_base )
   base_error = qerror(Xb, B_base, C)
@@ -356,7 +362,7 @@ function experiment_lsq_cuda(
   @printf("Error in base is %e\n", base_error)
 
   # Compute and quantize the database norms
-  B_base_norms = quantize_norms( B_base, C, norms_C )
+  B_base_norms, db_norms_X = quantize_norms( B_base, C, norms_C )
   db_norms     = vec( norms_C[ B_base_norms ] )
 
   # if V; print("Querying m=$m ... "); end
@@ -379,6 +385,8 @@ function experiment_lsq_cuda(
   h::Integer,    # number of entries per codebook
   niter::Integer=25, # Number of k-means iterations for training
   knn::Integer=1000,
+  nsplits_train::Integer=1, # Number of splits for training data so GPU does not run out of memory
+  nsplits_base::Integer=1, # Number of splits for training data so GPU does not run out of memory
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   # OPQ initialization
@@ -392,5 +400,5 @@ function experiment_lsq_cuda(
   # @printf("done\n")
 
   # Actual experiment
-  experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, V)
+  experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, V)
 end
