@@ -38,7 +38,9 @@ function run_demos(
   # Rayuela.experiment_sr(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
   # GPU methods
-  Rayuela.experiment_lsq_cuda(Xb, Xb, Xq, gt, m, h, niter, knn, verbose)
+  nsplits_train = 1
+  nsplits_base  = 1
+  Rayuela.experiment_lsq_cuda(Xt, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, verbose)
   # Rayuela.experiment_sr_cuda( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
 
