@@ -99,7 +99,7 @@ function train_sr_cuda(
   npert::Integer,             # The number of codes to perturb
   method::AbstractString,     # The SR method to use. Either SR_C or SR_D
   p::Float32,                 # SR power parameter
-  nsplits::Integer=2,         # The number of splits for icm encoding (for limited memory GPUs)
+  nsplits::Integer=1,         # The number of splits for icm encoding (for limited memory GPUs)
   V::Bool=false)              # whether to print progress
 
   if V
@@ -130,7 +130,7 @@ function train_sr_cuda(
   if V; @printf("%3d %e \n", -1, obj); end
 
   # Initialize B
-  @time B, _ = encode_icm_cuda( RX, B, C, [ilsiter], icmiter, npert, randord, 2, V )
+  @time B, _ = encode_icm_cuda( RX, B, C, [ilsiter], icmiter, npert, randord, nsplits, V )
   B = B[end]
   obj = qerror( RX, B, C )
   @printf("%3d %e \n", -1, obj)
@@ -156,8 +156,10 @@ function train_sr_cuda(
     end
 
     # Update the codes with local search
-    @time B, _ = encode_icm_cuda( RX, B, C, [ilsiter], icmiter, npert, randord, 2, V )
+    @time B, _ = encode_icm_cuda( RX, B, C, [ilsiter], icmiter, npert, randord, nsplits, V )
     B = B[end]
+
+    C = update_codebooks_fast_bin( RX, B, h, V )
 
   end
 
@@ -205,7 +207,7 @@ function experiment_sr(
   if V; @printf("Error in base is %e\n", base_error); end
 
   # Compute and quantize the database norms
-  B_base_norms = quantize_norms( B_base, C, norms_C )
+  B_base_norms, db_norms_X = quantize_norms( B_base, C, norms_C )
   db_norms     = vec( norms_C[ B_base_norms ] )
 
   if V; print("Querying m=$m ... "); end
@@ -250,6 +252,8 @@ function experiment_sr_cuda(
   h::Integer,    # number of entries per codebook
   niter::Integer=25, # Number of k-means iterations for training
   knn::Integer=1000,
+  nsplits_train::Integer=1,
+  nsplits_base::Integer=1,
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
 
   # TODO expose these parameters
@@ -262,21 +266,22 @@ function experiment_sr_cuda(
 
   # Train LSQ
   d, _ = size(Xt)
-  C, B, obj = train_sr_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, sr_method, p, 1, V)
+  C, B, obj = train_sr_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, sr_method, p, nsplits_train, V)
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
   B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
-  Bs_base, _ = encode_icm_cuda(Xb, B_base, C, [32], icmiter, npert, randord, 2, V)
+  Bs_base, _ = encode_icm_cuda(Xb, B_base, C, [32], icmiter, npert, randord, nsplits_base, V)
   B_base = Bs_base[end]
   base_error = qerror(Xb, B_base, C)
   if V; @printf("Error in base is %e\n", base_error); end
 
   # Compute and quantize the database norms
-  B_base_norms = quantize_norms( B_base, C, norms_C )
-  db_norms     = vec( norms_C[ B_base_norms ] )
+  B_base_norms, db_norms_X = quantize_norms( B_base, C, norms_C )
+  db_norms = vec( norms_C[ B_base_norms ] )
 
   if V; print("Querying m=$m ... "); end
+  # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
   @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
   # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, R, knn)
   if V; println("done"); end
@@ -294,6 +299,8 @@ function experiment_sr_cuda(
   h::Integer,    # number of entries per codebook
   niter::Integer=25, # Number of k-means iterations for training
   knn::Integer=1000,
+  nsplits_train::Integer=1,
+  nsplits_base::Integer=1,
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   # OPQ initialization
@@ -303,5 +310,5 @@ function experiment_sr_cuda(
   # C, B, R, train_error = train_chainq(Xt, m, h, R, B, C, niter, V)
 
   # Actual experiment
-  experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, V)
+  experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, V)
 end
