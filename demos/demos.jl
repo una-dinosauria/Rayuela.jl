@@ -4,11 +4,14 @@ using Rayuela
 function run_demos(
   dataset_name="SIFT1M",
   ntrain::Integer=Int(1e5)) # Increase this to 1e5 to use the full dataset
+  # dataset_name="GIST1M",
+  # ntrain::Integer=Int(5e5)) # Increase this to 1e5 to use the full dataset
 
   # Experiment params
   m, h = 8, 256
   nquery, nbase, knn = Int(1e4), Int(1e6), Int(1e3)
-  niter, verbose = 25, true
+  # nquery, nbase, knn = Int(1e3), Int(1e6), Int(1e3)
+  niter, verbose = 50, true
   b       = Int(log2(h) * m)
 
   # Load data

@@ -272,7 +272,7 @@ function experiment_sr_cuda(
   # === Encode the base set ===
   B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
 
-  ilsiters = [16, 32, 64]
+  ilsiters = [16, 32, 64, 128, 256]
   Bs_base, _ = encode_icm_cuda(Xb, B_base, C, ilsiters, icmiter, npert, randord, nsplits_base, V)
 
   for (idx, ilsiter) in enumerate(ilsiters)
