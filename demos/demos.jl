@@ -2,8 +2,10 @@ using Rayuela
 
 
 function run_demos(
-  dataset_name="SIFT1M",
-  ntrain::Integer=Int(1e5)) # Increase this to 1e5 to use the full dataset
+  # dataset_name="SIFT1M",
+  # ntrain::Integer=Int(1e5)) # Increase this to 1e5 to use the full dataset
+  dataset_name="MNIST",
+  ntrain::Integer=Int(60e3)) # Increase this to 1e5 to use the full dataset
   # dataset_name="GIST1M",
   # ntrain::Integer=Int(5e5)) # Increase this to 1e5 to use the full dataset
 
@@ -11,7 +13,7 @@ function run_demos(
   m, h = 8, 256
   nquery, nbase, knn = Int(1e4), Int(1e6), Int(1e3)
   # nquery, nbase, knn = Int(1e3), Int(1e6), Int(1e3)
-  niter, verbose = 50, true
+  niter, verbose = 25, true
   b       = Int(log2(h) * m)
 
   # Load data
@@ -43,8 +45,8 @@ function run_demos(
   # GPU methods
   nsplits_train = 1
   nsplits_base  = 2
-  # Rayuela.experiment_lsq_cuda(Xt, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, verbose)
-  Rayuela.experiment_sr_cuda(Xt, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, verbose)
+  Rayuela.experiment_lsq_cuda(Xt, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, verbose)
+  # Rayuela.experiment_sr_cuda(Xt, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, verbose)
 
 
   # GPU methods with random inputs

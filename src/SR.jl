@@ -285,8 +285,8 @@ function experiment_sr_cuda(
     db_norms = vec( norms_C[ B_base_norms ] )
 
     if V; print("Querying m=$m ... "); end
-    @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
-    # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+    #@time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
+    @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
     # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, R, knn)
     if V; println("done"); end
 

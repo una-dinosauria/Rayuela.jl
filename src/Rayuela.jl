@@ -12,6 +12,8 @@ using Distributions
 # For LSQ encoding in the GPU
 using CUDAdrv, CUBLAS # NO GPU in this branch
 
+using HDF5
+
 ### Load and initialize the linscan binaries ###
 const depsfile = joinpath(dirname(@__DIR__), "deps", "deps.jl")
 if isfile(depsfile)

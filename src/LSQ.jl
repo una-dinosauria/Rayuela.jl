@@ -193,7 +193,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
 
   B = zeros(Int16, m, n)
 
-  for _ = 1:ilsiter
+  for ilstrack = 1:ilsiter
 
     prevcost = veccost( X, oldB, C )
     if nworkers() == 1
@@ -223,12 +223,12 @@ function encode_icm_fully!{T <: AbstractFloat}(
     # Run iterated conditional modes
     if cpp
       B = convert(Matrix{UInt8}, B .- one(Int16))
-      @time iterated_conditional_modes_cpp!(B, unaries,
+      iterated_conditional_modes_cpp!(B, unaries,
         binaries, binaries_t, cbpair2binaryidx, cbi,
         to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
       B = convert(Matrix{Int16}, B) .+ one(Int16)
     else
-      @time iterated_conditional_modes!(B, unaries,
+      iterated_conditional_modes!(B, unaries,
         binaries, binaries_t, cbpair2binaryidx, cbi,
         to_look, to_condition, icmiter, npert, IDX, ub, bb, h, n, m, V)
     end
@@ -236,11 +236,12 @@ function encode_icm_fully!{T <: AbstractFloat}(
     # Keep only the codes that improved
     newcost = veccost( X, B, C )
     areequal = newcost .== prevcost
-    if V println("$(sum(areequal)) new codes are equal"); end
     arebetter = newcost .< prevcost
-    if V println("$(sum(arebetter)) new codes are better"); end
-    B[:, .~arebetter] = oldB[:, .~arebetter]
+    if V; @printf(" ILS iteration %d/%d done. ", ilstrack, ilsiter); end
+    if V; @printf("%5.2f%% new codes are equal. ", 100*sum(areequal)/n ); end
+    if V; @printf("%5.2f%% new codes are better.\n", 100*sum(arebetter)/n ); end
 
+    B[:, .~arebetter] = oldB[:, .~arebetter]
     copy!(oldB, B)
   end
 
@@ -304,7 +305,7 @@ function train_lsq{T <: AbstractFloat}(
   @printf("%3d %e \n", -2, qerror( X, B, C ))
 
   # Initialize B
-  B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
+  @time B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
   @printf("%3d %e \n", -1, qerror( X, B, C ))
 
   obj = zeros( Float32, niter )
@@ -316,7 +317,7 @@ function train_lsq{T <: AbstractFloat}(
     # Update the codebooks C
     C = update_codebooks(X, B, h, V, "lsqr")
     # Update the codes B
-    B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
+    @time B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
   end
 
   return C, B, obj
@@ -338,7 +339,8 @@ function experiment_lsq(
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
 
   # TODO expose these parameters
-  ilsiter = 8
+  ilsiter_train = 8
+  ilsiter_base = 32
   icmiter = 4
   randord = true
   npert   = 4
@@ -346,12 +348,12 @@ function experiment_lsq(
 
   # Train LSQ
   d, _ = size(Xt)
-  C, B, obj = Rayuela.train_lsq(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, cpp, V)
+  C, B, obj = Rayuela.train_lsq(Xt, m, h, R, B, C, niter, ilsiter_train, icmiter, randord, npert, cpp, V)
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
   B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
-  B_base = Rayuela.encoding_icm(Xb, B_base, C, ilsiter, icmiter, randord, npert, cpp, V)
+  @time B_base = Rayuela.encoding_icm(Xb, B_base, C, ilsiter_base, icmiter, randord, npert, cpp, V)
   base_error = qerror(Xb, B_base, C)
   if V; @printf("Error in base is %e\n", base_error); end
 

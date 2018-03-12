@@ -367,7 +367,7 @@ function experiment_lsq_cuda(
 
   # if V; print("Querying m=$m ... "); end
   print("Querying m=$m ... ")
-  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
   println("done")
   # if V; println("done"); end
 
