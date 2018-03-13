@@ -110,7 +110,7 @@ function experiment_rvq(
 
   # === RVQ train ===
   d, _ = size(Xt)
-  C, B, obj = Rayuela.train_rvq(Xt, m, h, niter, V)
+  C, B, train_error = Rayuela.train_rvq(Xt, m, h, niter, V)
 	norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
@@ -119,8 +119,8 @@ function experiment_rvq(
   if V; @printf("Error in base is %e\n", base_error); end
 
   # Compute and quantize the database norms
-  B_base_norms = quantize_norms( B_base, C, norms_C )
-  db_norms     = vec( norms_C[ B_base_norms ] )
+  B_base_norms, _ = quantize_norms( B_base, C, norms_C )
+  db_norms        = vec( norms_C[ B_base_norms ] )
 
   # === Compute recall ===
   # B_base       = convert(Matrix{UInt8}, B_base-1)
@@ -130,7 +130,34 @@ function experiment_rvq(
   @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
   if V; println("done"); end
 
-  rec = eval_recall(gt, idx, knn)
+  recall = eval_recall(gt, idx, knn)
+  return C, B, train_error, B_base, recall
+end
 
-  return C, B
+
+function experiment_rvq_query_base(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  # === RVQ train ===
+  d, _ = size(Xt)
+  C, B, train_error = Rayuela.train_rvq(Xt, m, h, niter, V)
+	norms_B, norms_C = get_norms_codebook(B, C)
+  db_norms     = vec( norms_C[ norms_B ] )
+
+  # === Compute recall ===
+  # B_base       = convert(Matrix{UInt8}, B_base-1)
+  # B_base_norms = convert(Vector{UInt8}, B_base_norms-1)
+  if V; print("Querying m=$m ... "); end
+  @time dists, idx = linscan_lsq(B, Xq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  recall = eval_recall(gt, idx, knn)
+  return C, B, train_error, recall
 end

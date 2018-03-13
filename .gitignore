@@ -4,3 +4,6 @@
 *.o
 *.swp
 data/
+results/
+core
+demos/core

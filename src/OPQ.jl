@@ -127,11 +127,37 @@ function experiment_opq(
   if V; @printf("Error in base is %e\n", base_error); end
 
   # === Compute recall ===
-  println("Querying m=$m ... ")
+  if V; println("Querying m=$m ... "); end
   b = Int(log2(h) * m)
   @time dists, idx = linscan_opq(B_base, Xq, C, b, R, knn)
-  println("done")
+  if V; println("done"); end
 
-  rec = eval_recall( gt, idx, knn )
+  recall = eval_recall( gt, idx, knn )
+  return C, B, R, train_error, B_base, recall
+end
 
+
+function experiment_opq_query_base(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  # === Train ===
+  # TODO expose initialization method
+  C, B, R, train_error = train_opq(Xt, m, h, niter, "natural", V)
+  if V; @printf("Error in training is %e\n", train_error[end]); end
+
+  # === Compute recall ===
+  if V; println("Querying m=$m ... "); end
+  b = Int(log2(h) * m)
+  @time dists, idx = linscan_opq(B, Xq, C, b, R, knn)
+  if V; println("done"); end
+
+  recall = eval_recall( gt, idx, knn )
+  return C, B, R, train_error, recall
 end

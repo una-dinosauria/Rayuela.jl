@@ -92,7 +92,7 @@ function train_ervq(
     end
 
   end
-  return C, B, 0.0
+  return C, B, qerror(X, B, C)
 end
 
 function train_ervq(
@@ -123,7 +123,7 @@ function experiment_ervq(
 
   # === ERVQ train ===
   d, _ = size(Xt)
-  C, B, obj = Rayuela.train_ervq(Xt, B, C, m, h, niter, V)
+  C, B, train_error = Rayuela.train_ervq(Xt, B, C, m, h, niter, V)
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
@@ -132,14 +132,41 @@ function experiment_ervq(
   if V; @printf("Error in base is %e\n", base_error); end
 
   # Compute and quantize the database norms
-  B_base_norms = quantize_norms( B_base, C, norms_C )
-  db_norms     = vec( norms_C[ B_base_norms ] )
+  B_base_norms, _ = quantize_norms( B_base, C, norms_C )
+  db_norms        = vec( norms_C[ B_base_norms ] )
 
   if V; print("Querying m=$m ... "); end
   @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
   if V; println("done"); end
 
-  rec = eval_recall(gt, idx, knn)
+  recall = eval_recall(gt, idx, knn)
+  return C, B, train_error, B_base, recall
+end
+
+function experiment_ervq_query_base(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  B::Matrix{T2}, # codes
+  C::Vector{Matrix{T}}, # codebooks
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
+
+  # === ERVQ train ===
+  d, _ = size(Xt)
+  C, B, train_error = Rayuela.train_ervq(Xt, B, C, m, h, niter, V)
+  norms_B, norms_C = get_norms_codebook(B, C)
+  db_norms     = vec( norms_C[ norms_B ] )
+
+  if V; print("Querying m=$m ... "); end
+  @time dists, idx = linscan_lsq(B, Xq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  recall = eval_recall(gt, idx, knn)
+  return C, B, train_error, recall
 end
 
 function experiment_ervq(
@@ -155,4 +182,18 @@ function experiment_ervq(
 
   C, B, _ = Rayuela.train_ervq(Xt, m, h, niter, V)
   experiment_ervq(Xt, B, C, Xb, Xq, gt, m, h, niter, knn, V)
+end
+
+function experiment_ervq_query_base(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  C, B, _ = Rayuela.train_ervq(Xt, m, h, niter, V)
+  experiment_ervq_query_base(Xt, B, C, Xq, gt, m, h, niter, knn, V)
 end
