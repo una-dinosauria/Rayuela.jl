@@ -347,7 +347,7 @@ function experiment_lsq_cuda(
   # Train LSQ
   d, _ = size(Xt)
   @printf("Running CUDA LSQ training... ")
-  C, B, obj = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, nsplits_train, V)
+  C, B, train_error = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, nsplits_train, V)
   @printf("done\n")
 
   norms_B, norms_C = get_norms_codebook(B, C)
@@ -365,15 +365,52 @@ function experiment_lsq_cuda(
   B_base_norms, db_norms_X = quantize_norms( B_base, C, norms_C )
   db_norms     = vec( norms_C[ B_base_norms ] )
 
-  # if V; print("Querying m=$m ... "); end
-  print("Querying m=$m ... ")
+  if V; print("Querying m=$m ... "); end
   @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
-  println("done")
-  # if V; println("done"); end
+  if V; println("done"); end
 
-  rec = eval_recall(gt, idx, knn)
-
+  recall = eval_recall(gt, idx, knn)
+  return C, B, R, train_error, B_base, recall
 end
+
+function experiment_lsq_cuda_query_base(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  B::Matrix{T2}, # codes
+  C::Vector{Matrix{T}}, # codebooks
+  R::Matrix{T}, # rotation
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000, # Compute recall @N for this value of N
+  nsplits_train::Integer=1, # Number of splits for training data so GPU does not run out of memory
+  V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
+
+  # TODO expose these parameters
+  ilsiter = 8
+  icmiter = 4
+  randord = true
+  npert   = 4
+  cpp     = true
+
+  # Train LSQ
+  d, _ = size(Xt)
+  if V; @printf("Running CUDA LSQ training... "); end
+  C, B, train_error = Rayuela.train_lsq_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, nsplits_train, V)
+  if V; @printf("done\n"); end
+
+  norms_B, norms_C = get_norms_codebook(B, C)
+  db_norms         = vec( norms_C[ norms_B ] )
+
+  if V; print("Querying m=$m ... "); end
+  @time dists, idx = linscan_lsq(B, Xq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  recall = eval_recall(gt, idx, knn)
+  return C, B, R, train_error, recall
+end
+
 
 "Runs an lsq experiment/demo"
 function experiment_lsq_cuda(
@@ -401,4 +438,31 @@ function experiment_lsq_cuda(
 
   # Actual experiment
   experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, V)
+end
+
+function experiment_lsq_cuda_query_base(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  nsplits_train::Integer=1, # Number of splits for training data so GPU does not run out of memory
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  # OPQ initialization
+  if V; @printf("Running OPQ initialization... "); end
+  niter_opq = 25
+  C, B, R, opq_error = train_opq(Xt, m, h, niter_opq, "natural", V)
+  if V; @printf("done\n"); end
+
+  # ChainQ (second initialization)
+  if V; @printf("Running ChainQ initialization... "); end
+  niter_chainq = 25
+  C, B, R, chainq_error = train_chainq(Xt, m, h, R, B, C, niter_chainq, V)
+  if V; @printf("done\n"); end
+
+  # Actual experiment
+  experiment_lsq_cuda_query_base(Xt, B, C, R, Xq, gt, m, h, niter, knn, nsplits_train, V), opq_error
 end

@@ -295,6 +295,47 @@ function experiment_sr_cuda(
 
 end
 
+function experiment_sr_cuda_query_base(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  B::Matrix{T2}, # codes
+  C::Vector{Matrix{T}}, # codebooks
+  R::Matrix{T}, # rotation
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  nsplits_train::Integer=1,
+  sr_method::String="SR_D",
+  V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
+
+  # TODO expose these parameters
+  ilsiter = 8
+  icmiter = 4
+  randord = true
+  npert   = 4
+  p       = 0.5f0
+
+  # Train LSQ
+  d, _ = size(Xt)
+  if V; print("Running CUDA $(sr_method) training... "); end
+  C, B, train_error = train_sr_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, sr_method, p, nsplits_train, V)
+  if V; @printf("done\n"); end
+
+  norms_B, norms_C = get_norms_codebook(B, C)
+  db_norms         = vec( norms_C[ norms_B ] )
+
+  if V; print("Querying m=$m ... "); end
+  @time dists, idx = linscan_lsq(B, Xq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  recall = eval_recall(gt, idx, knn)
+  return C, B, R, train_error, recall
+
+end
+
+
 "Runs an lsq experiment/demo"
 function experiment_sr_cuda(
   Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
@@ -310,11 +351,43 @@ function experiment_sr_cuda(
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   # OPQ initialization
-  C, B, R, _ = train_opq(Xt, m, h, niter, "natural", V)
+  if V; @printf("Running OPQ initialization... "); end
+  niter_opq = 25
+  C, B, R, _ = train_opq(Xt, m, h, niter_opq, "natural", V)
+  if V; @printf("done\n"); end
 
   # ChainQ (second initialization)
   # C, B, R, train_error = train_chainq(Xt, m, h, R, B, C, niter, V)
 
   # Actual experiment
   experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, V)
+end
+
+"Runs an lsq experiment/demo"
+function experiment_sr_cuda_query_base(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000,
+  nsplits_train::Integer=1,
+  sr_method::String="SR_D",
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  # OPQ initialization
+  if V; @printf("Running OPQ initialization... "); end
+  niter_opq = 25
+  C, B, R, opq_error = train_opq(Xt, m, h, niter_opq, "natural", V)
+  if V; @printf("done\n"); end
+
+  # ChainQ (second initialization)
+  if V; @printf("Running ChainQ initialization... "); end
+  niter_chainq = 25
+  C, B, R, chainq_error = train_chainq(Xt, m, h, R, B, C, niter_chainq, V)
+  if V; @printf("done\n"); end
+
+  # Actual experiment
+  experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m, h, niter, knn, nsplits_train, sr_method, V), opq_error
 end
