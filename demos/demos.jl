@@ -61,6 +61,16 @@ function load_experiment_data(
   return Xt, Xb, Xq, gt
 end
 
+function load_chainq(fname::String, m::Integer, trial::Integer)
+
+  B = h5read(fname, "$trial/B"); B = convert(Matrix{Int16}, B); B.+=1
+  R = h5read(fname, "$trial/R")
+  chainq_error = h5read(fname, "$trial/train_error")
+  C = Vector{Matrix{Float32}}(m)
+  for i=1:(m); C[i] = h5read(fname, "$trial/C_$i"); end
+
+  return C, B, R, chainq_error
+end
 
 # === experiment functions ===
 function run_demos(
@@ -194,18 +204,25 @@ function run_demos_query_base(
     # save_results_opq_query_base("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, [0f0])
 
     # Load ChainQ
-    fname = "./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5"
-    B = h5read(fname, "$trial/B"); B = convert(Matrix{Int16}, B); B.+=1
-    R = h5read(fname, "$trial/R")
-    opq_error = h5read(fname, "$trial/train_error")
-    C = Vector{Matrix{Float32}}(m-1)
-    for i=1:(m-1); C[i] = h5read(fname, "$trial/C_$i"); end
 
     @show trial
 
     nsplits_train = 1
+
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
     C, B, R, train_error, recall = Rayuela.experiment_lsq_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, knn, nsplits_train, verbose)
-    save_results_lsq_query_base("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, opq_error, recall)
+    save_results_lsq_query_base("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+
+    sr_method = "SR_D"
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base( Xt, B, C, R, Xq, gt, m-1, h, niter, knn, nsplits_train, sr_method, verbose)
+    save_results_lsq_query_base("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+
+    sr_method = "SR_C"
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base( Xt, B, C, R, Xq, gt, m-1, h, niter, knn, nsplits_train, sr_method, verbose)
+    save_results_lsq_query_base("./results/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+
 
     # GPU methods
     # nsplits_train = 1
