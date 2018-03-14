@@ -298,7 +298,8 @@ function train_lsq{T <: AbstractFloat}(
 
   # Initialize C
   RX = R' * X
-  C = update_codebooks( RX, B, h, V, "lsqr" )
+  # C = update_codebooks( RX, B, h, V, "lsqr" )
+  C = update_codebooks_fast_bin( RX, B, h, V )
 
   # Apply the rotation to the codebooks
   for i = 1:m; C[i] = R * C[i]; end
@@ -315,7 +316,8 @@ function train_lsq{T <: AbstractFloat}(
     @printf("%3d %e \n", iter, obj[iter])
 
     # Update the codebooks C
-    C = update_codebooks(X, B, h, V, "lsqr")
+    # C = update_codebooks(X, B, h, V, "lsqr")
+    C = update_codebooks_fast_bin( RX, B, h, V )
     # Update the codes B
     @time B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
   end
@@ -348,7 +350,7 @@ function experiment_lsq(
 
   # Train LSQ
   d, _ = size(Xt)
-  C, B, obj = Rayuela.train_lsq(Xt, m, h, R, B, C, niter, ilsiter_train, icmiter, randord, npert, cpp, V)
+  C, B, train_error = Rayuela.train_lsq(Xt, m, h, R, B, C, niter, ilsiter_train, icmiter, randord, npert, cpp, V)
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
@@ -365,8 +367,8 @@ function experiment_lsq(
   @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
   if V; println("done"); end
 
-  rec = eval_recall(gt, idx, knn)
-
+  recall = eval_recall(gt, idx, knn)
+  return C, B, R, train_error, B_base, recall
 end
 
 "Runs an lsq experiment/demo"

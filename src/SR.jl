@@ -254,6 +254,7 @@ function experiment_sr_cuda(
   knn::Integer=1000,
   nsplits_train::Integer=1,
   nsplits_base::Integer=1,
+  sr_method::String="SR_D",
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
 
   # TODO expose these parameters
@@ -261,22 +262,22 @@ function experiment_sr_cuda(
   icmiter = 4
   randord = true
   npert   = 4
-  sr_method = "SR_D"
   p       = 0.5f0
 
   # Train LSQ
   d, _ = size(Xt)
-  C, B, obj = train_sr_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, sr_method, p, nsplits_train, V)
+  C, B, train_error = train_sr_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, sr_method, p, nsplits_train, V)
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
   B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
 
-  ilsiters = [16, 32, 64, 128, 256]
+  # ilsiters = [16, 32, 64, 128, 256]
+  ilsiters = [32]
   Bs_base, _ = encode_icm_cuda(Xb, B_base, C, ilsiters, icmiter, npert, randord, nsplits_base, V)
 
-  for (idx, ilsiter) in enumerate(ilsiters)
-    B_base = Bs_base[idx]
+  # for (idx, ilsiter) in enumerate(ilsiters)
+    B_base = Bs_base[end]
     base_error = qerror(Xb, B_base, C)
     if V; @printf("Error in base is %e\n", base_error); end
 
@@ -285,14 +286,14 @@ function experiment_sr_cuda(
     db_norms = vec( norms_C[ B_base_norms ] )
 
     if V; print("Querying m=$m ... "); end
-    #@time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
+    # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
     @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
     # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, R, knn)
     if V; println("done"); end
 
-    rec = eval_recall(gt, idx, knn)
-  end
-
+    recall = eval_recall(gt, idx, knn)
+  # end
+    return C, B, R, train_error, B_base, recall
 end
 
 function experiment_sr_cuda_query_base(
@@ -332,7 +333,6 @@ function experiment_sr_cuda_query_base(
 
   recall = eval_recall(gt, idx, knn)
   return C, B, R, train_error, recall
-
 end
 
 
@@ -348,6 +348,7 @@ function experiment_sr_cuda(
   knn::Integer=1000,
   nsplits_train::Integer=1,
   nsplits_base::Integer=1,
+  sr_method::String="SR_D",
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   # OPQ initialization
@@ -360,7 +361,7 @@ function experiment_sr_cuda(
   # C, B, R, train_error = train_chainq(Xt, m, h, R, B, C, niter, V)
 
   # Actual experiment
-  experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, V)
+  experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, sr_method, V)
 end
 
 "Runs an lsq experiment/demo"

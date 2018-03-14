@@ -358,15 +358,15 @@ function experiment_lsq_cuda(
   B_base = Bs_base[end]
   # @show( B_base )
   base_error = qerror(Xb, B_base, C)
-  # if V; @printf("Error in base is %e\n", base_error); end
-  @printf("Error in base is %e\n", base_error)
+  if V; @printf("Error in base is %e\n", base_error); end
 
   # Compute and quantize the database norms
   B_base_norms, db_norms_X = quantize_norms( B_base, C, norms_C )
   db_norms     = vec( norms_C[ B_base_norms ] )
 
   if V; print("Querying m=$m ... "); end
-  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
   if V; println("done"); end
 
   recall = eval_recall(gt, idx, knn)

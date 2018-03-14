@@ -31,11 +31,16 @@ function save_results_opq(
   save_results_opq_query_base(bpath, trial, C, B, R, train_error, recall)
 end
 
-
 function save_results_lsq_query_base(
   bpath::String, trial::Integer, C::Vector{Matrix{Float32}}, B, R::Matrix{Float32}, train_error, opq_error, recall)
   h5write(bpath, "$(trial)/opq_base", opq_error)
   save_results_opq_query_base(bpath, trial, C, B, R, train_error, recall)
+end
+
+function save_results_lsq(
+  bpath::String, trial::Integer, C::Vector{Matrix{Float32}}, B, R::Matrix{Float32}, train_error, opq_error, B_base, recall)
+  h5write(bpath, "$(trial)/B_base", convert(Matrix{UInt8}, B_base.-1))
+  save_results_lsq_query_base(bpath, trial, C, B, R, train_error, opq_error, recall)
 end
 
 
@@ -122,15 +127,26 @@ function run_demos(
 
     # C, B, R, chainq_error = train_chainq(    Xt, m-1, h, R, B, C, niter, verbose)
     # save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
-    fname = "./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5"
+
+    @show trial
+    nsplits_train = 1
+    nsplits_base  = 3
 
     # Load ChainQ
-    B = h5read(fname, "$trial/B"); B = convert(Matrix{Int16}, B); B.+=1
-    R = h5read(fname, "$trial/R")
-    C = Vector{Matrix{Float32}}(m-1)
-    for i=1:(m-1); C[i] = h5read(fname, "$trial/C_$i"); end
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, verbose)
+    # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, verbose)
+    save_results_lsq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
 
-    # TODO Load and train just LSQ/SR
+    # sr_method = "SR_D"
+    # C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    # C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, sr_method, verbose)
+    # save_results_lsq("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+    #
+    # sr_method = "SR_C"
+    # C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    # C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, sr_method, verbose)
+    # save_results_lsq("./results/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
 
     # GPU methods
     # nsplits_train = 1
@@ -251,22 +267,22 @@ function run_demos_query_base(
   # return C, B, R, train_error, B_base, recall
 end
 
-# run_demos("SIFT1M", Int(1e5), 8,  256, 25)
+for niter = [25]#, 50, 100]
+  # run_demos("SIFT1M", Int(1e5),  8, 256, niter)
+  # run_demos("Deep1M", Int(1e5),  8, 256, niter)
+  # run_demos("SIFT1M", Int(1e5), 16, 256, niter)
+  run_demos("Deep1M", Int(1e5), 16, 256, niter)
+end
 
-# run_demos("SIFT1M", Int(1e5), 8,  256, 25)
-# run_demos("SIFT1M", Int(1e5), 16, 256, 25)
-# run_demos("Deep1M", Int(1e5), 8,  256, 25)
-# run_demos("Deep1M", Int(1e5), 16, 256, 25)
 # run_demos_query_base("labelme", Int(20e3), 8,  256, 25)
 # run_demos_query_base("labelme", Int(20e3), 16, 256, 25)
 # run_demos_query_base("MNIST",   Int(60e3), 8,  256, 25)
 # run_demos_query_base("MNIST",   Int(60e3), 16, 256, 25)
 
 # run_demos
-for niter = [25, 50, 100]
-# niter = 25
-  run_demos_query_base("labelme", Int(20e3), 8, 256, niter)
-  run_demos_query_base("MNIST",   Int(60e3), 8, 256, niter)
-  run_demos_query_base("labelme", Int(20e3), 16, 256, niter)
-  run_demos_query_base("MNIST",   Int(60e3), 16, 256, niter)
-end
+# for niter = [25, 50, 100]
+#   run_demos_query_base("labelme", Int(20e3), 8, 256, niter)
+#   run_demos_query_base("MNIST",   Int(60e3), 8, 256, niter)
+#   run_demos_query_base("labelme", Int(20e3), 16, 256, niter)
+#   run_demos_query_base("MNIST",   Int(60e3), 16, 256, niter)
+# end
