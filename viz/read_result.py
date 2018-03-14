@@ -72,11 +72,11 @@ def get_r_at_1(bpath, dataset, method, m, n, it=25):
     return np.mean(recalls, 0)[0]
 
 
-def print_recalls(bpath, datasets, methods, m, n):
+def print_recalls(bpath, datasets, methods, m, n, it=25):
     for dset in datasets:
         rs = []
         for method in methods:
-            r = get_r_at_1(bpath, dset, method, m, n)
+            r = get_r_at_1(bpath, dset, method, m, n, it)
             rs.append('{:.2f}'.format(100*r))
         print(dset, m, ' & '.join(rs))
 
@@ -87,13 +87,15 @@ if __name__ == "__main__":
     # print_recalls(BPATH, DSETS, METHODS, 8, n)
     # print_recalls(BPATH, DSETS, METHODS, 16, n)
 
+    print_recalls(BPATH, ['sift1m'], ['srd'], 8, n, 100)
+
     # plot_qerror(BPATH, 'labelme', 7,n)
     # plot_qerror(BPATH, 'mnist', 7, n)
 
-    plt.figure(figsize=(8, 3))
-    plt.subplot(121)
-    compare_recalls(BPATH, 'labelme', 8, n)
-    plt.subplot(122)
-    compare_recalls(BPATH, 'mnist', 8, n)
-    plt.tight_layout()
-    plt.show()
+    # plt.figure(figsize=(8, 3))
+    # plt.subplot(121)
+    # compare_recalls(BPATH, 'labelme', 8, n)
+    # plt.subplot(122)
+    # compare_recalls(BPATH, 'mnist', 8, n)
+    # plt.tight_layout()
+    # plt.show()
