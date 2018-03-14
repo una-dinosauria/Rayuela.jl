@@ -296,7 +296,7 @@ function high_recall_experiments(dataset_name="SIFT1M",
     # === Encode the base set ===
     B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
 
-    ilsiters = [4, 8]#[32, 64, 128, 256]
+    ilsiters = [32, 64, 128, 256]
     # recalls = zeros(Float32, length(ilsiters), knn)
     Bs_base, _ = encode_icm_cuda(Xb, B_base, C, ilsiters, icmiter, npert, randord, nsplits_base, V)
 
@@ -318,7 +318,7 @@ function high_recall_experiments(dataset_name="SIFT1M",
 
       bpath = "./results/large_recalls/srd_m$(m)_it$(niter).h5"
       h5write(bpath, "$trial/recall_$(ilsiter)", recall)
-      h5write(bpath, "$trial/B_Base_$(ilsiter)", convert(Matrix{UInt8}, B_base.-1))
+      # h5write(bpath, "$trial/B_Base_$(ilsiter)", convert(Matrix{UInt8}, B_base.-1))
     end
   end
 
