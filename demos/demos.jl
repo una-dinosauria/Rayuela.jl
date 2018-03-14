@@ -275,6 +275,7 @@ function high_recall_experiments(dataset_name="SIFT1M",
   nquery, nbase, knn = Int(1e4), Int(1e6), Int(1e3)
   verbose = V = true
   Xt, Xb, Xq, gt = load_experiment_data(dataset_name, ntrain, nbase, nquery, verbose)
+  d, _    = size( Xt )
 
   ilsiter = 8
   icmiter = 4
@@ -290,11 +291,12 @@ function high_recall_experiments(dataset_name="SIFT1M",
 
     fname = "./results/$(lowercase(dataset_name))/srd_m$(m)_it$(niter).h5"
     C, B, R, chainq_error = load_chainq(fname, m, trial)
+    norms_B, norms_C = get_norms_codebook(B, C)
 
     # === Encode the base set ===
     B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
 
-    ilsiters = [32, 64, 128, 256]
+    ilsiters = [4, 8]#[32, 64, 128, 256]
     # recalls = zeros(Float32, length(ilsiters), knn)
     Bs_base, _ = encode_icm_cuda(Xb, B_base, C, ilsiters, icmiter, npert, randord, nsplits_base, V)
 
