@@ -99,10 +99,11 @@ function run_demos(
   ntrials = 10
   for trial = 1:ntrials
 
+    @show trial
     # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
     # C, B, train_error, B_base, recall = Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
     # save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
-    #
+
     # C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
     # save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
 
@@ -125,24 +126,25 @@ function run_demos(
     # Load OPQ
     # fname = "./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5"
 
-    # C, B, R, chainq_error = train_chainq(    Xt, m-1, h, R, B, C, niter, verbose)
-    # save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
+    C, B, R, opq = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", m, trial)
+    C, B, R, chainq_error = train_chainq(    Xt, m-1, h, R, B, C, niter, verbose)
+    save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
 
-    @show trial
+
     nsplits_train = 1
     nsplits_base  = 3
 
     # Load ChainQ
-    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, verbose)
-    # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, verbose)
-    save_results_lsq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
-
-    # sr_method = "SR_D"
     # C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    # C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, sr_method, verbose)
-    # save_results_lsq("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
-    #
+    # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, verbose)
+    # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, verbose)
+    # save_results_lsq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+
+    sr_method = "SR_D"
+    # C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, sr_method, verbose)
+    save_results_lsq("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+    
     # sr_method = "SR_C"
     # C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
     # C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, sr_method, verbose)
@@ -267,11 +269,12 @@ function run_demos_query_base(
   # return C, B, R, train_error, B_base, recall
 end
 
-for niter = [25]#, 50, 100]
-  # run_demos("SIFT1M", Int(1e5),  8, 256, niter)
+# for niter = [25]#, 50, 100]
+for niter = [50, 100]
+  run_demos("SIFT1M", Int(1e5),  8, 256, niter)
   # run_demos("Deep1M", Int(1e5),  8, 256, niter)
   # run_demos("SIFT1M", Int(1e5), 16, 256, niter)
-  run_demos("Deep1M", Int(1e5), 16, 256, niter)
+  # run_demos("Deep1M", Int(1e5), 16, 256, niter)
 end
 
 # run_demos_query_base("labelme", Int(20e3), 8,  256, 25)

@@ -4,7 +4,7 @@ import os.path as path
 import matplotlib.pyplot as plt
 
 BPATH = 'results'
-DSETS = ['labelme', 'mnist', 'sift1m', 'deep1m']
+DSETS = ['sift1m', 'deep1m', 'labelme', 'mnist']
 METHODS = ['pq', 'opq', 'rvq', 'ervq', 'cq', 'lsq', 'srd', 'src']
 
 
@@ -64,8 +64,7 @@ def get_field(bpath, dataset, field, method, m, n, it=25):
 def get_r_at_1(bpath, dataset, method, m, n, it=25):
     if method == 'cq':
         return 0.0
-    if method in ['lsq', 'src', 'srd'] and m == 16 and dataset == 'deep1m':
-        return 0.0
+
     if method not in ['pq', 'opq']:
         m = m - 1
 
@@ -91,7 +90,7 @@ if __name__ == "__main__":
     # plot_qerror(BPATH, 'labelme', 7,n)
     # plot_qerror(BPATH, 'mnist', 7, n)
 
-    plt.figure(figsize=(7,3))
+    plt.figure(figsize=(8, 3))
     plt.subplot(121)
     compare_recalls(BPATH, 'labelme', 8, n)
     plt.subplot(122)
