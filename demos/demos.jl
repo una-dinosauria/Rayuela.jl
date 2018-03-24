@@ -324,7 +324,7 @@ function high_recall_experiments(dataset_name="SIFT1M",
 
 end
 
-high_recall_experiments("SIFT1M", Int(1e5),  8, 256, 100)
+high_recall_experiments("SIFT1M", Int(1e5),  8, 256, 50)
 
 # for niter = [25]#, 50, 100]
 for niter = [50, 100]
