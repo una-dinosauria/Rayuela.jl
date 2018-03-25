@@ -1,5 +1,5 @@
 
-export linscan_pq, linscan_opq, linscan_lsq, eval_recall
+export linscan_pq, linscan_opq, linscan_lsq, eval_recall, linscan_cq
 
 # Linear scan using PQ codebooks no rotation
 function linscan_pq(
@@ -157,6 +157,42 @@ function linscan_lsq(
 
   B_uint8 = convert(Matrix{UInt8},B-1)
   return linscan_lsq(B_uint8, X, C, dbnorms, R, k)
+end
+
+# Linear scan using Composite Quantization (Zhang et al, ICML 14)
+function linscan_cq(
+  B::Matrix{UInt8},           # m-by-n. The database, encoded
+  X::Matrix{Cfloat},         # d-by-nq. The queries.
+  C::Vector{Matrix{Cfloat}}, # (m-1)-long. The cluster centers
+  k::Int = 10000)             # Number of knn results to return
+
+  m, n  = size( B );
+  d, nq = size( X );
+  _, h  = size( C[1] );
+
+  dists = zeros( Cfloat, k, nq );
+  res   = zeros(  Cuint, k, nq  );
+
+  ccall(("linscan_aqd_cq_query_extra_byte", linscan_aqd_pairwise_byte), Void,
+    (Ptr{Cfloat}, Ptr{Cint},
+    Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, #Ptr{Cfloat},
+    Cuint, Cint, Cint, Cint, Cint, Cint),
+    dists, res,
+    B, X, hcat(C...), #dbnorms,
+    Cint(nq), Cint(n), Cint(m), Cint(h), Cint(d), Cint(k) );
+
+  return dists, res
+end
+
+# Linear scan using Composite Quantization (Zhang et al, ICML 14)
+function linscan_cq(
+  B::Matrix{T},           # m-by-n. The database, encoded
+  X::Matrix{Cfloat},         # d-by-nq. The queries.
+  C::Vector{Matrix{Cfloat}}, # (m-1)-long. The cluster centers
+  k::Int = 10000) where T <: Integer # Number of knn results to return
+
+  B_uint8 = convert(Matrix{UInt8},B-1)
+  return linscan_cq(B_uint8, X, C, k)
 end
 
 # Evaluate ANN search vs ground truth. Produces a recall@N curve.

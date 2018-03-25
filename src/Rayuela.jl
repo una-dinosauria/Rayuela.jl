@@ -40,13 +40,15 @@ include("OPQ.jl") # Optimized Product Quantizer
 
 # === Non-orthogonal quantizers ===
 include("ChainQ.jl") # Chain (Tree) Quantization
-include("RVQ.jl")
-include("ERVQ.jl")
+include("CQ.jl")     # Functions to interact with C++ release
+include("RVQ.jl")    # RVQ
+include("ERVQ.jl")   # ERVQ / Stacked quantizers
+include("CompetitiveQ.jl") # Slow version
 
 # === LSQ Quantizer ===
 include("LSQ.jl") # Local search quantization
-include("SR_perturbations.jl")
-include("SR.jl")
+include("SR_perturbations.jl") # Utils for SR
+include("SR.jl")  # Stochastic relaxations
 
 # === CUDA ports ===
 include("CudaUtilsModule.jl")

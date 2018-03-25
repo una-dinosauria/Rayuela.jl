@@ -1,9 +1,5 @@
 
 using Clustering # For k-meas
-include("../src/xvecs_read.jl")
-include("../src/read_datasets.jl")
-include("../src/qerrors.jl")
-include("../src/RVQ.jl")
 
 # # Compute quantization error
 # function qerror(
