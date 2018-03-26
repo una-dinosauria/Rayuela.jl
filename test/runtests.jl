@@ -1,3 +1,4 @@
+
 using Rayuela
 using Base.Test
 
@@ -11,18 +12,30 @@ function generate_random_dataset(T1, T2, d, n, m, h)
 end
 
 # Test cpp viterbi encoding implementation
-@testset "Viterbi encoding" begin
-  d, n, m, h = 128, Int(1e4), 7, 256
-  X, C, B = generate_random_dataset(Float32,Int16,d,n,m,h)
+# @testset "Viterbi encoding" begin
+#   d, n, m, h = 32, Int(1e3), 4, 256
+#   X, C, B = generate_random_dataset(Float32, Int16, d, n, m, h)
+#
+#   Bj, _ = Rayuela.quantize_chainq(X, C) # Julia
+#   Bc, _ = Rayuela.quantize_chainq(X, C, true) # C
+#   @test all(Bj .== Bc)
+# end
 
-  Rayuela.quantize_chainq(X[:,1:100], C) # Julia
-  Rayuela.quantize_chainq(X[:,1:100], C, true) # C
-  @profile j_B, _ = Rayuela.quantize_chainq(X, C) # Julia
+# xvecs_read and xvecs_write
+@testset "xvecs" begin
+  fn = tempname()
+  d, n, m, h = 32, Int(1e3), 4, 256
+  X, C, B = generate_random_dataset(Float32, Int16, d, n, m, h)
 
-  @time j_B, _ = Rayuela.quantize_chainq(X, C) # Julia
-  @time c_B, _ = Rayuela.quantize_chainq(X, C, true) # C
+  # fvecs
+  fvecs_write(X, fn)
+  X2 = fvecs_read(n, fn)
+  @test all(X .== X2)
+  rm(fn)
 
-
-  @show j_B[:,1], c_B[:,1]
-  @test all(j_B .== c_B)
+  Xint = convert(Matrix{Int32}, floor.(X.-0.5f0)*1000)
+  ivecs_write(Xint, fn)
+  Xint2 = ivecs_read(n, fn)
+  @test all(Xint .== Xint2)
+  rm(fn)
 end

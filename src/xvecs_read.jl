@@ -7,7 +7,7 @@
 #   v = bvecs_read (filename, n)      -> read n vectors
 #   v = bvecs_read (filename, [a b]) -> read the vectors from a to b (indices starts from 1)
 
-# TODO maybe refactor these with metaprogrammming
+# TODO refactor these with metaprogrammming
 
 export bvecs_read, fvecs_read, ivecs_read
 
