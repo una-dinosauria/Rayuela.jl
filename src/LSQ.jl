@@ -171,6 +171,11 @@ function encode_icm_fully!{T <: AbstractFloat}(
   h, n = size( unaries[1] )
   m, _ = size( oldB )
 
+  if cpp && h != 256 
+    error("The C++ implementation of chain quantization encoding only supports
+    codebooks with 256 entries")
+  end
+
   ncbi = length( binaries )
 
   # Create a transposed copy of the binaries

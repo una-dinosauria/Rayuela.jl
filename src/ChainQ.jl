@@ -15,6 +15,11 @@ function quantize_chainq_cpp!(
   h, n = size( unaries[1] )
   m    = length( binaries ) + 1
 
+  if h != 256
+    error("The C++ implementation of chain quantization encoding only supports
+    codebooks with 256 entries")
+  end
+
   # We need a matrix to keep track of the min and argmin
   mincost = zeros(T, h)
   minidx  = zeros(Int32, h, m )
