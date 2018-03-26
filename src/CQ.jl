@@ -1,11 +1,7 @@
 
+export read_cq_bvecs, read_cq_fvecs, CQ_parameters, dump_CQ_parameters
 
-bpath = "/home/julieta/Desktop/CQ/build/temp/"
-
-Cpath = bpath * "D"
-Bpath = bpath * "B"
-
-# Read float binary file produced by CQ
+# Read float binary file produced by CQ, like the codebooks D
 function read_cq_fvecs(fname::AbstractString)
 
   dim, count = zero(Cint), zero(Cint)
@@ -20,7 +16,7 @@ function read_cq_fvecs(fname::AbstractString)
   return vectors
 end
 
-# Read int binary file produced by CQ
+# Read int binary file produced by CQ, like the codes B
 function read_cq_bvecs(fname::AbstractString)
 
   dim, count = zero(Cint), zero(Cint)
@@ -34,6 +30,65 @@ function read_cq_bvecs(fname::AbstractString)
 
   return codes
 end
+
+@with_kw mutable struct CQ_parameters
+  PQ::Bool=false
+  NCQ::Bool=false
+  CQ::Bool=true
+  Search::Bool=false
+
+  # global parameters
+  # points_count=1000000
+  points_count::Int=100000
+  dictionaries_count::Int=8
+  words_count::Int=256
+  space_dimension::Int=128
+  # points_file=/home/julieta/Desktop/local-search-quantization/data/sift/sift_base.fvecs
+  points_file::String="/home/julieta/Desktop/local-search-quantization/data/sift/sift_learn.fvecs"
+  output_file_prefix::String="/home/julieta/Desktop/CQ/build/temp/"
+  max_iter::Int=30
+
+  # PQ parameters
+  distortion_tol::Float32=0.0001
+  read_partition::Int=0
+  partition_file::String=""
+  # if 101 then using closure cluster, else lloyd kmeans
+  kmeans_method::Int=101
+
+  # NCQ and CQ parameters
+  num_sep::Int=20
+  # initial from outside, if 1 then set the file name of dictinary and codes
+  initial_from_outside=0
+  dictionary_file::String=""
+  binary_codes_file::String=""
+
+  # CQ parameters
+  mu::Float32=0.0004f0
+
+  # Search parameters
+  queries_count::Int=10000
+  groundtruth_length::Int=100
+  result_length::Int=1000
+  queries_file::String="/home/julieta/Desktop/local-search-quantization/data/sift/sift_query.fvecs"
+  groundtruth_file::String="/home/julieta/Desktop/local-search-quantization/data/sift/sift_groundtruth.ivecs"
+  trained_dictionary_file::String="/home/julieta/Desktop/CQ/build/temp/D"
+  trained_binary_codes_file::String="/home/julieta/Desktop/CQ/build/temp/B"
+  output_retrieved_results_file::String="/home/julieta/Desktop/CQ/build/temp/recall"
+end
+
+
+function dump_CQ_parameters(p::CQ_parameters, fname::String)
+  open(fname, "w") do fid
+    for (name, typ) in zip(fieldnames(CQ_parameters), CQ_parameters.types)
+      if typ == Bool || typ == Int
+        println(fid, name, "=", Int(getfield(p, name)))
+      else
+        println(fid, name, "=", getfield(p, name))
+      end
+    end
+  end
+end
+
 
 function inner_terms(C, B)
   m, n = size(B)
@@ -53,82 +108,3 @@ function inner_terms(C, B)
 
   return it
 end
-
-
-K = read_cq_fvecs(Cpath)
-B = read_cq_bvecs(Bpath)
-B = convert(Matrix{Int16}, B)
-B .+= 1
-
-C = Vector{Matrix{Cfloat}}(m)
-indices = splitarray(1:(m*h), m)
-for i = 1:m
-  C[i] = K[:, indices[i]]
-end
-
-dataset_name = "SIFT1M"
-nquery = Int(1e4)
-verbose = true
-Xt = Rayuela.read_dataset(dataset_name, Int(1e5))
-Xb = Rayuela.read_dataset(dataset_name * "_base", Int(1e6))
-Xq = Rayuela.read_dataset(dataset_name * "_query", nquery, verbose)[:,1:nquery]
-gt = Rayuela.read_dataset(dataset_name * "_groundtruth", nquery, verbose)
-if dataset_name == "SIFT1M" || dataset_name == "GIST1M"
-  gt = gt .+ 1
-end
-gt = convert( Vector{UInt32}, gt[1,1:nquery] )
-
-qerr = qerror(Xb, B, C)
-@printf("%e\n", qerr )
-
-# # Encode the base
-# B_base = ones(Int16, 8, Int(1e6))
-# ilsiter, icmiter, randord, npert, cpp, V = 1, 3, false, 0, true, true
-# B_base = Rayuela.encoding_icm(Xb, B_base, C, ilsiter, icmiter, randord, npert, cpp, V)
-#
-# qerr = qerror(Xb, B_base, C)
-# @printf("%e\n", qerr )
-
-# Compute and quantize the database norms
-# norms_B, norms_C = get_norms_codebook(B, C)
-# B_base_norms = quantize_norms( B_base, C, norms_C )
-# db_norms1     = vec( norms_C[ B_base_norms ] )
-
-# Compute database norms. No need to quantize them?
-
-knn = Int(1e3)
-
-# Brute-force approach to search gives R@1 of 30
-# idx = zeros(UInt32, knn, nquery)
-# @time dists = Distances.pairwise(Distances.SqEuclidean(), Xq, CB)
-# #Threads.@threads
-# for i = 1:nquery
-#   if i % 100 == 0
-#     @show i
-#   end
-#   idx[:,i] = sortperm(dists[i,:]; alg=PartialQuickSort(knn))[1:knn]
-# end
-
-# Fast search
-db_norms = zeros(Float32, Int(1e6))
-CB      = Rayuela.reconstruct(B, C)
-R = eye(Float32, d)
-dbnorms = zeros(Float32, Int(1e6))
-# dbnorms = vec(sum(CB.^2, 1))
-# it = inner_terms(C,B)
-# dbnorms -= it
-
-
-if verbose; print("Querying m=$m ... "); end
-# @time dists, idx = linscan_lsq(B, Xq, C, db_norms, R, knn)
-# @time dists, idx = linscan_cq(B, Xq, C, db_norms, knn)
-@time dists, idx = linscan_cq(B, Xq, C, knn)
-if verbose; println("done"); end
-
-rec = eval_recall(gt, idx, knn)
-
-# @show B
-
-# C = fvecs_read(m*h, C_path)
-# C = fvecs_read(10, C_path)
-# @show C

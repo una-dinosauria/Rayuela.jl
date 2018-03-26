@@ -14,6 +14,9 @@ using CUDAdrv, CUBLAS # NO GPU in this branch
 
 using HDF5
 
+# For default keyword arguments in CQ parameters
+using Parameters
+
 ### Load and initialize the linscan binaries ###
 const depsfile = joinpath(dirname(@__DIR__), "deps", "deps.jl")
 if isfile(depsfile)
@@ -25,6 +28,7 @@ cudautilsptx = cudautils[1:end-2] * "ptx"
 
 # === Functions to read data ===
 include("xvecs_read.jl")
+include("xvecs_write.jl")
 include("read_datasets.jl")
 
 # === Utility functions mostly ===
