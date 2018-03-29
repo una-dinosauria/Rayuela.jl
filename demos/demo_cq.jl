@@ -54,7 +54,7 @@ function run_experiments(
   dictionaries_count::Int=8)
 
   ntrials = 10
-  for trial = 1:ntrials
+  for trial = 3:ntrials
 
     @show "trial", trial
 
@@ -72,9 +72,9 @@ function run_experiments(
       a.queries_count    = Int(10e3)
       a.groundtruth_length = 1
       a.output_file_prefix = "/home/julieta/Desktop/CQ/build/results/mnist_$(dictionaries_count)/trial_$trial/"
-      a.points_file        = "/home/julieta/Desktop/CQ/build/data/mnist_$(dictionaries_count)/mnist_learn.fvecs"
-      a.queries_file       = "/home/julieta/Desktop/CQ/build/data/mnist_$(dictionaries_count)/mnist_query.fvecs"
-      a.groundtruth_file   = "/home/julieta/Desktop/CQ/build/data/mnist_$(dictionaries_count)/mnist_groundtruth.ivecs"
+      a.points_file        = "/home/julieta/Desktop/CQ/build/data/mnist/mnist_learn.fvecs"
+      a.queries_file       = "/home/julieta/Desktop/CQ/build/data/mnist/mnist_query.fvecs"
+      a.groundtruth_file   = "/home/julieta/Desktop/CQ/build/data/mnist/mnist_groundtruth.ivecs"
     elseif dataset_name == "labelme"
       a.points_count     = 20019
       a.space_dimension  = 512
@@ -82,9 +82,9 @@ function run_experiments(
       a.queries_count    = 2000
       a.groundtruth_length = 1
       a.output_file_prefix = "/home/julieta/Desktop/CQ/build/results/labelme_$(dictionaries_count)/trial_$trial/"
-      a.points_file        = "/home/julieta/Desktop/CQ/build/data/labelme_$(dictionaries_count)/labelme_learn.fvecs"
-      a.queries_file       = "/home/julieta/Desktop/CQ/build/data/labelme_$(dictionaries_count)/labelme_query.fvecs"
-      a.groundtruth_file   = "/home/julieta/Desktop/CQ/build/data/labelme_$(dictionaries_count)/labelme_groundtruth.ivecs"
+      a.points_file        = "/home/julieta/Desktop/CQ/build/data/labelme/labelme_learn.fvecs"
+      a.queries_file       = "/home/julieta/Desktop/CQ/build/data/labelme/labelme_query.fvecs"
+      a.groundtruth_file   = "/home/julieta/Desktop/CQ/build/data/labelme/labelme_groundtruth.ivecs"
     # elseif
       # a.points_count     = Int(1e5)
       # a.space_dimension  = 128
@@ -146,8 +146,8 @@ end
 # dump_dataset("Convnet1M")
 
 # @show("run_experiments")
-# run_experiments("MNIST", 16)
-# run_experiments("labelme", 16)
-run_experiments("SIFT1M", 16)
+run_experiments("MNIST", 16)
+# run_experiments("labelme", 8)
+# run_experiments("SIFT1M", 16)
 
 # run_experiments("Convnet1M")
