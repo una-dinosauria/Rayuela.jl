@@ -4,7 +4,6 @@ BinDeps
 CUBLAS
 CUDAdrv
 Distances
-Distributions
 HDF5
 IterativeSolvers
 Parameters

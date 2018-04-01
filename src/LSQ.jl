@@ -7,25 +7,26 @@ function perturb_codes!(
   npert::Integer,         # in. Number of entries to perturb in each code
   h::Integer,             # in. The number of codewords in each codebook
   IDX::UnitRange{Int64},  # in. Subset of codes in B to perturb
-  replace::Bool=true)  # in. Whether to sample with replacement
+  replace::Bool=true) # in. Whether to sample with replacement
 
   m, _ = size(B)
   n    = length(IDX)
 
   # Sample random perturbation indices (places to perturb) in B
+  pertidx = rand(1:m, npert, n)
 
-  if replace
-    # With replacements this is easy
-    pertidx  = rand(1:m, npert, n)
-  else
-    # Each call to sample has about 8 allocations, so this can results in
-    # several Million alloc calls too.
-    pertidx  = Matrix{Integer}(npert, n)
-    for i = 1:n
-      # Sample npert unique values out of m
-      Distributions.sample!(1:m, view(pertidx,:,i), replace=false, ordered=true)
-    end
-  end
+  # if replace
+  #   # With replacements this is easy
+  #   pertidx  = rand(1:m, npert, n)
+  # else
+  #   # Each call to sample has about 8 allocations, so this can results in
+  #   # several Million alloc calls too.
+  #   pertidx  = Matrix{Integer}(npert, n)
+  #   for i = 1:n
+  #     # Sample npert unique values out of m
+  #     Distributions.sample!(1:m, view(pertidx,:,i), replace=false, ordered=true)
+  #   end
+  # end
 
   # Sample the values that will replace the new ones
   pertvals = rand(1:h, npert, n)
@@ -171,9 +172,8 @@ function encode_icm_fully!{T <: AbstractFloat}(
   h, n = size( unaries[1] )
   m, _ = size( oldB )
 
-  if cpp && h != 256 
-    error("The C++ implementation of chain quantization encoding only supports
-    codebooks with 256 entries")
+  if cpp && h != 256
+    error("The C++ implementation of ICM encoding only supports codebooks with 256 entries")
   end
 
   ncbi = length( binaries )
