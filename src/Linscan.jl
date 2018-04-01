@@ -98,11 +98,8 @@ function linscan_opq(
   R::Matrix{Cfloat},         # Rotation matrix
   k::Int = 10000)             # Number of knn results to return
 
-  # Simply rotate
-  RX = R'*X
-
-  # And call the function as usual
-  return linscan_pq( B, RX, C, b, k )
+  # Rotate and call the function as usual
+  return linscan_pq( B, R'*X, C, b, k )
 end
 
 function linscan_opq(

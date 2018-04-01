@@ -10,7 +10,7 @@ using IterativeSolvers
 using Distributions
 
 # For LSQ encoding in the GPU
-using CUDAdrv, CUBLAS # NO GPU in this branch
+using CUDAdrv, CUBLAS
 
 using HDF5
 
