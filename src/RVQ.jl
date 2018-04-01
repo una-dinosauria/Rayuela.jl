@@ -23,24 +23,24 @@ function quantize_rvq(
   Xr = copy(X)
 
   for i = 1:m
-    if V print("Encoding on codebook $i / $m... ") end
+    if V print("RVQ encoding on codebook $i / $m... ") end
 
     # Find distances from X to codebook
     dmat = Distances.pairwise(Distances.SqEuclidean(), C[i], Xr)
 
     # Update the codes
-    costs     = zeros(T, n)
-    counts    = zeros(Int, h)
-    to_update = zeros(Bool, h)
-    unused    = Int[]
+    costs     = zeros(T, n)    # Out. The cost of assignment
+    counts    = zeros(Int, h)  # Out. Number of points assigned to this centre
+    to_update = ones(Bool, h)  # Out. Whether this centre needs update
+    unused    = Vector{Int}()  # Out. Indices of centres that have no assignments
 
     Clustering.update_assignments!( dmat, true, B[i], costs, counts, to_update, unused )
 
     # Create new codebook entries that we are missing
     if !isempty(unused)
-      C_copy = zeros(T,size(C[i]))
-      Clustering.repick_unused_centers(Xr, costs, C_copy, unused)
-      singletons[i] = C_copy[:,unused]
+      temp_codebook = similar(C[i]) # Out. The new codebooks will be added here
+      Clustering.repick_unused_centers(Xr, costs, temp_codebook, unused)
+      singletons[i] = temp_codebook[:,unused]
     end
 
     # Update the residual

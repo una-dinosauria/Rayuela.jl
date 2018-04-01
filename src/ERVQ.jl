@@ -29,7 +29,7 @@ function train_ervq(
   niter::Integer=25, # Number of k-means iterations for training
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
 
-  B = convert(Matrix{Int64}, B)
+  B = convert(Matrix{Int}, B)
 
   # Then we do the fine-tuning part of https://arxiv.org/abs/1411.2173
   # TODO make sure that C is full-dimensional
@@ -40,35 +40,43 @@ function train_ervq(
     if V print("=== Iteration $i / $niter ===\n"); end
 
     # Dummy singletons
-    singletons = Vector{Vector{Int}}(2)
-    singletons[1] = Vector{Int}()
-    singletons[2] = Vector{Int}()
+    singletons = Vector{Matrix{T}}(m)
 
     Xr = copy(X)
-    Xd = X .- reconstruct(B[2:end,:],C[2:end])
+    Xd = X .- reconstruct(B[2:end,:], C[2:end])
 
     for j=1:m
       if V print("Updating codebook $j... "); end
 
       if j == m
-        Xd = Xr .- reconstruct(B[j-1,:],C[j-1])
+        Xd = Xr .- reconstruct(B[j-1,:], C[j-1])
       elseif j > 1
         Xd = Xr .- reconstruct( vcat(B[j-1,:]', B[j+1:end,:]), [C[j-1],C[j+1:end]...] )
       end
 
       # Update the codebook C[j]
-      to_update = zeros(Bool,h)
-      to_update[B[j,:]] = true
+      weights = nothing  # use unweighted version of update_centers!
+      to_update = zeros(Bool, h)
+      to_update[B[j,:]] = true # In. Whether a codebook entry needs update
+      cweights = zeros(T, h)   # Out. Cluster weights. We do not use this.
+      Clustering.update_centers!(Xd, weights, B[j,:], to_update, C[j], cweights)
 
       # Check if some centres are unasigned
-      Clustering.update_centers!(Xd, nothing, B[j,:], to_update, C[j], zeros(T,h))
+      if sum(to_update) < h && j == 1
+        # If this happens with the first codebook, we have no precomputed
+        # singletons, so we have to compute them ourselves.
+        # Empirically this is an edge case but it has happened to me so.
 
-      # TODO Assert that the number of singletons is enough
-      if sum(to_update) < h
+        unused = .!to_update # In. Unused centres are centres that were not updated.
+        costs = sum((X .- Xd).^2, 1) # In. The cost of assigning the ith vector
+        Clustering.repick_unused_centers(Xd, costs, C[j], unused)
+
+      elseif sum(to_update) < h
+        # In other cases we already have the precomputed singletons
         ii = 1
         for idx in find(.!to_update)
-          C[j][:,idx] = singletons[2][:,ii]
-          ii = ii+1
+          C[j][:,idx] = singletons[2][:, ii]
+          ii = ii + 1
         end
       end
       if V print("done.\n"); end
