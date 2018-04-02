@@ -1,6 +1,5 @@
 
-export qerror, qerror_pq, qerror_opq, quantize_norms, splitarray,# sparsify_codes,
-      K2vec, quantize_norms, get_norms_codebook
+export quantize_norms, splitarray, K2vec, quantize_norms, get_norms_codebook
 
 "Get the codebook of the norms with k-means"
 function get_norms_codebook(

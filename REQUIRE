@@ -1,7 +1,7 @@
 julia 0.6
 Clustering
 BinDeps
-CUBLAS
+CuArrays
 CUDAdrv
 Distances
 HDF5

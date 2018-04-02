@@ -13,20 +13,18 @@ function perturb_codes!(
   n    = length(IDX)
 
   # Sample random perturbation indices (places to perturb) in B
-  pertidx = rand(1:m, npert, n)
-
-  # if replace
-  #   # With replacements this is easy
-  #   pertidx  = rand(1:m, npert, n)
-  # else
-  #   # Each call to sample has about 8 allocations, so this can results in
-  #   # several Million alloc calls too.
-  #   pertidx  = Matrix{Integer}(npert, n)
-  #   for i = 1:n
-  #     # Sample npert unique values out of m
-  #     Distributions.sample!(1:m, view(pertidx,:,i), replace=false, ordered=true)
-  #   end
-  # end
+  if replace
+    # With replacements this is easy
+    pertidx  = rand(1:m, npert, n)
+  else
+    # Each call to sample has about 8 allocations, so this can results in
+    # several Million alloc calls too.
+    pertidx  = Matrix{Integer}(npert, n)
+    for i = 1:n
+      # Sample npert unique values out of m
+      Distributions.sample!(1:m, view(pertidx,:,i), replace=false, ordered=true)
+    end
+  end
 
   # Sample the values that will replace the new ones
   pertvals = rand(1:h, npert, n)

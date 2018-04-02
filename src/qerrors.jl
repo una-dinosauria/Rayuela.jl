@@ -1,4 +1,6 @@
 
+export qerror, qerror_pq, qerror_opq
+
 # === Functions that compute quantization error ===
 
 "Reconstruct an encoding"

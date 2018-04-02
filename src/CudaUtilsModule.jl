@@ -76,11 +76,15 @@ end
 #   return nothing
 # end
 
+# CUDAdrv.Mem.Buffer
 function condition_icm3(
   nblocks::Integer, nthreads::CuDim,
-  d_ub::CuArray{Cfloat, 2},     # in/out. h-by-n. where we accumulate
-  d_bbs::CuArray{Cfloat, 2},     # in. binaries
-  d_codek::CuArray{Cuchar, 2},  # in. n-long. indices into d_bb
+  # d_ub::CuArray{Cfloat, 2},     # in/out. h-by-n. where we accumulate
+  # d_bbs::CuArray{Cfloat, 2},     # in. binaries
+  # d_codek::CuArray{Cuchar, 2},  # in. n-long. indices into d_bb
+  d_ub::CUDAdrv.Mem.Buffer,     # in/out. h-by-n. where we accumulate
+  d_bbs::CUDAdrv.Mem.Buffer,     # in. binaries
+  d_codek::CUDAdrv.Mem.Buffer,  # in. n-long. indices into d_bb
   conditioning::Cint,
   m::Cint,
   n::Cint)                        # in. size( d_ub, 2 )
@@ -96,8 +100,10 @@ end
 
 function vec_add(
   nblocks::CuDim, nthreads::CuDim,
-  d_matrix::CuArray{Cfloat},
-  d_vec::CuArray{Cfloat},
+  # d_matrix::CuArray{Cfloat, 2},
+  # d_vec::CuArray{Cfloat, 1},
+  d_matrix::CUDAdrv.Mem.Buffer,
+  d_vec::CUDAdrv.Mem.Buffer,
   n::Cint,
   h::Cint)
 
@@ -123,10 +129,14 @@ end
 
 function veccost2(
   nblocks::CuDim, nthreads::CuDim,
-  d_rx::CuArray{Cfloat},
-  d_codebooks::CuArray{Cfloat},
-  d_codes::CuArray{Cuchar},
-  d_veccost::CuArray{Cfloat}, # out.
+  # d_rx::CuArray{Cfloat},
+  # d_codebooks::CuArray{Cfloat},
+  # d_codes::CuArray{Cuchar},
+  # d_veccost::CuArray{Cfloat}, # out.
+  d_rx::CUDAdrv.Mem.Buffer,
+  d_codebooks::CUDAdrv.Mem.Buffer,
+  d_codes::CUDAdrv.Mem.Buffer,
+  d_veccost::CUDAdrv.Mem.Buffer, # out.
   d::Cint,
   m::Cint,
   n::Cint)
@@ -140,8 +150,8 @@ end
 
 function perturb(
   nblocks::CuDim, nthreads::CuDim,
-  state::CUDAdrv.OwnedPtr{Void},
-  codes::CuArray{Cuchar},
+  state::CUDAdrv.Mem.Buffer,
+  codes::CUDAdrv.Mem.Buffer,
   n::Cint,
   m::Cint,
   k::Cint)
@@ -155,7 +165,7 @@ end
 function setup_kernel(
   nblocks::CuDim, nthreads::CuDim,
   n::Cint,
-  state::CUDAdrv.OwnedPtr{Void} )
+  state::CUDAdrv.Mem.Buffer)
 
   fun = ptxdict["setup_kernel"];
   cudacall( fun, nblocks, nthreads,

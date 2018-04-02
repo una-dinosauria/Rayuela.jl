@@ -7,10 +7,11 @@ using Clustering, Distances
 using IterativeSolvers
 
 # For sampling
-# using Distributions
+using Distributions
 
 # For LSQ encoding in the GPU
-using CUDAdrv, CUBLAS
+using CUDAdrv
+using CuArrays
 
 using HDF5
 

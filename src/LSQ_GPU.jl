@@ -62,30 +62,32 @@ function encode_icm_cuda_single(
   if V; tic(); end
 
   # Copy X and C to the GPU
-  d_RX = CuArray( RX );
-  d_C  = CuArray( cat(2, C... ))
+  d_RX = CuArrays.CuArray( RX );
+  d_C  = CuArrays.CuArray( cat(2, C... ))
 
   # === Get unaries in the gpu ===
-  d_prevcost = CuArray{Cfloat}(n)
-  d_newcost  = CuArray{Cfloat}(n)
+  d_prevcost = CuArrays.CuArray{Cfloat}(n)
+  d_newcost  = CuArrays.CuArray{Cfloat}(n)
 
   # CUBLAS.cublasCreate_v2( CUBLAS.cublashandle )
-  d_unaries   = Vector{CuArray{Float32}}(m)
-  d_codebooks = Vector{CuArray{Float32}}(m)
+  d_unaries   = Vector{CuArrays.CuArray{Float32}}(m)
+  d_codebooks = Vector{CuArrays.CuArray{Float32}}(m)
   for j = 1:m
-    d_codebooks[j] = CuArray(C[j])
+    d_codebooks[j] = CuArrays.CuArray(C[j])
     # -2 * C' * X
-    d_unaries[j] = CUBLAS.gemm('T', 'N', -2.0f0, d_codebooks[j], d_RX)
+    d_unaries[j] = CuArrays.BLAS.gemm('T', 'N', -2.0f0, d_codebooks[j], d_RX)
+    # d_unaries[j] = -2.0f0 * d_codebooks[j]' * d_RX <-- thus runs out of memory real fast
+
     # Add self-codebook interactions || C_{i,i} ||^2
-    CudaUtilsModule.vec_add( n, (1,h), d_unaries[j], CuArray(diag( C[j]' * C[j] )), Cint(n), Cint(h) )
+    CudaUtilsModule.vec_add( n, (1,h), d_unaries[j].buf, CuArrays.CuArray(diag( C[j]' * C[j] )).buf, Cint(n), Cint(h) )
   end
 
   # === Get binaries to the GPU ===
-  d_binaries  = Vector{CuArray{Float32}}( ncbi )
-  d_binariest = Vector{CuArray{Float32}}( ncbi )
+  d_binaries  = Vector{CuArrays.CuArray{Float32}}( ncbi )
+  d_binariest = Vector{CuArrays.CuArray{Float32}}( ncbi )
   for j = 1:ncbi
-    d_binaries[j]  = CuArray( binaries[j] )
-    d_binariest[j] = CuArray( binaries_t[j] )
+    d_binaries[j]  = CuArrays.CuArray( binaries[j] )
+    d_binariest[j] = CuArrays.CuArray( binaries_t[j] )
   end
 
   # Allocate space for temporary results
@@ -115,7 +117,7 @@ function encode_icm_cuda_single(
 
     # Compute the cost of the previous assignments
     # CudaUtilsModule.veccost(n, (1, d), d_RX, d_C, CuArray( convert(Matrix{Cuchar}, (B')-1) ), d_prevcost, Cint(m), Cint(n))
-    CudaUtilsModule.veccost2(n, (1, d), d_RX, d_C, CuArray( convert(Matrix{Cuchar}, (B')-1) ), d_prevcost, Cint(d), Cint(m), Cint(n))
+    CudaUtilsModule.veccost2(n, (1, d), d_RX.buf, d_C.buf, CuArrays.CuArray( convert(Matrix{Cuchar}, (B')-1) ).buf, d_prevcost.buf, Cint(d), Cint(m), Cint(n))
     CUDAdrv.synchronize(ctx)
     prevcost = Array( d_prevcost )
 
@@ -127,14 +129,14 @@ function encode_icm_cuda_single(
       to_condition_r = to_condition[:, to_look_r]
     end
 
-    d_newB = CuArray( convert(Matrix{Cuchar}, newB-1 ) )
+    d_newB = CuArrays.CuArray( convert(Matrix{Cuchar}, newB-1 ) )
 
     # Perturn npert entries in each code
-    CudaUtilsModule.perturb( n, (1,m), d_state, d_newB, Cint(n), Cint(m), Cint(npert) )
+    CudaUtilsModule.perturb( n, (1,m), d_state, d_newB.buf, Cint(n), Cint(m), Cint(npert) )
 
     newB = Array( d_newB )
     Bt   = newB'
-    d_Bs = CuArray( Bt )
+    d_Bs = CuArrays.CuArray( Bt )
 
     CUDAdrv.synchronize(ctx)
 
@@ -159,11 +161,11 @@ function encode_icm_cuda_single(
         end
 
         # Transfer pairwise tables to the GPU
-        d_bbs = CuArray( convert(Matrix{Cfloat}, cat(2,bbs...)) )
+        d_bbs = CuArrays.CuArray( convert(Matrix{Cfloat}, cat(2,bbs...)) )
         # Sum binaries (condition) and minimize
         CudaUtilsModule.condition_icm3(
           n, (1, h),
-          d_unaries[k], d_bbs, d_Bs, Cint(k-1), Cint(m), Cint(n) )
+          d_unaries[k].buf, d_bbs.buf, d_Bs.buf, Cint(k-1), Cint(m), Cint(n) )
         CUDAdrv.synchronize(ctx)
 
         kidx = kidx + 1;
@@ -175,7 +177,7 @@ function encode_icm_cuda_single(
     newB .+= 1
 
     # Keep only the codes that improved
-    CudaUtilsModule.veccost2(n, (1, d), d_RX, d_C, d_Bs, d_newcost, Cint(d), Cint(m), Cint(n))
+    CudaUtilsModule.veccost2(n, (1, d), d_RX.buf, d_C.buf, d_Bs.buf, d_newcost.buf, Cint(d), Cint(m), Cint(n))
     CUDAdrv.synchronize(ctx)
 
     newcost = Array( d_newcost )
@@ -230,8 +232,9 @@ function encode_icm_cuda(
 
   # TODO check that splits >= 1
   if nsplits == 1
-    return encode_icm_cuda_single(RX, B, C, ilsiters, icmiter, npert, randord, V)
-    # gc()
+    aa, bb =  encode_icm_cuda_single(RX, B, C, ilsiters, icmiter, npert, randord, V)
+    gc()
+    return aa, bb
   end
 
   # Split the data
