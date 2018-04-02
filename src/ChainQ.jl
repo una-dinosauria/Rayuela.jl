@@ -309,7 +309,7 @@ function train_chainq(
 
     # Update the codes with lattice search
     B, Btime = quantize_chainq( RX, C )
-    if V; @printf("done in %.2f secs. %.2f secs updating B. %.2f secs updating C\n", toq(), Btime, Ctime); end
+    if V; @printf("done in %.2f secs. %.2f secs updating B with %d workers. %.2f secs updating C\n", toq(), Btime, nworkers(), Ctime); end
   end
 
   return C, B, R, obj

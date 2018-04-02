@@ -1,6 +1,6 @@
 using Rayuela
-using Plots
-# Code to reproduce figure 3.1 in the paper.
+using PyPlot
+# Code to reproduce figure 3.1
 
 function run_experiment()
   experiment_data = Dict{String,Vector{Float32}}()
@@ -44,86 +44,46 @@ function run_experiment()
   return experiment_data
 end
 
-function make_figure(ed)
-  pyplot() # <-- use pyplot as a backend
 
-  xs = [0, 1, 2, 4, 8, 16, 32, 64]
-  ylim = (41000, 46000)
-  p1 = plot(xs, ed["m7_icmiter1_npert1"], label="1", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter1_npert2"], label="2", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter1_npert4"], label="4", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter1_npert7"], label="7", w=2, ylim=ylim)
+function make_figure_pyplot(ed)
+  # This is the code that actually makes the plot
+  fig = figure(figsize=(18, 9))
 
-  xs = [1, 2, 4, 8, 16, 32, 64]
-  p2 = plot(xs, ed["m7_icmiter2_npert1"], label="1", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter2_npert2"], label="2", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter2_npert4"], label="4", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter2_npert7"], label="7", w=2, ylim=ylim)
+  subplotidx = 1
+  for m = [7, 15], icmiter = [1, 2, 4, 8]
+    nperts = ifelse(m==7, [1, 2, 4, 7], [1, 2, 4, 8, 15])
+    ax = subplot(2, 4, subplotidx)
+    counter = 1
+    for npert in nperts
 
-  xs = [0, 4, 8, 16, 32, 64]
-  p3 = plot(xs, ed["m7_icmiter4_npert1"], label="1", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter4_npert2"], label="2", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter4_npert4"], label="4", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter4_npert7"], label="7", w=2, ylim=ylim)
+      # We want the total number of icmiters to be 64
+      ilsiters = [1, 2, 4, 8, 16, 32, 64]
+      ilsiters = [x for x in ilsiters if x >= icmiter]
+      x = vcat([0], ilsiters)
+      y = ed["m$(m)_icmiter$(icmiter)_npert$(npert)"]
+      @show x, y
+      PyPlot.plot( x, y, label="\$k=$(npert)\$", lw=2 )
 
-  xs = [0, 8, 16, 32, 64]
-  p4 = plot(xs, ed["m7_icmiter8_npert1"], label="1", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter8_npert2"], label="2", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter8_npert4"], label="4", w=2, ylim=ylim)
-  plot!(xs, ed["m7_icmiter8_npert7"], label="7", w=2, ylim=ylim)
+      ax[:set_xlim]([0, 64])
+      ylim = ifelse(m == 7, [40500, 46000], [21500, 29000])
+      ax[:set_ylim](ylim)
+      ax[:set_xticks]([0, 8, 16, 32, 64])
 
-  xs = [0, 1, 2, 4, 8, 16, 32, 64]
-  ylim = (21500, 29000)
-  p5 = plot(xs, ed["m15_icmiter1_npert1"], label="1", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter1_npert2"], label="2", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter1_npert4"], label="4", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter1_npert8"], label="8", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter1_npert15"], label="15", w=2, ylim=ylim)
-
-  xs = [1, 2, 4, 8, 16, 32, 64]
-  p6 = plot(xs, ed["m15_icmiter2_npert1"], label="1", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter2_npert2"], label="2", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter2_npert4"], label="4", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter2_npert8"], label="8", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter2_npert15"], label="15", w=2, ylim=ylim)
-
-  xs = [0, 4, 8, 16, 32, 64]
-  p7 = plot(xs, ed["m15_icmiter4_npert1"], label="1", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter4_npert2"], label="2", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter4_npert4"], label="4", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter4_npert8"], label="8", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter4_npert15"], label="15", w=2, ylim=ylim)
-
-  xs = [0, 8, 16, 32, 64]
-  p8 = plot(xs, ed["m15_icmiter8_npert1"], label="1", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter8_npert2"], label="2", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter8_npert4"], label="4", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter8_npert8"], label="8", w=2, ylim=ylim)
-  plot!(xs, ed["m15_icmiter8_npert15"], label="15", w=2, ylim=ylim)
-
-  # plot(p1, p2, p3, p4, layout=(1,4), yaxis=("Quantization error"), ylim=(82000, 84000))
-  plot(p1, p2, p3, p4, p5, p6, p7, p8, layout=(2,4), yaxis=("Quantization error"))
-
-  # for m = [7, 15], icmiter = [1, 2, 4, 8]
-  #   nperts = ifelse(m==7, [1, 2, 4, 7], [1, 2, 4, 8, 15])
-  #
-  #   for npert in nperts
-  #
-  #     # We want the total number of icmiters to be 64
-  #     max_ilsiters = 64 / icmiter
-  #     ilsiters = [1, 2, 4, 8, 16, 32, 64]
-  #     ilsiters_idx = find(max_ilsiters .== ilsiters )[1]
-  #     ilsiters = ilsiters[1:ilsiters_idx]
-  #     @show m, icmiter, nperts, ilsiters
-  #
-  #     ed["m$(m)_icmiter$(icmiter)_npert$(npert)"] = objs
-  #
-  #     @show length(objs)
-  #   end
-  # end
-
+      sz = 14
+      title("\$m=$(m)\$, $(icmiter) ICM iter.", size=sz)
+      ylabel("Quantization error", size=sz)
+      xlabel("Total ICM iterations", size=sz)
+      ticklabel_format(style="sci", axis="y", scilimits=[0,0])
+      legend(loc="upper right", fontsize=12)#, ncol=2)
+    end
+    subplotidx += 1
+  end
+  PyPlot.tight_layout()
+  # show()
+  PyPlot.savefig( "/home/julieta/Desktop/hyperparams_SIFT1M.pdf" )
 end
 
 
-# experiment_data = run_experiment()
-make_figure(experiment_data)
+experiment_data = run_experiment()
+# make_figure_plotsjl(experiment_data)
+make_figure_pyplot(experiment_data)

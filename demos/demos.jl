@@ -218,15 +218,16 @@ function run_demos_query_base(
 
 
   # Precompute init for LSQ/SR
-  for trial = 1:ntrials
-    C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
-    save_results_opq_query_base("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, [0f0])
-  end
-
   # for trial = 1:ntrials
-  #   C, B, R, chainq_error = Rayuela.train_chainq(Xt, m-1, h, R, B, C, niter, verbose)
-  #   save_results_opq_query_base("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, [0f0])
+  #   C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
+  #   save_results_opq_query_base("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, [0f0])
   # end
+
+  for trial = 9:ntrials
+    C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, chainq_error = Rayuela.train_chainq(Xt, m-1, h, R, B, C, niter, verbose)
+    save_results_opq_query_base("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, [0f0])
+  end
 
   # nsplits_train = 1
   # for trial = 1:ntrials
@@ -347,7 +348,7 @@ end
 # run_demos
 for niter = [100]
   # run_demos_query_base("labelme", Int(20e3), 8, 256, niter)
-  run_demos_query_base("MNIST",   Int(60e3), 8, 256, niter)
-  run_demos_query_base("labelme", Int(20e3), 16, 256, niter)
+  # run_demos_query_base("MNIST",   Int(60e3), 8, 256, niter)
+  # run_demos_query_base("labelme", Int(20e3), 16, 256, niter)
   run_demos_query_base("MNIST",   Int(60e3), 16, 256, niter)
 end
