@@ -69,12 +69,12 @@ function make_figure_pyplot(ed)
       ax[:set_ylim](ylim)
       ax[:set_xticks]([0, 8, 16, 32, 64])
 
-      sz = 14
+      sz = 18
       title("\$m=$(m)\$, $(icmiter) ICM iter.", size=sz)
       ylabel("Quantization error", size=sz)
       xlabel("Total ICM iterations", size=sz)
       ticklabel_format(style="sci", axis="y", scilimits=[0,0])
-      legend(loc="upper right", fontsize=12)#, ncol=2)
+      legend(loc="upper right", fontsize=sz-2)#, ncol=2)
     end
     subplotidx += 1
   end
@@ -84,6 +84,5 @@ function make_figure_pyplot(ed)
 end
 
 
-experiment_data = run_experiment()
-# make_figure_plotsjl(experiment_data)
+# experiment_data = run_experiment()
 make_figure_pyplot(experiment_data)
