@@ -64,11 +64,6 @@ void _viterbi_encoding(
   unsigned char* B, // In/out. n-by-m matrix of codes that we are working on
   float* unaries, // In. n-by-h matrix with the unary terms of the code that we are exhaustively exploring
   float* binaries, // (m(m-1)/2)-by-h matrix with the binary terms of the encoding MRFS
-  float* mincost,
-  float* U,
-  int* minidx,
-  float* cost,
-  int* backpath,
   const int n, // Number of vectors we are processing in parallel
   const int m  // Number of codebooks
 ) {
@@ -79,10 +74,13 @@ void _viterbi_encoding(
   float ucost, bcost, minv, costi;
   int mini;
 
-  // TODO set proper parallel flags if we want a good CPP implementation
-  // #pragma omp parallel for private(U,minv,mini,ucost,bcost,bb,costi,cost,backpath,minidx,mincost)
-  // #pragma omp parallel for private(U,ucost,bcost,minv,costi,mincost,minidx,cost,backpath,mini,bb)
-  // #pragma omp parallel for private(U,ucost,bcost,minv,costi,mincost,minidx,cost,backpath,mini,bb) shared(B)
+  float U[m*H] = {};
+  float mincost[H] = {};
+  int minidx[m*H] = {};
+  float cost[H] = {};
+  int backpath[m] = {};
+
+  #pragma omp parallel for private(U,ucost,bcost,minv,costi,mincost,minidx,cost,backpath,mini,bb) // <-- works :S
   for (int idx=0; idx<n; idx++) { // Loop over datapoints
 
     // Put all the unaries of this item together
@@ -173,14 +171,9 @@ extern "C"
     unsigned char* B, // In/out. n-by-m matrix of codes that we are working on
     float* unaries, // In. n-by-h matrix with the unary terms of the code that we are exhaustively exploring
     float* binaries, // (m(m-1)/2)-by-h matrix with the binary terms of the encoding MRFS
-    float* mincost,
-    float* U,
-    int* minidx,
-    float* cost,
-    int* backpath,
     const int n, // Number of vectors we are processing in parallel
     const int m // Number of codebooks
   ) {
-    _viterbi_encoding(B, unaries, binaries, mincost, U, minidx, cost, backpath, n, m);
+    _viterbi_encoding(B, unaries, binaries, n, m);
   };
 }

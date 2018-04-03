@@ -20,26 +20,14 @@ function quantize_chainq_cpp!(
     codebooks with 256 entries")
   end
 
-  # We need a matrix to keep track of the min and argmin
-  mincost = zeros(T, h)
-  minidx  = zeros(Int32, h, m )
-
-  # Allocate memory for brute-forcing each pair
-  cost = zeros( T, h )
-  U = zeros(T, h, m)
-
-  CODES2 = zeros(Cuchar,m,n)
+  CODES2 = zeros(Cuchar, m, n)
   unaries2, binaries2 = vcat(unaries...), hcat(binaries...)
-  U2 = similar(U)
-  backpath2 = zeros(Int32, m)
 
   ccall(("viterbi_encoding", encode_icm_so), Void,
-    (Ptr{Int16}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
-    Ptr{Cint}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint),
-    CODES2, unaries2, binaries2, mincost, U, minidx, cost, backpath2, n, m)
+    (Ptr{Int16}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint),
+    CODES2, unaries2, binaries2, n, m)
 
   CODES2 = convert(Matrix{Int16}, CODES2+1)
-
   CODES[:] = CODES2[:]
 end
 
@@ -223,7 +211,7 @@ end
 function quantize_chainq(
   X::Matrix{Float32},         # d-by-n matrix. Data to encode
   C::Vector{Matrix{Float32}}, # m-long vector with d-by-h codebooks
-  use_cpp::Bool=false)
+  use_cpp::Bool=true)
 
   tic()
   d, n = size( X )
