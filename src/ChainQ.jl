@@ -12,8 +12,8 @@ function quantize_chainq_cpp!(
   # Get unaries
   unaries = get_unaries( X, C )
 
-  h, n = size( unaries[1] )
-  m    = length( binaries ) + 1
+  h, n = size(unaries[1])
+  m    = length(C)
 
   if h != 256
     error("The C++ implementation of chain quantization encoding only supports
@@ -27,7 +27,7 @@ function quantize_chainq_cpp!(
     (Ptr{Int16}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint),
     CODES2, unaries2, binaries2, n, m)
 
-  CODES2 = convert(Matrix{Int16}, CODES2+1)
+  CODES2 = convert(Matrix{Int16}, CODES2) .+ one(Int16)
   CODES[:] = CODES2[:]
 end
 
