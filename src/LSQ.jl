@@ -320,7 +320,7 @@ function train_lsq{T <: AbstractFloat}(
 
     # Update the codebooks C
     # C = update_codebooks(X, B, h, V, "lsqr")
-    C = update_codebooks_fast_bin( RX, B, h, V )
+    C = update_codebooks_fast_bin( X, B, h, V )
     # Update the codes B
     @time B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
   end
