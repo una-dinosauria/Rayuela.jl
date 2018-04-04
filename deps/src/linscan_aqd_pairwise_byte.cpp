@@ -43,8 +43,8 @@ void _linscan_aqd_query_extra_byte(
           float* centry = codebooks + j*d; 			// Create a pointer for this codebook entry.
 
           for ( int k=0; k<d; k++) {             // Loop over dimensions.
-              // tentry[ j ] -= 2*query[k]*centry[k]; // Compute the dot product.
-							tentry[ j ] += (query[k]-centry[k])*(query[k]-centry[k]); // Compute the squared distance
+              tentry[ j ] -= 2*query[k]*centry[k]; // Compute the dot product.
+							// tentry[ j ] += (query[k]-centry[k])*(query[k]-centry[k]); // Compute the squared distance
           }
       }
 
