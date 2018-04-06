@@ -359,7 +359,6 @@ function experiment_lsq_cuda(
   B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
   Bs_base, _ = Rayuela.encode_icm_cuda(Xb, B_base, C, [32], icmiter, npert, randord, nsplits_base, V)
   B_base = Bs_base[end]
-  # @show( B_base )
   base_error = qerror(Xb, B_base, C)
   if V; @printf("Error in base is %e\n", base_error); end
 
