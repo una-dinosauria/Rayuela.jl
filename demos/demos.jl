@@ -108,18 +108,16 @@ function run_demos(
   #   C, B, train_error, B_base, recall = Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
   #   save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
   # end
-  #
   # for trial = 1:ntrials
   #   C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
   #   save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
   # end
 
   # Cheap non-orthogonal methods: RVQ, ERVQ
-  # for trial = 4:ntrials
+  # for trial = 1:ntrials
   #   C, B, train_error, B_base, recall = Rayuela.experiment_rvq( Xt,       Xb, Xq, gt, m-1, h, niter, knn, verbose)
   #   save_results_pq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5",  trial, C, B, train_error, B_base, recall)
   # end
-
   # for trial = 1:ntrials
   #   C, B, train_error = load_rvq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5", m-1, trial)
   #   C, B, train_error, B_base, recall = Rayuela.experiment_ervq(Xt, B, C, Xb, Xq, gt, m-1, h, niter, knn, verbose)
@@ -132,37 +130,47 @@ function run_demos(
   # Rayuela.experiment_sr(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
 
   # Precompute init for LSQ/SR
+  # for trial = 1:ntrials
+  #   C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
+  #   save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, ones(UInt16,1,1), [0f0])
+  # end
   for trial = 1:ntrials
-    C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
-    save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, ones(UInt16,1,1), [0f0])
+    C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, chainq_error = train_chainq(    Xt, m-1, h, R, B, C, niter, verbose)
+    save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
   end
 
-    # Load OPQ
-    # fname = "./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5"
 
-    # C, B, R, opq = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", m, trial)
-    # C, B, R, chainq_error = train_chainq(    Xt, m, h, R, B, C, niter, verbose)
-    # save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
+  nsplits_train =  m == 8 ? 1 : 2
+  nsplits_base  =  m == 8 ? 3 : 6
+  @show nsplits_train, nsplits_base
 
+  for trial = 1:ntrials
 
-    # nsplits_train = 1
-    # nsplits_base  = 3
+    # C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(25).h5", m-1, trial)
+    # B_base = h5read("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(25).h5", "$trial/B_base")
+    # B_base = convert(Matrix{Int16}, B_base) .+ 1
+    # @show qerror(Xt, B, C), qerror(Xb, B_base, C)
 
-    # Load ChainQ
-    # C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
     # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, verbose)
-    # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, verbose)
-    # save_results_lsq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, verbose)
+    save_results_lsq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+  end
 
-    # sr_method = "SR_D"
-    # C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    # C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, sr_method, verbose)
-    # save_results_lsq("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+  for trial = 1:ntrials
+    sr_method = "SR_D"
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, sr_method, verbose)
+    save_results_lsq("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+  end
 
-    # sr_method = "SR_C"
-    # C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    # C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, sr_method, verbose)
-    # save_results_lsq("./results/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+  for trial = 1:ntrials
+    sr_method = "SR_C"
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, sr_method, verbose)
+    save_results_lsq("./results/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+  end
 
     # GPU methods
     # nsplits_train = 1
@@ -218,7 +226,9 @@ function run_demos_query_base(
   # for trial = 1:ntrials
   #   C, B, train_error, recall = Rayuela.experiment_rvq_query_base(Xt,        Xq, gt, m-1, h, niter, knn, verbose)
   #   save_results_pq_query_base("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5",  trial, C, B, train_error, recall)
+  # end
 
+  # for trial = 1:ntrials
   #   C, B, train_error, recall = Rayuela.experiment_ervq_query_base(Xt, B, C, Xq, gt, m-1, h, niter, knn, verbose)
   #   save_results_pq_query_base("./results/$(lowercase(dataset_name))/ervq_m$(m-1)_it$(niter).h5", trial, C, B, train_error, recall)
   # end
@@ -235,32 +245,32 @@ function run_demos_query_base(
   #   save_results_opq_query_base("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, [0f0])
   # end
 
-  for trial = 9:ntrials
-    C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, chainq_error = Rayuela.train_chainq(Xt, m-1, h, R, B, C, niter, verbose)
-    save_results_opq_query_base("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, [0f0])
+  # for trial = 1:ntrials
+  #   C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", m-1, trial)
+  #   C, B, R, chainq_error = Rayuela.train_chainq(Xt, m-1, h, R, B, C, niter, verbose)
+  #   save_results_opq_query_base("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, [0f0])
+  # end
+
+  nsplits_train = 1
+  for trial = 1:ntrials
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, recall = Rayuela.experiment_lsq_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, knn, nsplits_train, verbose)
+    save_results_lsq_query_base("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
   end
 
-  # nsplits_train = 1
-  # for trial = 1:ntrials
-  #   C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-  #   C, B, R, train_error, recall = Rayuela.experiment_lsq_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, knn, nsplits_train, verbose)
-  #   save_results_lsq_query_base("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
-  # end
-  #
-  # for trial = 1:ntrials
-  # sr_method = "SR_D"
-  #   C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-  #   C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base( Xt, B, C, R, Xq, gt, m-1, h, niter, knn, nsplits_train, sr_method, verbose)
-  #   save_results_lsq_query_base("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
-  # end
-  #
-  # for trial = 1:ntrials
-  # sr_method = "SR_C"
-  #   C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-  #   C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base( Xt, B, C, R, Xq, gt, m-1, h, niter, knn, nsplits_train, sr_method, verbose)
-  #   save_results_lsq_query_base("./results/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
-  # end
+  for trial = 1:ntrials
+  sr_method = "SR_D"
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base( Xt, B, C, R, Xq, gt, m-1, h, niter, knn, nsplits_train, sr_method, verbose)
+    save_results_lsq_query_base("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+  end
+
+  for trial = 1:ntrials
+  sr_method = "SR_C"
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base( Xt, B, C, R, Xq, gt, m-1, h, niter, knn, nsplits_train, sr_method, verbose)
+    save_results_lsq_query_base("./results/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+  end
 
 
   # GPU methods
@@ -346,12 +356,13 @@ end
 
 for niter = [100]#, 50, 100]
 # for niter = [50, 100]
-  run_demos("Convnet1M", Int(1e5),  8, 256, 100)
   # run_demos("SIFT1M", Int(1e5),  8, 256, niter)
-  # run_demos("Deep1M", Int(1e5),  8, 256, niter)
   # run_demos("SIFT1M", Int(1e5), 16, 256, niter)
-  # run_demos("Deep1M", Int(1e5), 16, 256, niter)
+  # run_demos("Convnet1M", Int(1e5),   8, 256, 100)
+  # run_demos("Convnet1M", Int(1e5),  16, 256, 100)
 end
+# run_demos("Deep1M", Int(1e5),  8, 256, niter)
+# run_demos("Deep1M", Int(1e5), 16, 256, niter)
 
 # run_demos_query_base("labelme", Int(20e3), 8,  256, 100)
 # run_demos_query_base("labelme", Int(20e3), 16, 256, 100)
@@ -359,9 +370,9 @@ end
 # run_demos_query_base("MNIST",   Int(60e3), 16, 256, 100)
 
 # run_demos
-# for niter = [100]
+for niter = [100]
   # run_demos_query_base("labelme", Int(20e3), 8, 256, niter)
+  run_demos_query_base("labelme", Int(20e3), 16, 256, niter)
   # run_demos_query_base("MNIST",   Int(60e3), 8, 256, niter)
-  # run_demos_query_base("labelme", Int(20e3), 16, 256, niter)
-  # run_demos_query_base("MNIST",   Int(60e3), 16, 256, niter)
-# end
+  run_demos_query_base("MNIST",   Int(60e3), 16, 256, niter)
+end
