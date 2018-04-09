@@ -1,6 +1,7 @@
 
 export read_cq_bvecs, read_cq_fvecs, CQ_parameters, dump_CQ_parameters
 
+
 # Read float binary file produced by CQ, like the codebooks D
 function read_cq_fvecs(fname::AbstractString)
 
@@ -15,6 +16,7 @@ function read_cq_fvecs(fname::AbstractString)
 
   return vectors
 end
+
 
 # Read int binary file produced by CQ, like the codes B
 function read_cq_bvecs(fname::AbstractString)
@@ -31,6 +33,8 @@ function read_cq_bvecs(fname::AbstractString)
   return codes
 end
 
+
+# Parameters that CQ receives
 @with_kw mutable struct CQ_parameters
   PQ::Bool=false
   NCQ::Bool=false
@@ -77,6 +81,7 @@ end
 end
 
 
+# Print CQ parameters to a config file that the CQ binary can consume
 function dump_CQ_parameters(p::CQ_parameters, fname::String)
   open(fname, "w") do fid
     for (name, typ) in zip(fieldnames(CQ_parameters), CQ_parameters.types)
@@ -89,22 +94,3 @@ function dump_CQ_parameters(p::CQ_parameters, fname::String)
   end
 end
 
-
-function inner_terms(C, B)
-  m, n = size(B)
-  d, h = size(C[1])
-
-  # Compute squared codebook norms
-  Cn = Vector{Vector{Float32}}(m)
-  for i = 1:m
-    Cn[i] = vec(sum(C[i].^2, 1))
-  end
-
-  # make space
-  it = zeros(Float32, n)
-  for i = 1:m
-    it += Cn[i][B[i,:]]
-  end
-
-  return it
-end

@@ -38,6 +38,14 @@ function get_title(dataset_name)
   end
 end
 
+function print_recalls(meanrecall, stdrecall)
+  for j = [1, 2, 5, 10, 20, 50, 100]
+    @printf("r@%d %.2f ± %.2f\n", j, 100 * meanrecall[j], 100 * stdrecall[j]);
+  end
+  println()
+end
+
+
 subplotidx = 1;
 for dataset_name = dnames
   ax = subplot(1,length(dnames),subplotidx)
@@ -47,11 +55,10 @@ for dataset_name = dnames
     m = ms[ midx ]
 
     # Load lsq
-    if m == 7
-      for i=length(ilsit):-1:1
-        meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "lsq_m$(m)_it100.h5")
-        plot(toplot, meanrecall[toplot], label="LSQ-$(ilsit[i]) $((m+1)*8) bits", m == 7 ? "--" : "", lw=linew)
-      end
+    for i=length(ilsit):-1:1
+      meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "lsq_m$(m)_it100.h5")
+      println("$dataset_name lsq m=$m"); print_recalls(meanrecall, stdrecall)
+      plot(toplot, meanrecall[toplot], label="LSQ-$(ilsit[i]) $((m+1)*8) bits", m == 7 ? "--" : "", lw=linew)
     end
 
     # Load rvq and ervq
