@@ -1,5 +1,5 @@
 
-using Rayuela
+using Rayuela, HDF5
 
 function get_dataset_numbers(dataset_name::String)
   nquery, nbase, ntrain = 0, 0, 0
@@ -72,7 +72,8 @@ function test_experiment(
   @time dists, idx = linscan_cq(B, Xq, C, knn)
   if verbose; println("done"); end
   rec = eval_recall(gt, idx, knn)
-  return rec
+
+  h5write(joinpath(bpath, "recall.h5"), "recall", rec)
 end
 
 
@@ -147,11 +148,11 @@ function dump_dataset(dataset_name, verbose=true)
   fvecs_write(Xt, joinpath(bpath, "$(lowercase(dataset_name))_learn.fvecs"))
   fvecs_write(Xb, joinpath(bpath, "$(lowercase(dataset_name))_base.fvecs"))
   fvecs_write(Xq, joinpath(bpath, "$(lowercase(dataset_name))_query.fvecs"))
-  ivecs_write(convert(Matrix{Int32},gt), joinpath(bpath, "$(lowercase(dataset_name))_groundtruth.ivecs"))
+  ivecs_write(convert(Matrix{Int32},gt.-=1), joinpath(bpath, "$(lowercase(dataset_name))_groundtruth.ivecs"))
 end
 
 # dump_dataset("MNIST")
-# dump_dataset("labelme")
+dump_dataset("labelme")
 # dump_dataset("Convnet1M")
 
 # @show("run_experiments")
@@ -160,8 +161,12 @@ end
 # run_experiments("SIFT1M", 16)
 # run_experiments("Convnet1M")
 
-for trial = 3:10
+for trial = 3
   # test_experiment("labelme", 8, trial)
+  # test_experiment("labelme", 16, trial)
   # test_experiment("MNIST", 8, trial)
+  # test_experiment("MNIST", 16, trial)
+
   test_experiment("SIFT1M", 8, trial)
+  test_experiment("SIFT1M", 16, trial)
 end
