@@ -6,7 +6,7 @@ function read_dataset(
   nvectors::Union{Integer, UnitRange},      # number of vectors to read
   V::Bool=false )         # whether to print progress
 
-  if V print("Loading $(dname)... "); end
+  if V println("Loading $(dname)... "); end
 
   # === Deep_babenko ===
   if dname == "Deep1M_babenko"
@@ -232,9 +232,5 @@ function read_dataset(
     X = X[:, nvectors];
   end
 
-
-
-  if V println("done."); end
   return X
-
 end

@@ -106,6 +106,85 @@ function make_plots(RPATH, dnames)
   savefig( sfile )
 end
 
+function make_sparse_plot(RPATH)
+
+  ilsit = 32
+  sz = 13
+  linew = 2
+  toplot = 1:1000
+
+  # Set the overall size here
+  fig = figure("recall_plot", figsize=(5 + 0.6, 5 ))
+  ntrials = 6
+
+  dataset_name = "sift1m"
+  ax = subplot(1, 1, 1)
+
+  ax[:set_prop_cycle](nothing)  # Reset colour cycle
+  m = 7
+
+  # Load lsq
+  # meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "SIFT1M_sc2.h5")
+  recalls = zeros(ntrials, 1000)
+  for trial = 1:ntrials
+    recalls[trial, :] = h5read(joinpath(RPATH, dataset_name, "SIFT1M_sc2.h5"), "trial$trial/recall_$ilsit")
+  end
+  meanrecall, stdrecall = mean(recalls,1)[toplot], std(recalls,1)[toplot]
+  println("$dataset_name slsq2 m=$m"); print_recalls(meanrecall, stdrecall)
+  plot(toplot, meanrecall[toplot], label="SLSQ2-$(ilsit) $((m+1)*8) bits", "-", lw=linew)
+
+  # meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "SIFT1M_sc1.h5")
+  for trial = 1:ntrials
+    recalls[trial, :] = h5read(joinpath(RPATH, dataset_name, "SIFT1M_sc1.h5"), "trial$trial/recall_$ilsit")
+  end
+  meanrecall, stdrecall = mean(recalls,1)[toplot], std(recalls,1)[toplot]
+  println("$dataset_name slsq1 m=$m"); print_recalls(meanrecall, stdrecall)
+  plot(toplot, meanrecall[toplot], label="SLSQ1-$(ilsit) $((m+1)*8) bits", "-", lw=linew)
+
+  # if dataset_name == "convnet1m"
+  #   # Skip the color for consistency
+  #   plot([], [])
+  # else
+  #   bpath = joinpath("/home/julieta/Desktop/CQ/build/results/", lowercase(dataset_name) * "_$(m+1)", "trial_3")
+  #   recall = h5read(joinpath(bpath, "recall.h5"), "recall")
+  #   println("$dataset_name cq m=$(m+1)"); print_recalls(recall, zeros(size(recall)))
+  #   plot(toplot, recall[toplot], label="CQ $((m+1)*8) bits", m == 7 ? "--" : "", lw=linew)
+  # end
+  #
+  # # Load rvq and ervq
+  # for baseline = ["ervq", "rvq"]
+  #   meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "$(baseline)_m$(m)_it100.h5")
+  #   println("$dataset_name $baseline m=$m"); print_recalls(meanrecall, stdrecall)
+  #   plot(toplot, meanrecall[toplot], label="$(uppercase(baseline)) $((m+1)*8) bits", m == 7 ? "--" : "", lw=linew)
+  # end
+  # plot([], [])
+  # plot([], [])
+  # plot([], [])
+  ax[:set_prop_cycle](nothing)  # Reset colour cycle
+
+  # Load pq and opq
+  for baseline = ["opq", "pq"]
+    meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "$(baseline)_m$(m+1)_it100.h5")
+    println("$dataset_name $baseline m=$m"); print_recalls(meanrecall, stdrecall)
+    plot(toplot, meanrecall[toplot], label="$(uppercase(baseline)) $((m+1)*8) bits", "--", lw=linew)
+  end
+
+  grid(true)
+  title(get_title(dataset_name), size=sz)
+  ax[:set_xscale]("log")
+
+  ax[:set_ylim]([0.2, 1])
+  ax[:set_xlim]([1, 1000])
+
+  ylabel("Recall@N", size=sz)
+  xlabel("N", size=sz)
+  legend(loc="lower right", fontsize=sz-2, ncol=1)
+
+  PyPlot.tight_layout()
+  sfile = "/home/julieta/Desktop/recall_sparse.pdf"
+  savefig( sfile )
+end
+
 function make_sift_table(RPATH)
   ntrials = 10
   toplot = collect(1:1000)
@@ -224,4 +303,5 @@ RPATH = "/home/julieta/.julia/v0.6/Rayuela/results/"
 # make_plots(RPATH, ["mnist", "labelme"])
 
 # make_sift_table(RPATH)
-make_mnist_labelme_table(RPATH)
+# make_mnist_labelme_table(RPATH)
+make_sparse_plot(RPATH)
