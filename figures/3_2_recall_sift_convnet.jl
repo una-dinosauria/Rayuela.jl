@@ -26,7 +26,7 @@ end
 
 function print_recalls(meanrecall, stdrecall)
   for j = [1, 2, 5, 10, 20, 50, 100]
-    @printf("r@%d %.2f ± %.2f\n", j, 100 * meanrecall[j], 100 * stdrecall[j]);
+    @printf("r@%d %.2f \\pm %.2f\n", j, 100 * meanrecall[j], 100 * stdrecall[j]);
   end
   println()
 end
@@ -108,14 +108,14 @@ end
 
 function make_sparse_plot(RPATH)
 
-  ilsit = 32
+  ilsit = 16
   sz = 13
   linew = 2
   toplot = 1:1000
 
   # Set the overall size here
   fig = figure("recall_plot", figsize=(5 + 0.6, 5 ))
-  ntrials = 6
+  ntrials = 10
 
   dataset_name = "sift1m"
   ax = subplot(1, 1, 1)
@@ -130,7 +130,7 @@ function make_sparse_plot(RPATH)
     recalls[trial, :] = h5read(joinpath(RPATH, dataset_name, "SIFT1M_sc2.h5"), "trial$trial/recall_$ilsit")
   end
   meanrecall, stdrecall = mean(recalls,1)[toplot], std(recalls,1)[toplot]
-  println("$dataset_name slsq2 m=$m"); print_recalls(meanrecall, stdrecall)
+  println("$dataset_name slsq2-$(ilsit) m=$m"); print_recalls(meanrecall, stdrecall)
   plot(toplot, meanrecall[toplot], label="SLSQ2-$(ilsit) $((m+1)*8) bits", "-", lw=linew)
 
   # meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "SIFT1M_sc1.h5")
@@ -138,25 +138,9 @@ function make_sparse_plot(RPATH)
     recalls[trial, :] = h5read(joinpath(RPATH, dataset_name, "SIFT1M_sc1.h5"), "trial$trial/recall_$ilsit")
   end
   meanrecall, stdrecall = mean(recalls,1)[toplot], std(recalls,1)[toplot]
-  println("$dataset_name slsq1 m=$m"); print_recalls(meanrecall, stdrecall)
+  println("$dataset_name slsq1-$(ilsit) m=$m"); print_recalls(meanrecall, stdrecall)
   plot(toplot, meanrecall[toplot], label="SLSQ1-$(ilsit) $((m+1)*8) bits", "-", lw=linew)
 
-  # if dataset_name == "convnet1m"
-  #   # Skip the color for consistency
-  #   plot([], [])
-  # else
-  #   bpath = joinpath("/home/julieta/Desktop/CQ/build/results/", lowercase(dataset_name) * "_$(m+1)", "trial_3")
-  #   recall = h5read(joinpath(bpath, "recall.h5"), "recall")
-  #   println("$dataset_name cq m=$(m+1)"); print_recalls(recall, zeros(size(recall)))
-  #   plot(toplot, recall[toplot], label="CQ $((m+1)*8) bits", m == 7 ? "--" : "", lw=linew)
-  # end
-  #
-  # # Load rvq and ervq
-  # for baseline = ["ervq", "rvq"]
-  #   meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "$(baseline)_m$(m)_it100.h5")
-  #   println("$dataset_name $baseline m=$m"); print_recalls(meanrecall, stdrecall)
-  #   plot(toplot, meanrecall[toplot], label="$(uppercase(baseline)) $((m+1)*8) bits", m == 7 ? "--" : "", lw=linew)
-  # end
   # plot([], [])
   # plot([], [])
   # plot([], [])
