@@ -114,7 +114,7 @@ function make_sparse_plot(RPATH)
   toplot = 1:1000
 
   # Set the overall size here
-  fig = figure("recall_plot", figsize=(5 + 0.6, 5 ))
+  fig = figure("recall_plot", figsize=(5 + 0.6, 5))
   ntrials = 10
 
   dataset_name = "sift1m"

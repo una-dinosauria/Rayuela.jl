@@ -4,6 +4,7 @@ BinDeps
 CuArrays
 CUDAdrv
 Distances
+Distributions
 HDF5
 IterativeSolvers
 Parameters
