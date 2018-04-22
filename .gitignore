@@ -3,6 +3,7 @@
 *.jl.mem
 *.o
 *.swp
+*.remote*
 data/
 results/
 core

@@ -145,7 +145,7 @@ function read_dataset(
   # === SIFT1B
   elseif dname == "SIFT1B_query"
 
-    fname = "./data/sift1b/bigann_query.bvecs"
+    fname = "/hdd/sift1b/bigann_query.bvecs"
     X     = bvecs_read(nvectors,fname)
     X = convert(Matrix{Float32},X)
     return X
@@ -153,7 +153,7 @@ function read_dataset(
   elseif dname == "SIFT1B_base"
 
     # fname = "./data/sift1b/bigann_base.bvecs"
-    fname = "/scratch/julm/bigann_base.bvecs"
+    fname = "/hdd/sift1b/bigann_base.bvecs"
     # fname = "/scratch/zakhmi/bigann_base.bvecs" # curiosity
     X     = bvecs_read(nvectors,fname)
     X = convert(Matrix{Float32},X)
@@ -161,20 +161,28 @@ function read_dataset(
 
   elseif dname == "SIFT1B" || dname == "SIFT10M"
 
-    fname = "./data/sift1b/bigann_learn.bvecs"
+    fname = "/hdd/sift1b/bigann_learn.bvecs"
     X     = bvecs_read(nvectors,fname)
     X = convert(Matrix{Float32},X)
     return X
 
   elseif dname == "SIFT1B_groundtruth"
 
-    fname = "./data/sift1b/sift1b_gnd.h5";
-    X     = h5read(fname, "gt");
+    fname = "/hdd/sift1b/gnd/idx_1000M.ivecs"
+    X     = ivecs_read(nvectors, fname)
+    return X
 
   elseif dname == "SIFT1B_groundtruth_10M"
 
-    fname = "./data/sift1b/sift1b_gnd.h5";
-    X     = h5read(fname, "gt_10M");
+    fname = "/hdd/sift1b/gnd/idx_10M.ivecs"
+    X     = ivecs_read(nvectors, fname)
+    return X
+
+  elseif dname == "SIFT1B_groundtruth_1M"
+
+    fname = "/hdd/sift1b/gnd/idx_1M.ivecs"
+    X     = ivecs_read(nvectors, fname)
+    return X
 
   # === MNIST
   elseif dname == "MNIST_query"

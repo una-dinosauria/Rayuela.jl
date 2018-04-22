@@ -45,7 +45,7 @@ include("OPQ.jl") # Optimized Product Quantizer
 
 # === Non-orthogonal quantizers ===
 include("ChainQ.jl") # Chain (Tree) Quantization
-include("CQ.jl")     # Functions to interact with C++ release
+include("CQ.jl")     # Functions to interact with C++ CQ release
 include("RVQ.jl")    # RVQ
 include("ERVQ.jl")   # ERVQ / Stacked quantizers
 include("CompetitiveQ.jl") # Slow version
