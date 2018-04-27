@@ -1,7 +1,7 @@
 # Rayuela.jl
 
 [Rayuela](https://en.wikipedia.org/wiki/Hopscotch#Rayuela).jl is a package
-that implements non-orthogonal multi-codebook quantization methods.
+that implements non-orthogonal multi-codebook quantization methods (MCQ).
 These methods are used for fast search of high-dimensional (d=100s-1000s) dense vectors.
 Rayuela is written in [Julia](https://github.com/JuliaLang/julia).
 
@@ -9,10 +9,10 @@ This is not a production-ready library -- if you are looking for something
 like that, maybe look at [faiss](https://github.com/facebookresearch/faiss).
 
 Rayuela implements the main contributions that I made to this problem during my
-PhD at UBC, as well as multiple baselines and indexing structures for very
-large-scale datasets. The package is my attempt to make my research reproducible
+PhD at [UBC](https://cs.ubc.ca), as well as multiple baselines for MCQ.
+The package is my attempt to make my research reproducible
 and accessible, and to make it easier for other people, specially newcomers, to
-contribute to this field, where lack of reproducibility is a major barrier of entry.
+contribute to this field, where lack of reproducibility is IMO a major barrier of entry.
 
 I originally intended to incorporate these contributions on top of [faiss](https://github.com/facebookresearch/faiss)
 (see [#185](https://github.com/facebookresearch/faiss/issues/185)),
@@ -53,8 +53,10 @@ if you do.
 - Residual Vector Quantization -- [Sensors'10](http://www.mdpi.com/1424-8220/10/12/11259/htm)
 - Stacked Quantizers (aka Enhanced Residual Vector Quantization) -- [arxiv](https://arxiv.org/abs/1411.2173)/[CBMI'14 (paywalled)](http://ieeexplore.ieee.org/abstract/document/6849842/)
 - Local Search Quantization -- [ECCV'16](https://www.cs.ubc.ca/~julm/papers/eccv16.pdf)
+- Local Search Quantization++ -- Under review
 - Composite Quantization -- [ICML'14](https://pdfs.semanticscholar.org/eb18/329fe6466f36b0dbacd00e405c8f8618e1cf.pdf), [original code](https://github.com/hellozting/CompositeQuantization) (released late 2017, written in c++ with Microsoft's extensions)
-- Competitive Quantization -- []
+- Competitive Quantization -- [TKDE'16](https://ieeexplore.ieee.org/abstract/document/7539664/)
+- Some wrapping code to call and evaluate Composite Quantization -- [ICML'14](https://arxiv.org/pdf/1712.00955.pdf), [code](https://github.com/hellozting/CompositeQuantization)
 - Recall evaluation code
 
 ### TODO
@@ -65,14 +67,12 @@ Things I'd like to get around implementing / porting / wrapping some day
 - Non-orthogonal multi-index --
  [CVPR'16](http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Babenko_Efficient_Indexing_of_CVPR_2016_paper.pdf), [code](https://github.com/arbabenko/GNOIMI), [project page](http://sites.skoltech.ru/compvision/noimi/)
 - Bolt -- [KDD'17](https://pdfs.semanticscholar.org/edae/41dc0b511cd0455388c9fd0720a086078cc6.pdf), [code](https://github.com/dblalock/bolt)
-- Improvements to LSQ -- under review
 
 ### TODO (no code, low priority)
 I would like to implement these methods. Some of them report really good results but, to the best of my knowledge, the authors have never released code. Also, my time is not infinite so ¯\\\_(ツ)\_/¯
 
 - Sparse Composite Quantization -- [CVPR'15](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Zhang_Sparse_Composite_Quantization_2015_CVPR_paper.pdf)
 - Tree Quantization with Gurobi optimization -- [CVPR'15](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
-- Competitive Quantization -- [TKDE'16](https://www.researchgate.net/profile/Serkan_Kiranyaz/publication/306046688_Competitive_Quantization_for_Approximate_Nearest_Neighbor_Search/links/57bd58bb08ae6c703bc64909.pdf)
 - Joint K-means quantization -- [ICPR'16](http://ieeexplore.ieee.org/document/7900200/#full-text-section) (pay-walled)
 - Pyramid encoding quantization -- [EUSIPCO'17](http://www.eurasip.org/Proceedings/Eusipco/Eusipco2017/papers/1570339946.pdf)
 - Arborescence coding -- [ICCV'17](http://sites.skoltech.ru/app/data/uploads/sites/25/2017/08/AnnArbor_ICCV17.pdf)
