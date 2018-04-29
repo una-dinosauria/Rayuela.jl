@@ -37,7 +37,7 @@ function train_ervq(
   if V print("Error after init is $error \n"); end
 
   for i = 1:niter
-    if V print("=== Iteration $i / $niter ===\n"); end
+    if V print("=== Iteration $i / $niter ===\n"); tic(); end
 
     # Dummy singletons
     singletons = Vector{Matrix{T}}(m)
@@ -96,7 +96,7 @@ function train_ervq(
 
     if V
       error = qerror(X, B, C)
-      print("Iteration $i / $niter done. Qerror is $error.\n");
+      print("Iteration $i / $niter done in $(toq()) seconds. Qerror is $error.\n");
     end
 
   end
@@ -131,7 +131,7 @@ function experiment_ervq(
 
   # === ERVQ train ===
   d, _ = size(Xt)
-  C, B, train_error = Rayuela.train_ervq(Xt, B, C, m, h, niter, V)
+  @time C, B, train_error = Rayuela.train_ervq(Xt, B, C, m, h, niter, V)
   norms_B, norms_C = get_norms_codebook(B, C)
 
   # === Encode the base set ===
@@ -188,7 +188,7 @@ function experiment_ervq(
   knn::Integer=1000,
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
-  C, B, _ = Rayuela.train_ervq(Xt, m, h, niter, V)
+  C, B, _ = Rayuela.train_rvq(Xt, m, h, niter, V)
   experiment_ervq(Xt, B, C, Xb, Xq, gt, m, h, niter, knn, V)
 end
 
@@ -202,6 +202,6 @@ function experiment_ervq_query_base(
   knn::Integer=1000,
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
-  C, B, _ = Rayuela.train_ervq(Xt, m, h, niter, V)
+  C, B, _ = Rayuela.train_rvq(Xt, m, h, niter, V)
   experiment_ervq_query_base(Xt, B, C, Xq, gt, m, h, niter, knn, V)
 end
