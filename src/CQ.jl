@@ -39,7 +39,7 @@ end
   PQ::Bool=false
   NCQ::Bool=false
   CQ::Bool=true
-  Search::Bool=false
+  Search::Bool=true
 
   # global parameters
   # points_count=1000000
@@ -93,4 +93,3 @@ function dump_CQ_parameters(p::CQ_parameters, fname::String)
     end
   end
 end
-

@@ -345,7 +345,6 @@ function experiment_lsq_cuda(
   icmiter = 4
   randord = true
   npert   = 4
-  cpp     = true
 
   # Train LSQ
   d, _ = size(Xt)
@@ -394,7 +393,6 @@ function experiment_lsq_cuda_query_base(
   icmiter = 4
   randord = true
   npert   = 4
-  cpp     = true
 
   # Train LSQ
   d, _ = size(Xt)

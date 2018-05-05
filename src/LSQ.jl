@@ -301,8 +301,8 @@ function train_lsq{T <: AbstractFloat}(
 
   # Initialize C
   RX = R' * X
-  # C = update_codebooks( RX, B, h, V, "lsqr" )
-  C = update_codebooks_fast_bin( RX, B, h, V )
+  # C = update_codebooks_fast_bin( RX, B, h, V )
+  C = update_codebooks( RX, B, h, V, "lsqr" )
 
   # Apply the rotation to the codebooks
   for i = 1:m; C[i] = R * C[i]; end
@@ -319,8 +319,8 @@ function train_lsq{T <: AbstractFloat}(
     @printf("%3d %e \n", iter, obj[iter])
 
     # Update the codebooks C
-    # C = update_codebooks(X, B, h, V, "lsqr")
-    C = update_codebooks_fast_bin( X, B, h, V )
+    # C = update_codebooks_fast_bin( X, B, h, V )
+    C = update_codebooks(X, B, h, V, "lsqr")
     # Update the codes B
     @time B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
   end
@@ -328,6 +328,42 @@ function train_lsq{T <: AbstractFloat}(
   return C, B, obj
 end
 
+function experiment_lsq_query_base(
+  Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
+  B::Matrix{T2}, # codes
+  C::Vector{Matrix{T}}, # codebooks
+  R::Matrix{T}, # rotation
+  Xq::Matrix{T}, # d-by-n. Queries
+  gt::Vector{UInt32}, # ground truth
+  m::Integer,    # number of codebooks
+  h::Integer,    # number of entries per codebook
+  niter::Integer=25, # Number of k-means iterations for training
+  knn::Integer=1000, # Compute recall @N for this value of N
+  V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
+
+  # TODO expose these parameters
+  ilsiter = 8
+  icmiter = 4
+  randord = true
+  npert   = 4
+  cpp     = true
+
+  # Train LSQ
+  d, _ = size(Xt)
+  if V; @printf("Running CUDA LSQ training... "); end
+  C, B, train_error = Rayuela.train_lsq(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, cpp, V)
+  if V; @printf("done\n"); end
+
+  norms_B, norms_C = get_norms_codebook(B, C)
+  db_norms         = vec( norms_C[ norms_B ] )
+
+  if V; print("Querying m=$m ... "); end
+  @time dists, idx = linscan_lsq(B, Xq, C, db_norms, eye(Float32, d), knn)
+  if V; println("done"); end
+
+  recall = eval_recall(gt, idx, knn)
+  return C, B, R, train_error, recall
+end
 
 function experiment_lsq(
   Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
