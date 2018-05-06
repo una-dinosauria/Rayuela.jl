@@ -1,7 +1,7 @@
 
-# function quantize_chainq
 export train_chainq, quantize_chainq, experiment_chainq
 
+"Quantize using Vitebi algorithm implemented in c++"
 function quantize_chainq_cpp!(
   CODES::Matrix{Int16},  # out. Where to save the result
   X::Matrix{T},                # in. d-by-n matrix to encode
@@ -31,19 +31,8 @@ function quantize_chainq_cpp!(
   CODES[:] = CODES2[:]
 end
 
-# function my_findmin(cost::Vector{T}, h) where T <: Real
-#   minv = cost[1]
-#   mini = 1
-#   for k = 2:h
-#     costi = cost[k]
-#     if costi < minv
-#       minv = costi
-#       mini = k
-#     end
-#   end
-#   return minv, mini
-# end
 
+"Quantize using Vitebi algorithm implemented in julia"
 function quantize_chainq!(
   CODES::SharedMatrix{Int16},  # out. Where to save the result
   X::Matrix{T},                # in. d-by-n matrix to encode
@@ -138,6 +127,9 @@ function quantize_chainq!(
   end # for idx = IDX
 end
 
+
+"Quantize using Vitebi algorithm implemented in julia. This algorithm is batched and thus may be faster, but in practice
+it's about as fast as the sequential version."
 function quantize_chainq_batched!(
   CODES::SharedMatrix{Int16},  # out. Where to save the result
   X::Matrix{T},                # in. d-by-n matrix to encode
@@ -169,10 +161,10 @@ function quantize_chainq_batched!(
   @inbounds for i = 1:(m-1) # Loop over states
 
     if i > 1; unaries[i] .+= mincost; end
+    ucost = unaries[i]
 
     bb = binaries[i]
     for j = 1:h # Loop over the cost of going to j
-      ucost = unaries[i]
       bcost = bb[:,j]
       # cost  = ucost .+ bcost
 
@@ -207,7 +199,104 @@ function quantize_chainq_batched!(
   # end
 end
 
-"Function to call that encodes a dataset using dynamic programming"
+
+"Quantize using Vitebi algorithm implemented in julia. This algorithm is batched and thus may be faster, but in practice
+it's about as fast as the sequential version."
+function quantize_chainq_cuda!(
+  CODES::Matrix{Int16},  # out. Where to save the result
+  X::Matrix{T},                # in. d-by-n matrix to encode
+  C::Vector{Matrix{T}},        # in. m-long vector with d-by-h codebooks
+  binaries::Vector{Matrix{T}}, # in. Binary terms
+  IDX::UnitRange{Int64}) where T <: AbstractFloat # in. Index to save the result
+
+  # Get unaries
+  # @Profile.profile begin
+  unaries = get_unaries( X, C )
+
+  h, n = size( unaries[1] )
+  m    = length( binaries ) + 1
+
+  # We need a matrix to keep track of the min and argmin
+  mincost = zeros(T, h, n)
+  minidx  = zeros(Int32, h, m, n)
+
+  # Allocate memory for brute-forcing each pair
+  cost = zeros(T, h, n)
+  cost2 = zeros(T, h, n)
+
+  minv = typemax(T)
+  mini = 1
+
+  # Setup GPU stuff
+  dev = CuDevice(0)
+  ctx = CuContext(dev)
+  gpuid = 0
+  CudaUtilsModule.init(gpuid, cudautilsptx)
+
+  # Make space for unaries
+  # d_unaries = Vector{CUDAdrv.Mem.Buffer}(m)
+  # for i = 1:m; d_unaries[i] = CUDAdrv.Mem.upload(unaries[i]); end
+  d_bcost = CuArrays.CuArray{Cfloat}(h)
+  d_cost = CUDAdrv.Mem.upload(cost)
+
+  # Forward pass
+  @inbounds for i = 1:(m-1) # Loop over states
+
+    if i > 1; unaries[i] .+= mincost; end
+    ucost = unaries[i]
+    d_ucost = CUDAdrv.Mem.upload(ucost)
+
+    bb = binaries[i]
+    for j = 1:h # Loop over the cost of going to j
+      bcost = bb[:,j]
+      CUDAdrv.Mem.upload!(d_bcost.buf, bcost)
+      # cost  = ucost .+ bcost
+
+      # Mem.upload!(d_ucost, ucost)
+
+      # d_ucost = CUDAdrv.Mem.upload(ucost)
+      # d_bcost = CUDAdrv.Mem.upload(bcost)
+
+      # for kk = IDX
+      #   @simd for k=1:h
+      #     cost[k,kk] = ucost[k,kk] + bcost[k]
+      #   end
+      # end
+
+      CudaUtilsModule.vec_add2(n, (1, h), d_cost, d_ucost, d_bcost.buf, Cint(n), Cint(h))
+      Mem.download!(cost, d_cost)
+
+      # @show cost .- cost2
+
+      # Findmin
+      minv, mini = findmin(cost,1)
+      mincost[j,:]  = minv
+      minidx[j,i,:] = rem.(mini-1,h) + 1
+    end
+  end
+
+  unaries[m] .+= mincost
+  _, mini = findmin(unaries[m],1)
+  mini = rem.(mini-1,h) + 1
+
+  # Backward trace
+  @inbounds for idx = IDX # Loop over the datapoints
+
+    backpath = [ mini[idx] ]
+    for i = (m-1):-1:1
+      push!(backpath, minidx[ backpath[end], i, idx ])
+    end
+
+    # Save the inferred code
+    CODES[:, idx] = reverse( backpath )
+  end
+
+  CudaUtilsModule.finit()
+  destroy!(ctx)
+end
+
+
+"Function to call that encodes a dataset using the Viterbi algorithm"
 function quantize_chainq(
   X::Matrix{Float32},         # d-by-n matrix. Data to encode
   C::Vector{Matrix{Float32}}, # m-long vector with d-by-h codebooks
@@ -227,7 +316,9 @@ function quantize_chainq(
 
   if nworkers() == 1
     if use_cpp
-      quantize_chainq_cpp!( sdata(CODES), X, C, binaries, 1:n )
+      # quantize_chainq_batched!( CODES, X, C, binaries, 1:n )
+      # quantize_chainq_cpp!(sdata(CODES), X, C, binaries, 1:n)
+      quantize_chainq_cuda!(sdata(CODES), X, C, binaries, 1:n)
     else
       quantize_chainq!( CODES, X, C, binaries, 1:n )
       # quantize_chainq_batched!( CODES, X, C, binaries, 1:n )
@@ -248,7 +339,7 @@ function quantize_chainq(
 end
 
 
-# Train a chain quantizer with viterbi decoding
+"Train a chain quantizer with the Viterbi algorithm"
 function train_chainq(
   X::Matrix{T},             # d-by-n matrix of data points to train on.
   m::Integer,               # number of codebooks
@@ -304,6 +395,7 @@ function train_chainq(
 end
 
 
+"Train, quantize the base set and compute recall using chain quantization"
 function experiment_chainq(
   Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
   B::Matrix{T2}, # codes
@@ -340,8 +432,8 @@ function experiment_chainq(
   if V; println("done"); end
 
   rec = eval_recall(gt, idx, knn)
-
 end
+
 
 function experiment_chainq(
   Xt::Matrix{T}, # d-by-n. Data to learn codebooks from

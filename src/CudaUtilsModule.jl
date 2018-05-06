@@ -21,7 +21,10 @@ function mdinit(devlist, ptxfile)
     ptxdict["perturb"]      = CuFunction(md, "perturb")
     # ptxdict["veccost"]      = CuFunction(md, "veccost")
     ptxdict["veccost2"]     = CuFunction(md, "veccost2")
+
+    # Add vector to matrix
     ptxdict["vec_add"]      = CuFunction(md, "vec_add")
+    ptxdict["vec_add2"]      = CuFunction(md, "vec_add2")
 
     # ICM functions
     # ptxdict["condition_icm"]  = CuFunction(md, "condition_icm");
@@ -100,8 +103,6 @@ end
 
 function vec_add(
   nblocks::CuDim, nthreads::CuDim,
-  # d_matrix::CuArray{Cfloat, 2},
-  # d_vec::CuArray{Cfloat, 1},
   d_matrix::CUDAdrv.Mem.Buffer,
   d_vec::CUDAdrv.Mem.Buffer,
   n::Cint,
@@ -110,7 +111,21 @@ function vec_add(
   fun = ptxdict["vec_add"];
   cudacall( fun, nblocks, nthreads,
     ( Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint ),
-    d_matrix, d_vec, n, h);
+    d_matrix, d_vec, n, h)
+end
+
+function vec_add2(
+  nblocks::CuDim, nthreads::CuDim,
+  d_matrix_dst::CUDAdrv.Mem.Buffer,
+  d_matrix::CUDAdrv.Mem.Buffer,
+  d_vec::CUDAdrv.Mem.Buffer,
+  n::Cint,
+  h::Cint)
+
+  fun = ptxdict["vec_add2"];
+  cudacall( fun, nblocks, nthreads,
+    ( Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint ),
+    d_matrix_dst, d_matrix, d_vec, n, h)
 end
 
 # function veccost(

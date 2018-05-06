@@ -193,6 +193,18 @@ __device__ void _vec_add( float *matrix, float *vec, int n, int h) {
   }
 }
 
+// Adds a vector to all the columns of a matrix and puts it in another matrix
+__device__ void _vec_add2( float* matrix_dst, float *matrix_src, float *vec_src, int n, int h) {
+
+  int x = threadIdx.x + blockIdx.x * blockDim.x; // 1-to-n
+  int y = threadIdx.y; // 1-to-256
+
+  if (x < n) {
+    matrix_dst[ x*h + y ] = matrix_src[ x*h + y ] + vec_src[ y ];
+  }
+}
+
+
 /****************************
 ** Encoding ICM functions **
 *****************************/
@@ -383,6 +395,11 @@ extern "C"
   // Adds a vector to each column of a matrix. Used to add unary terms.
   void __global__ vec_add( float *matrix, float *vec, int n, int h ) {
     _vec_add( matrix, vec, n, h );
+  }
+
+  // Adds a vector to each column of a matrix. Used to add unary terms.
+  void __global__ vec_add2( float *matrix_dst, float *matrix_src, float *vec_src, int n, int h ) {
+    _vec_add2( matrix_dst, matrix_src, vec_src, n, h );
   }
 
   // ICM conditioning
