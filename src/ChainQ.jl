@@ -211,9 +211,10 @@ function quantize_chainq_cuda!(
 
   # Get unaries
   # @Profile.profile begin
-  unaries = get_unaries( X, C )
+  # unaries = get_unaries( X, C )
 
-  h, n = size( unaries[1] )
+  d, n = size( X )
+  _, h = size( C[1] )
   m    = length( binaries ) + 1
 
   # We need a matrix to keep track of the min and argmin
@@ -233,8 +234,18 @@ function quantize_chainq_cuda!(
   CudaUtilsModule.init(gpuid, cudautilsptx)
 
   # Make space for unaries
-  d_unaries = Vector{CuArrays.CuArray{Float32}}(m)
-  for i = 1:m; d_unaries[i] = CuArrays.CuArray(unaries[i]); end
+  d_X = CuArrays.CuArray(X)
+  d_unaries   = Vector{CuArrays.CuArray{Float32}}(m)
+  d_codebooks = Vector{CuArrays.CuArray{Float32}}(m)
+  for j = 1:m
+    d_codebooks[j] = CuArrays.CuArray(C[j])
+    # -2 * C' * X
+    d_unaries[j] = CuArrays.BLAS.gemm('T', 'N', -2.0f0, d_codebooks[j], d_X)
+    # d_unaries[j] = -2.0f0 * d_codebooks[j]' * d_RX <-- thus runs out of memory real fast
+
+    # Add self-codebook interactions || C_{i,i} ||^2
+    CudaUtilsModule.vec_add( n, (1,h), d_unaries[j].buf, CuArrays.CuArray(diag( C[j]' * C[j] )).buf, Cint(n), Cint(h) )
+  end
 
   d_mincost = CuArrays.CuArray(mincost)
   d_bcost = CuArrays.CuArray{Float32}(h)
@@ -271,14 +282,19 @@ function quantize_chainq_cuda!(
       mincost[j,:] .= vec(minv)
       CUDAdrv.Mem.upload!(d_mincost.buf, mincost)
       # minidx[j,i,:] = rem.(mini.-1,h) + 1
-      minidx[j,i,:] = rem.(mini,h) + 1
+      minidx[j,i,:] = mini .+ 1
     end
     end
   end
 
-  unaries[m] .+= mincost
-  _, mini = findmin(unaries[m],1)
-  mini = rem.(mini-1,h) + 1
+  # unaries[m] .+= mincost
+  # _, mini = findmin(unaries[m],1)
+  # mini = rem.(mini-1,h) + 1
+
+  d_unaries[m] .+= d_mincost
+  CudaUtilsModule.vec_add2(n, (1, h), d_unaries[m].buf, CuArrays.CuArray(zeros(Float32, h)).buf, d_minv.buf, d_mini.buf, Cint(n))
+  Mem.download!(mini, d_mini.buf)
+  mini .+= 1
 
   # Backward trace
   @inbounds for idx = IDX # Loop over the datapoints

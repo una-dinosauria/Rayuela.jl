@@ -194,13 +194,92 @@ __device__ void _vec_add( float *matrix, float *vec, int n, int h) {
 }
 
 // Adds a vector to all the columns of a matrix and puts it in another matrix
-__device__ void _vec_add2( float* matrix_dst, float *matrix_src, float *vec_src, int n, int h) {
+__device__ void _vec_add2(float *matrix, float *vec, float *d_minv, int *d_mini, int n) {
+
+  // Hard-coding 256 entries in each codebook
+  const int H = 256;
 
   int x = threadIdx.x + blockIdx.x * blockDim.x; // 1-to-n
   int y = threadIdx.y; // 1-to-256
 
   if (x < n) {
-    matrix_dst[ x*h + y ] = matrix_src[ x*h + y ] + vec_src[ y ];
+
+    // Shared memory to find the min
+    __shared__ float values[H];
+    __shared__ unsigned char indices[H];
+
+    // Compute matrix + vec and save into shared memory
+    values[y] = matrix[x*H + y] + vec[y];
+
+    // Find the minimum after conditioning
+    if ( y >= 128 ) {return; }
+    __syncthreads();
+
+    bool ismin = values[ y ] > values[ y+128 ];
+    if ( ismin ) {
+      values[ y ] = values[ y+128 ];
+      indices[ y ] = y+128;
+    } else {
+      indices[ y ] = (unsigned char) y;
+    }
+    __syncthreads();
+
+    if ( y >= 64 ) {return; }
+    ismin = values[ y ] > values[ y+64 ];
+    if ( ismin ) {
+      values[ y ] = values[ y+64 ];
+      indices[ y ] = indices[ y+64 ];
+    }
+    __syncthreads();
+
+    if ( y >= 32 ) {return; }
+    ismin = values[ y ] > values[ y+32 ];
+    if ( ismin ) {
+      values[ y ] = values[ y+32 ];
+      indices[ y ] = indices[ y+32 ];
+    }
+
+    if ( y >= 16 ) {return; }
+    ismin = values[ y ] > values[ y+16 ];
+    if ( ismin ) {
+      values[ y ] = values[ y+16 ];
+      indices[ y ] = indices[ y+16 ];
+    }
+
+    if ( y >= 8 ) {return; }
+    ismin = values[ y ] > values[ y+8 ];
+    if ( ismin ) {
+      values[ y ] = values[ y+8 ];
+      indices[ y ] = indices[ y+8 ];
+    }
+
+    if ( y >= 4 ) {return; }
+    ismin = values[ y ] > values[ y+4 ];
+    if ( ismin ) {
+      values[ y ] = values[ y+4 ];
+      indices[ y ] = indices[ y+4 ];
+    }
+
+    if ( y >= 2 ) {return; }
+    ismin = values[ y ] > values[ y+2 ];
+    if ( ismin ) {
+      values[ y ] = values[ y+2 ];
+      indices[ y ] = indices[ y+2 ];
+    }
+
+    if ( y >= 1 ) {return; }
+
+    // When we get here, only the 0th thread must be alive
+    ismin = values[ y ] > values[ y+1 ];
+    if ( ismin ) {
+      values[ y ] = values[ y+1 ];
+      indices[ y ] = indices[ y+1 ];
+    }
+
+    // Copy the new code back to GPU global memory
+    d_minv[x] = values[y];
+    d_mini[x] = indices[y];
+
   }
 }
 
@@ -393,25 +472,25 @@ extern "C"
   }
 
   // Adds a vector to each column of a matrix. Used to add unary terms.
-  void __global__ vec_add( float *matrix, float *vec, int n, int h ) {
+  void __global__ vec_add(float *matrix, float *vec, int n, int h) {
     _vec_add( matrix, vec, n, h );
   }
 
   // Adds a vector to each column of a matrix. Used to add unary terms.
-  void __global__ vec_add2( float *matrix_dst, float *matrix_src, float *vec_src, int n, int h ) {
-    _vec_add2( matrix_dst, matrix_src, vec_src, n, h );
+  void __global__ vec_add2(float *matrix, float *vec, float *d_minv, int *d_mini, int n) {
+    _vec_add2(matrix, vec, d_minv, d_mini, n);
   }
 
   // ICM conditioning
-  void __global__ condition_icm( float *d_ub, float *d_bb, unsigned char *d_codek, int n, int h) {
+  void __global__ condition_icm(float *d_ub, float *d_bb, unsigned char *d_codek, int n, int h) {
     _condition_icm( d_ub, d_bb, d_codek, n, h );
   }
-  void __global__ condition_icm2( float *d_ub, float *d_bb, unsigned char *d_codek, int n, int h) {
+  void __global__ condition_icm2(float *d_ub, float *d_bb, unsigned char *d_codek, int n, int h) {
     _condition_icm2( d_ub, d_bb, d_codek, n, h );
   }
 
   // ICM conditioning and minimization
-  void __global__ condition_icm3(  float *d_ub, float *d_bb, unsigned char *d_codek, int conditioning, int m, int n) {
+  void __global__ condition_icm3(float *d_ub, float *d_bb, unsigned char *d_codek, int conditioning, int m, int n) {
     _condition_icm3( d_ub, d_bb, d_codek, conditioning, m, n );
   }
 
