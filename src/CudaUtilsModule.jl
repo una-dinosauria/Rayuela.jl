@@ -116,16 +116,16 @@ end
 
 function vec_add2(
   nblocks::CuDim, nthreads::CuDim,
-  d_matrix_dst::CUDAdrv.Mem.Buffer,
   d_matrix::CUDAdrv.Mem.Buffer,
   d_vec::CUDAdrv.Mem.Buffer,
-  n::Cint,
-  h::Cint)
+  d_minv::CUDAdrv.Mem.Buffer,
+  d_mini::CUDAdrv.Mem.Buffer,
+  n::Cint)
 
   fun = ptxdict["vec_add2"];
   cudacall( fun, nblocks, nthreads,
-    ( Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint ),
-    d_matrix_dst, d_matrix, d_vec, n, h)
+    ( Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cint}, Cint),
+    d_matrix, d_vec, d_minv, d_mini, n)
 end
 
 # function veccost(

@@ -39,7 +39,6 @@ function encode_icm_cuda_single(
     cbpair2binaryidx[ cbi[1,j], cbi[2,j] ] = j
   end
 
-  # CUDArt.devices( dev->true ) do devlist
   dev = CuDevice(0)
   ctx = CuContext(dev)
 
@@ -50,11 +49,9 @@ function encode_icm_cuda_single(
 
   # === Create a state for random number generation ===
   if V; @printf("Creating %d random states... ", n); tic(); end
-  # d_state = CUDArt.malloc( Ptr{Void}, n*64 )
   d_state = CUDAdrv.Mem.alloc( n*64 )
   CudaUtilsModule.setup_kernel( cld(n, 1024), 1024, Cint(n), d_state )
 
-  # CUDArt.device_synchronize()
   CUDAdrv.synchronize(ctx)
   if V; @printf("done in %.2f seconds\n", toq()); end
 
@@ -62,8 +59,8 @@ function encode_icm_cuda_single(
   if V; tic(); end
 
   # Copy X and C to the GPU
-  d_RX = CuArrays.CuArray( RX );
-  d_C  = CuArrays.CuArray( cat(2, C... ))
+  d_RX = CuArrays.CuArray(RX)
+  d_C  = CuArrays.CuArray(cat(2, C... ))
 
   # === Get unaries in the gpu ===
   d_prevcost = CuArrays.CuArray{Cfloat}(n)

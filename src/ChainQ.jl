@@ -222,10 +222,9 @@ function quantize_chainq_cuda!(
 
   # Allocate memory for brute-forcing each pair
   cost = zeros(T, h, n)
-  cost2 = zeros(T, h, n)
 
-  minv = typemax(T)
-  mini = 1
+  minv = zeros(T, n)
+  mini = zeros(Int32, n)
 
   # Setup GPU stuff
   dev = CuDevice(0)
@@ -234,44 +233,46 @@ function quantize_chainq_cuda!(
   CudaUtilsModule.init(gpuid, cudautilsptx)
 
   # Make space for unaries
-  # d_unaries = Vector{CUDAdrv.Mem.Buffer}(m)
-  # for i = 1:m; d_unaries[i] = CUDAdrv.Mem.upload(unaries[i]); end
-  d_bcost = CuArrays.CuArray{Cfloat}(h)
-  d_cost = CUDAdrv.Mem.upload(cost)
+  d_unaries = Vector{CuArrays.CuArray{Float32}}(m)
+  for i = 1:m; d_unaries[i] = CuArrays.CuArray(unaries[i]); end
+
+  d_mincost = CuArrays.CuArray(mincost)
+  d_bcost = CuArrays.CuArray{Float32}(h)
+  d_cost  = CuArrays.CuArray(cost)
+
+  d_minv = CuArrays.CuArray(minv)
+  d_mini = CuArrays.CuArray(mini)
 
   # Forward pass
   @inbounds for i = 1:(m-1) # Loop over states
 
-    if i > 1; unaries[i] .+= mincost; end
-    ucost = unaries[i]
-    d_ucost = CUDAdrv.Mem.upload(ucost)
+    if i > 1; d_unaries[i] .+= d_mincost; end
+    # ucost = unaries[i]
+    # d_ucost = CuArrays.CuArray(ucost)
+    d_ucost = d_unaries[i]
 
     bb = binaries[i]
+
+    @time begin
     for j = 1:h # Loop over the cost of going to j
       bcost = bb[:,j]
       CUDAdrv.Mem.upload!(d_bcost.buf, bcost)
       # cost  = ucost .+ bcost
 
-      # Mem.upload!(d_ucost, ucost)
+      CudaUtilsModule.vec_add2(n, (1, h), d_ucost.buf, d_bcost.buf, d_minv.buf, d_mini.buf, Cint(n))
+      # d_cost .= d_ucost .+ d_bcost
+      # Mem.download!(cost, d_cost.buf)
 
-      # d_ucost = CUDAdrv.Mem.upload(ucost)
-      # d_bcost = CUDAdrv.Mem.upload(bcost)
-
-      # for kk = IDX
-      #   @simd for k=1:h
-      #     cost[k,kk] = ucost[k,kk] + bcost[k]
-      #   end
-      # end
-
-      CudaUtilsModule.vec_add2(n, (1, h), d_cost, d_ucost, d_bcost.buf, Cint(n), Cint(h))
-      Mem.download!(cost, d_cost)
-
-      # @show cost .- cost2
+      Mem.download!(minv, d_minv.buf)
+      Mem.download!(mini, d_mini.buf)
 
       # Findmin
-      minv, mini = findmin(cost,1)
-      mincost[j,:]  = minv
-      minidx[j,i,:] = rem.(mini-1,h) + 1
+      # minv, mini = findmin(cost,1)
+      mincost[j,:] .= vec(minv)
+      CUDAdrv.Mem.upload!(d_mincost.buf, mincost)
+      # minidx[j,i,:] = rem.(mini.-1,h) + 1
+      minidx[j,i,:] = rem.(mini,h) + 1
+    end
     end
   end
 
