@@ -97,7 +97,7 @@ function make_plots(RPATH, dnames)
   ntrials = 10
 
   ilsiters = [32, 64, 128]
-  niters = [25, 50, 100]
+  niters   = [25, 50, 100]
 
   times_dict = running_times_labelme
 

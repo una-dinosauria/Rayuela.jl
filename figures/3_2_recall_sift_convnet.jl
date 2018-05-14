@@ -52,6 +52,13 @@ function make_plots(RPATH, dnames)
       ax[:set_prop_cycle](nothing)  # Reset colour cycle
       m = ms[ midx ]
 
+      # Load srd
+      for i=length(ilsit):-1:1
+        meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "srd_m$(m)_it100.h5")
+        println("$dataset_name srd m=$m"); print_recalls(meanrecall, stdrecall)
+        plot(toplot, meanrecall[toplot], label="SRD-$(ilsit[i]) $((m+1)*8) bits", m == 7 ? "--" : "", lw=linew)
+      end
+
       # Load lsq
       for i=length(ilsit):-1:1
         meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "lsq_m$(m)_it100.h5")
@@ -227,7 +234,6 @@ function make_sift_table(RPATH)
   println("\\\\")
 end
 
-
 function make_mnist_labelme_table(RPATH)
   ntrials = 10
   toplot = collect(1:1000)
@@ -282,10 +288,11 @@ function make_mnist_labelme_table(RPATH)
   println("\\\\")
 end
 
-RPATH = "/home/julieta/.julia/v0.6/Rayuela/results/"
+
+# RPATH = "/home/julieta/.julia/v0.6/Rayuela/results/"
 # make_plots(RPATH, ["sift1m", "convnet1m"])
 # make_plots(RPATH, ["mnist", "labelme"])
 
 # make_sift_table(RPATH)
 # make_mnist_labelme_table(RPATH)
-make_sparse_plot(RPATH)
+# make_sparse_plot(RPATH)

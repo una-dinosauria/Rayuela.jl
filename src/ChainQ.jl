@@ -247,6 +247,11 @@ function quantize_chainq_cuda!(
     CudaUtilsModule.vec_add( n, (1,h), d_unaries[j].buf, CuArrays.CuArray(diag( C[j]' * C[j] )).buf, Cint(n), Cint(h) )
   end
 
+  d_binaries = Vector{CuArrays.CuArray{Float32}}(length(binaries))
+  for i = 1:length(binaries)
+    d_binaries[i] = CuArrays.CuArray(binaries[i])
+  end
+
   d_mincost = CuArrays.CuArray(mincost)
   d_bcost = CuArrays.CuArray{Float32}(h)
   d_cost  = CuArrays.CuArray(cost)
@@ -266,25 +271,25 @@ function quantize_chainq_cuda!(
 
     @time begin
     for j = 1:h # Loop over the cost of going to j
-      bcost = bb[:,j]
-      CUDAdrv.Mem.upload!(d_bcost.buf, bcost)
+      # bcost = bb[:,j]
+      # CUDAdrv.Mem.upload!(d_bcost.buf, bcost)
       # cost  = ucost .+ bcost
 
-      CudaUtilsModule.vec_add2(n, (1, h), d_ucost.buf, d_bcost.buf, d_minv.buf, d_mini.buf, Cint(n))
-      # d_cost .= d_ucost .+ d_bcost
-      # Mem.download!(cost, d_cost.buf)
+      # CudaUtilsModule.vec_add2(n, (1, h), d_ucost.buf, d_bcost.buf, d_minv.buf, d_mini.buf, Cint(n))
+      CudaUtilsModule.vec_add2(n, (1, h), d_ucost.buf, d_binaries[i].buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(j-1))
 
-      Mem.download!(minv, d_minv.buf)
+      # Mem.download!(minv, d_minv.buf)
       Mem.download!(mini, d_mini.buf)
 
       # Findmin
       # minv, mini = findmin(cost,1)
-      mincost[j,:] .= vec(minv)
-      CUDAdrv.Mem.upload!(d_mincost.buf, mincost)
+      # mincost[j,:] .= vec(minv)
       # minidx[j,i,:] = rem.(mini.-1,h) + 1
       minidx[j,i,:] = mini .+ 1
     end
     end
+    # CUDAdrv.Mem.upload!(d_mincost.buf, mincost)
+
   end
 
   # unaries[m] .+= mincost
@@ -292,11 +297,12 @@ function quantize_chainq_cuda!(
   # mini = rem.(mini-1,h) + 1
 
   d_unaries[m] .+= d_mincost
-  CudaUtilsModule.vec_add2(n, (1, h), d_unaries[m].buf, CuArrays.CuArray(zeros(Float32, h)).buf, d_minv.buf, d_mini.buf, Cint(n))
+  CudaUtilsModule.vec_add2(n, (1, h), d_unaries[m].buf, CuArrays.CuArray(zeros(Float32, h, h)).buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(0))
   Mem.download!(mini, d_mini.buf)
   mini .+= 1
 
   # Backward trace
+  @time begin
   @inbounds for idx = IDX # Loop over the datapoints
 
     backpath = [ mini[idx] ]
@@ -306,6 +312,7 @@ function quantize_chainq_cuda!(
 
     # Save the inferred code
     CODES[:, idx] = reverse( backpath )
+  end
   end
 
   CudaUtilsModule.finit()

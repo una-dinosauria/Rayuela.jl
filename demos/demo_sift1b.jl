@@ -16,7 +16,13 @@ V = verbose = true
 Xt = read_dataset(dataset_name, ntrain, V)
 # Xb = read_dataset(dataset_name * "_base", nbase, V)
 Xq = read_dataset(dataset_name * "_query", nquery, V)[:,1:nquery]
-gt = read_dataset(dataset_name * "_groundtruth_10M", nquery, V)
+
+gt = []
+if nbase == Int(1e9)
+  gt = read_dataset(dataset_name * "_groundtruth"), nquery, V)
+else
+  gt = read_dataset(dataset_name * "_groundtruth_10M"), nquery, V)
+end
 gt .+= 1
 gt = convert( Vector{UInt32}, gt[1,1:nquery] )
 

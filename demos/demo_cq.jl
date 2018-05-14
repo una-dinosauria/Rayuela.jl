@@ -82,7 +82,7 @@ function run_experiments(
   dictionaries_count::Int=8)
 
   ntrials = 10
-  for trial = 1:2
+  for trial = 1:1
 
     @show "trial", trial
 
@@ -116,6 +116,10 @@ function run_experiments(
     else
       error("dataset unknown")
     end
+
+    a.trained_dictionary_file = joinpath(a.output_file_prefix, "D")
+    a.trained_binary_codes_file = joinpath(a.output_file_prefix, "B")
+    a.output_retrieved_results_file = joinpath(a.output_file_prefix, "recall")
 
     # Prepare output folder
     if !Base.Filesystem.ispath(a.output_file_prefix)
@@ -152,12 +156,12 @@ function dump_dataset(dataset_name, verbose=true)
 end
 
 # dump_dataset("MNIST")
-dump_dataset("labelme")
+# dump_dataset("labelme")
 # dump_dataset("Convnet1M")
 
 # @show("run_experiments")
 # run_experiments("MNIST", 16)
-# run_experiments("labelme", 8)
+run_experiments("labelme", 8)
 # run_experiments("SIFT1M", 16)
 # run_experiments("Convnet1M")
 
@@ -167,6 +171,6 @@ for trial = 3
   # test_experiment("MNIST", 8, trial)
   # test_experiment("MNIST", 16, trial)
 
-  test_experiment("SIFT1M", 8, trial)
-  test_experiment("SIFT1M", 16, trial)
+  # test_experiment("SIFT1M", 8, trial)
+  # test_experiment("SIFT1M", 16, trial)
 end

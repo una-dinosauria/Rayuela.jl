@@ -3,12 +3,12 @@
 #include <stdio.h>
 #include <curand_kernel.h>
 
-/*******************************************
-** Helper functions for CUDA LSQ encoding **
-** Written by Julieta Martinez, 2016      **
-** jltmtzc@gmail.com                      **
-** https://www.cs.ubc.ca/~julm/           **
-*******************************************/
+/****************************************
+** Helper functions for CUDA encoding  **
+** Written by Julieta Martinez, 2016   **
+** jltmtzc@gmail.com                   **
+** https://www.cs.ubc.ca/~julm/        **
+****************************************/
 
 // Create a global cuda random state. Used for perturbations.
 __device__ void _setup_kernel(
@@ -194,7 +194,7 @@ __device__ void _vec_add( float *matrix, float *vec, int n, int h) {
 }
 
 // Adds a vector to all the columns of a matrix and puts it in another matrix
-__device__ void _vec_add2(float *matrix, float *vec, float *d_minv, int *d_mini, int n) {
+__device__ void _vec_add2(float *matrix, float *d_binaries, float *d_minv, int *d_mini, int n, int j) {
 
   // Hard-coding 256 entries in each codebook
   const int H = 256;
@@ -209,7 +209,7 @@ __device__ void _vec_add2(float *matrix, float *vec, float *d_minv, int *d_mini,
     __shared__ unsigned char indices[H];
 
     // Compute matrix + vec and save into shared memory
-    values[y] = matrix[x*H + y] + vec[y];
+    values[y] = matrix[x*H + y] + d_binaries[H*j + y];
 
     // Find the minimum after conditioning
     if ( y >= 128 ) {return; }
@@ -277,7 +277,7 @@ __device__ void _vec_add2(float *matrix, float *vec, float *d_minv, int *d_mini,
     }
 
     // Copy the new code back to GPU global memory
-    d_minv[x] = values[y];
+    d_minv[H*x + j] = values[y];
     d_mini[x] = indices[y];
 
   }
@@ -477,8 +477,8 @@ extern "C"
   }
 
   // Adds a vector to each column of a matrix. Used to add unary terms.
-  void __global__ vec_add2(float *matrix, float *vec, float *d_minv, int *d_mini, int n) {
-    _vec_add2(matrix, vec, d_minv, d_mini, n);
+  void __global__ vec_add2(float *matrix, float *vec, float *d_minv, int *d_mini, int n, int j) {
+    _vec_add2(matrix, vec, d_minv, d_mini, n, j);
   }
 
   // ICM conditioning

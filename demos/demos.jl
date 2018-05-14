@@ -369,9 +369,9 @@ end
 #   run_demos("Deep1M", Int(1e5), 16, 256, niter)
 # end
 
-# run_demos_query_base("MNIST",   Int(60e3), 8,  256, 5, 1)
+run_demos_query_base("MNIST",   Int(60e3), 8,  256, 5, 1)
 # run_demos_query_base("MNIST",   Int(60e3), 16, 256, 5, 1)
-run_demos_query_base("labelme", Int(20e3), 8,  256, 5, 1)
+# run_demos_query_base("labelme", Int(20e3), 8,  256, 5, 1)
 # run_demos_query_base("labelme", Int(20e3), 16, 256, 5, 1)
 
 # run_demos
