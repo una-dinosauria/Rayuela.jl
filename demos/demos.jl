@@ -290,7 +290,8 @@ function run_demos_query_base(
 
 end
 
-function high_recall_experiments(dataset_name="SIFT1M",
+function high_recall_experiments(
+  dataset_name="SIFT1M",
   method::String="lsq",
   ntrain::Integer=Int(1e5),
   m::Integer=8,

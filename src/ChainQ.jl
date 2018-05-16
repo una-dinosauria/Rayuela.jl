@@ -383,7 +383,8 @@ function train_chainq(
   RX = R' * X
 
   # Initialize C
-  C, Ctime = update_codebooks_chain( RX, B, h )
+  # C, Ctime = update_codebooks_chain( RX, B, h )
+  C, Ctime = update_codebooks_chain_bin(RX, B, h)
   if V; @printf("%3d %e... %.2f secs updating C\n", -2, qerror( RX, B, C ), Ctime); end
 
   # Initialize B
@@ -408,7 +409,8 @@ function train_chainq(
     RX = R' * X
 
     # Update the codebooks #
-    C, Ctime = update_codebooks_chain( RX, B, h )
+    # C, Ctime = update_codebooks_chain( RX, B, h )
+    C, Ctime = update_codebooks_chain_bin(RX, B, h)
 
     # Update the codes with lattice search
     B, Btime = quantize_chainq( RX, C )

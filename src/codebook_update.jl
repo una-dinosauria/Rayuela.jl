@@ -92,19 +92,15 @@ function update_codebooks_fast(
   return K2vec( C', m, h )
 end
 
-# Same as above but matrix multiplications are accelerated by taking advantage
-# of the binary structure of B
-function update_codebooks_fast_bin(
+function fast_bin_matmul(
   X::Matrix{Float32}, # d-by-n matrix to update codebooks on.
   B::Matrix{Int16},   # m-by-n matrix. X encoded.
   h::Integer,         # number of entries per codebook.
   V::Bool=false,      # whether to print progress
   rho::Float64=1e-4) # regularization
 
-  if V print("Doing fast bin codebook update... "); st=time(); end
-
-  m, n = size( B )
-  d, n = size( X )
+  d, n = size(X)
+  m, n = size(B)
 
   Bm = Vector{Vector{Int16}}(m)
   for i = 1:m
@@ -161,6 +157,25 @@ function update_codebooks_fast_bin(
   # Solve with Cholesky
   A = BTB+rho*I
   b = BXT
+
+  return A, b
+end
+
+# Same as above but matrix multiplications are accelerated by taking advantage
+# of the binary structure of B
+function update_codebooks_fast_bin(
+  X::Matrix{Float32}, # d-by-n matrix to update codebooks on.
+  B::Matrix{Int16},   # m-by-n matrix. X encoded.
+  h::Integer,         # number of entries per codebook.
+  V::Bool=false,      # whether to print progress
+  rho::Float64=1e-4) # regularization
+
+  if V print("Doing fast bin codebook update... "); st=time(); end
+
+  m, n = size( B )
+  d, n = size( X )
+
+  A, b = fast_bin_matmul(X, B, h, V, rho)
 
   # Slightly more naive way to do it
   # C = A \ b
@@ -311,4 +326,52 @@ function update_codebooks_chain(
   C = update_codebooks_generic(X, B, h, get_cbdims_chain, V)
 
   return C, toq()
+end
+
+
+# Fast version of the function above
+function update_codebooks_chain_bin(
+    X::Matrix{Float32}, # d-by-n. The data that was encoded.
+    B::Matrix{Int16}, # d-by-m. X encoded.
+    h::Integer,         # number of entries per codebook.
+    V::Bool=false,      # whether to print progress
+    rho::Float64=1e-4)
+
+    tic()
+
+    m, n = size( B )
+    d, n = size( X )
+
+    A, b = fast_bin_matmul(X, B, h, V, rho)
+    # @show size(A) # mh x mh
+    # @show size(b) # mh x d
+
+    # Take subdims that are adjacent and solve each one
+    subdims = get_cbdims_chain(d, m)
+
+    C = Vector{Matrix{Float32}}(m)
+    for i = 1:m
+        C[i] = zeros(Float32, d, h)
+    end
+
+    for i = 1:(m-1)
+        d1 = (i-1)*h+1:(i+1)*h
+        d2 = intersect(subdims[i], subdims[i+1])
+
+        # @show d1, d2
+
+        # Slightly more naive way to do it
+        # C = A \ b
+
+        # More low-level (avoids checks) and less readable but more efficient.
+        # See https://software.intel.com/en-us/mkl-developer-reference-c-getrf
+        lpt = LAPACK.getrf!(A[d1, d1])
+        # See https://software.intel.com/en-us/mkl-developer-reference-c-getrs
+        Cblock = LAPACK.getrs!('N', lpt[1], lpt[2], b[d1, d2])
+
+        C[i][d2, :] = Cblock[1:h, :]'
+        C[i+1][d2, :] = Cblock[h+1:2*h, :]'
+    end
+
+    return C, toq()
 end
