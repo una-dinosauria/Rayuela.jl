@@ -219,7 +219,8 @@ function quantize_chainq_cuda!(
 
   # We need a matrix to keep track of the min and argmin
   mincost = zeros(T, h, n)
-  minidx  = zeros(Int32, h, m, n)
+  # minidx  = zeros(Int32, h, m, n)
+  minidx = convert(Array{Int32}, rand(1:h, h, m, n))
 
   # Allocate memory for brute-forcing each pair
   cost = zeros(T, h, n)
@@ -235,71 +236,49 @@ function quantize_chainq_cuda!(
 
   # Make space for unaries
   d_X = CuArrays.CuArray(X)
-  d_unaries   = Vector{CuArrays.CuArray{Float32}}(m)
-  d_codebooks = Vector{CuArrays.CuArray{Float32}}(m)
+  d_unaries   = Vector{CuArrays.CuArray{T}}(m)
+  d_codebooks = Vector{CuArrays.CuArray{T}}(m)
   for j = 1:m
     d_codebooks[j] = CuArrays.CuArray(C[j])
+
     # -2 * C' * X
-    d_unaries[j] = CuArrays.BLAS.gemm('T', 'N', -2.0f0, d_codebooks[j], d_X)
     # d_unaries[j] = -2.0f0 * d_codebooks[j]' * d_RX <-- thus runs out of memory real fast
+    d_unaries[j] = CuArrays.BLAS.gemm('T', 'N', -2.0f0, d_codebooks[j], d_X)
 
     # Add self-codebook interactions || C_{i,i} ||^2
-    CudaUtilsModule.vec_add( n, (1,h), d_unaries[j].buf, CuArrays.CuArray(diag( C[j]' * C[j] )).buf, Cint(n), Cint(h) )
+    # CudaUtilsModule.vec_add(n, (1,h), d_unaries[j].buf, CuArrays.CuArray(diag( C[j]' * C[j] )).buf, Cint(n), Cint(h) )
+    CudaUtilsModule.vec_add(n, (1,h), d_unaries[j].buf, CuArrays.CuArray(sum(C[j].^2, 1)).buf, Cint(n), Cint(h) )
   end
 
-  d_binaries = Vector{CuArrays.CuArray{Float32}}(length(binaries))
+  d_binaries = Vector{CuArrays.CuArray{T}}(length(binaries))
   for i = 1:length(binaries)
     d_binaries[i] = CuArrays.CuArray(binaries[i])
   end
 
   d_mincost = CuArrays.CuArray(mincost)
-  d_bcost = CuArrays.CuArray{Float32}(h)
-  d_cost  = CuArrays.CuArray(cost)
-
-  d_minv = CuArrays.CuArray(minv)
   d_mini = CuArrays.CuArray(mini)
 
   # Forward pass
   @inbounds for i = 1:(m-1) # Loop over states
 
-    if i > 1; d_unaries[i] .+= d_mincost; end
-    # ucost = unaries[i]
-    # d_ucost = CuArrays.CuArray(ucost)
-    d_ucost = d_unaries[i]
-
-    bb = binaries[i]
-
     @time begin
+    if i > 1; CuArrays.BLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[i], 1); end
+
     for j = 1:h # Loop over the cost of going to j
-      # bcost = bb[:,j]
-      # CUDAdrv.Mem.upload!(d_bcost.buf, bcost)
-      # cost  = ucost .+ bcost
+      CudaUtilsModule.vec_add2(n, (1, h), d_unaries[i].buf, d_binaries[i].buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(j-1))
 
-      # CudaUtilsModule.vec_add2(n, (1, h), d_ucost.buf, d_bcost.buf, d_minv.buf, d_mini.buf, Cint(n))
-      CudaUtilsModule.vec_add2(n, (1, h), d_ucost.buf, d_binaries[i].buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(j-1))
-
-      # Mem.download!(minv, d_minv.buf)
       Mem.download!(mini, d_mini.buf)
-
-      # Findmin
-      # minv, mini = findmin(cost,1)
-      # mincost[j,:] .= vec(minv)
-      # minidx[j,i,:] = rem.(mini.-1,h) + 1
-      minidx[j,i,:] = mini .+ 1
+      minidx[j,i,:] .= mini .+ one(eltype(mini))
     end
     end
-    # CUDAdrv.Mem.upload!(d_mincost.buf, mincost)
 
   end
 
-  # unaries[m] .+= mincost
-  # _, mini = findmin(unaries[m],1)
-  # mini = rem.(mini-1,h) + 1
 
-  d_unaries[m] .+= d_mincost
+  CuArrays.BLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[m], 1)
   CudaUtilsModule.vec_add2(n, (1, h), d_unaries[m].buf, CuArrays.CuArray(zeros(Float32, h, h)).buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(0))
   Mem.download!(mini, d_mini.buf)
-  mini .+= 1
+  mini .+= one(eltype(mini))
 
   # Backward trace
   @time begin
@@ -311,12 +290,14 @@ function quantize_chainq_cuda!(
     end
 
     # Save the inferred code
-    CODES[:, idx] = reverse( backpath )
+    CODES[:, idx] .= reverse!( backpath )
   end
   end
 
   CudaUtilsModule.finit()
   destroy!(ctx)
+
+  nothing
 end
 
 
@@ -336,13 +317,14 @@ function quantize_chainq(
     binaries[i] = 2 * C[i]' * C[i+1]
   end
   CODES = SharedArray{Int16,2}(m, n)
-  CODES[:] = 0
+  CODES[:] .= zero(Int16)
 
   if nworkers() == 1
     if use_cpp
       # quantize_chainq_batched!( CODES, X, C, binaries, 1:n )
       # quantize_chainq_cpp!(sdata(CODES), X, C, binaries, 1:n)
       quantize_chainq_cuda!(sdata(CODES), X, C, binaries, 1:n)
+      gc()
     else
       quantize_chainq!( CODES, X, C, binaries, 1:n )
       # quantize_chainq_batched!( CODES, X, C, binaries, 1:n )
@@ -383,13 +365,13 @@ function train_chainq(
   RX = R' * X
 
   # Initialize C
-  # C, Ctime = update_codebooks_chain( RX, B, h )
+  # C, Ctime = update_codebooks_chain(RX, B, h)
   C, Ctime = update_codebooks_chain_bin(RX, B, h)
-  if V; @printf("%3d %e... %.2f secs updating C\n", -2, qerror( RX, B, C ), Ctime); end
+  if V; @printf("%3d %e... %.2f secs updating C\n", -2, qerror(RX, B, C), Ctime); end
 
   # Initialize B
   B, Btime = quantize_chainq( RX, C )
-  if V; @printf("%3d %e... %.2f secs updating B\n", -1, qerror( RX, B, C ), Btime); end
+  if V; @printf("%3d %e... %.2f secs updating B\n", -1, qerror(RX, B, C), Btime); end
 
   for iter = 0:niter
     if V; tic(); end # Take time if asked to
@@ -409,11 +391,11 @@ function train_chainq(
     RX = R' * X
 
     # Update the codebooks #
-    # C, Ctime = update_codebooks_chain( RX, B, h )
+    # C, Ctime = update_codebooks_chain(RX, B, h)
     C, Ctime = update_codebooks_chain_bin(RX, B, h)
 
     # Update the codes with lattice search
-    B, Btime = quantize_chainq( RX, C )
+    B, Btime = quantize_chainq(RX, C)
     if V; @printf("done in %.2f secs. %.2f secs updating B with %d workers. %.2f secs updating C\n", toq(), Btime, nworkers(), Ctime); end
   end
 
