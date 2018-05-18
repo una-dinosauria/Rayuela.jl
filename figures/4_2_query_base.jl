@@ -75,8 +75,10 @@ function make_plots(RPATH, dnames)
           "lsq_64_gpu"  => 0.36 + 4.27,
           "lsq_128"     => 5.32 + 10.26,
           "lsq_128_gpu" => 1.15 + 10.26,
-          "chainq_64"   => 0,
-          "chainq_128"  => 0,
+          "chainq_64"   => 0, # total
+          "chainq_64_gpu" => 1.65, # total
+          "chainq_128"  => 0, # total
+          "chainq_128_gpu" => 3.24, # total
           "cq_64"       => 7100, # ~2 hours for 30 iterations
           "cq_128"      => 29808, # ~8 hours for 30 iterations
           "ervq_64"     => 2.99,
