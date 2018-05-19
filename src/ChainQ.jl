@@ -246,8 +246,7 @@ function quantize_chainq_cuda!(
     d_unaries[j] = CuArrays.BLAS.gemm('T', 'N', -2.0f0, d_codebooks[j], d_X)
 
     # Add self-codebook interactions || C_{i,i} ||^2
-    # CudaUtilsModule.vec_add(n, (1,h), d_unaries[j].buf, CuArrays.CuArray(diag( C[j]' * C[j] )).buf, Cint(n), Cint(h) )
-    CudaUtilsModule.vec_add(n, (1,h), d_unaries[j].buf, CuArrays.CuArray(sum(C[j].^2, 1)).buf, Cint(n), Cint(h) )
+    CudaUtilsModule.vec_add(n, (1,h), d_unaries[j].buf, CuArrays.CuArray(sum(C[j].^2, 1)).buf, Cint(n), Cint(h))
   end
 
   d_binaries = Vector{CuArrays.CuArray{T}}(length(binaries))
@@ -265,7 +264,7 @@ function quantize_chainq_cuda!(
     if i > 1; CuArrays.BLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[i], 1); end
 
     for j = 1:h # Loop over the cost of going to j
-      CudaUtilsModule.vec_add2(n, (1, h), d_unaries[i].buf, d_binaries[i].buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(j-1))
+      CudaUtilsModule.viterbi_forward(n, (1, h), d_unaries[i].buf, d_binaries[i].buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(j-1))
 
       Mem.download!(mini, d_mini.buf)
       minidx[j,i,:] .= mini .+ one(eltype(mini))
@@ -276,7 +275,7 @@ function quantize_chainq_cuda!(
 
 
   CuArrays.BLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[m], 1)
-  CudaUtilsModule.vec_add2(n, (1, h), d_unaries[m].buf, CuArrays.CuArray(zeros(Float32, h, h)).buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(0))
+  CudaUtilsModule.viterbi_forward(n, (1, h), d_unaries[m].buf, CuArrays.CuArray(zeros(Float32, h, h)).buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(0))
   Mem.download!(mini, d_mini.buf)
   mini .+= one(eltype(mini))
 

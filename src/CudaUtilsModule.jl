@@ -23,8 +23,10 @@ function mdinit(devlist, ptxfile)
     ptxdict["veccost2"]     = CuFunction(md, "veccost2")
 
     # Add vector to matrix
-    ptxdict["vec_add"]      = CuFunction(md, "vec_add")
-    ptxdict["vec_add2"]      = CuFunction(md, "vec_add2")
+    ptxdict["vec_add"]         = CuFunction(md, "vec_add")
+
+    # Forward pass of the viterbi algorithm
+    ptxdict["viterbi_forward"] = CuFunction(md, "viterbi_forward")
 
     # ICM functions
     # ptxdict["condition_icm"]  = CuFunction(md, "condition_icm");
@@ -114,7 +116,7 @@ function vec_add(
     d_matrix, d_vec, n, h)
 end
 
-function vec_add2(
+function viterbi_forward(
   nblocks::CuDim, nthreads::CuDim,
   d_matrix::CUDAdrv.Mem.Buffer,
   d_vec::CUDAdrv.Mem.Buffer,
@@ -122,7 +124,7 @@ function vec_add2(
   d_mini::CUDAdrv.Mem.Buffer,
   n::Cint, j::Cint)
 
-  fun = ptxdict["vec_add2"];
+  fun = ptxdict["viterbi_forward"];
   cudacall( fun, nblocks, nthreads,
     ( Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cint}, Cint, Cint),
     d_matrix, d_vec, d_minv, d_mini, n, j)
@@ -144,10 +146,6 @@ end
 
 function veccost2(
   nblocks::CuDim, nthreads::CuDim,
-  # d_rx::CuArray{Cfloat},
-  # d_codebooks::CuArray{Cfloat},
-  # d_codes::CuArray{Cuchar},
-  # d_veccost::CuArray{Cfloat}, # out.
   d_rx::CUDAdrv.Mem.Buffer,
   d_codebooks::CUDAdrv.Mem.Buffer,
   d_codes::CUDAdrv.Mem.Buffer,
@@ -158,7 +156,7 @@ function veccost2(
 
   fun = ptxdict["veccost2"];
   cudacall( fun, nblocks, nthreads,
-    ( Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cuchar}, Ptr{Cfloat}, Cint, Cint, Cint),
+    (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cuchar}, Ptr{Cfloat}, Cint, Cint, Cint),
     d_rx, d_codebooks, d_codes, d_veccost, d, m, n,
     shmem=Int( d*sizeof(Cfloat)) );
 end

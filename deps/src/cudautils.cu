@@ -193,8 +193,15 @@ __device__ void _vec_add( float *matrix, float *vec, int n, int h) {
   }
 }
 
-// Adds a vector to all the columns of a matrix and puts it in another matrix
-__device__ void _vec_add2(float *matrix, float *d_binaries, float *d_minv, int *d_mini, int n, int j) {
+// Adds the hth column of d_binaries to matrix, and finds the minimum value and index in each
+// column and puts the output in d_minv and d_mini
+__device__ void _viterbi_forward(
+  float *matrix,
+  float *d_binaries,
+  float *d_minv,
+  int *d_mini,
+  int n,
+  int j) {
 
   // Hard-coding 256 entries in each codebook
   const int H = 256;
@@ -208,7 +215,7 @@ __device__ void _vec_add2(float *matrix, float *d_binaries, float *d_minv, int *
     __shared__ float values[H];
     __shared__ unsigned char indices[H];
 
-    // Compute matrix + vec and save into shared memory
+    // Add matrix + vec
     values[y] = matrix[x*H + y] + d_binaries[H*j + y];
 
     // Find the minimum after conditioning
@@ -477,8 +484,8 @@ extern "C"
   }
 
   // Adds a vector to each column of a matrix. Used to add unary terms.
-  void __global__ vec_add2(float *matrix, float *vec, float *d_minv, int *d_mini, int n, int j) {
-    _vec_add2(matrix, vec, d_minv, d_mini, n, j);
+  void __global__ viterbi_forward(float *matrix, float *vec, float *d_minv, int *d_mini, int n, int j) {
+    _viterbi_forward(matrix, vec, d_minv, d_mini, n, j);
   }
 
   // ICM conditioning
