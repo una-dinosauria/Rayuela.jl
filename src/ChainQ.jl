@@ -200,18 +200,13 @@ function quantize_chainq_batched!(
 end
 
 
-"Quantize using Vitebi algorithm implemented in julia. This algorithm is batched and thus may be faster, but in practice
-it's about as fast as the sequential version."
+"Quantize using Vitebi algorithm implemented in CUDA"
 function quantize_chainq_cuda!(
   CODES::Matrix{Int16},  # out. Where to save the result
   X::Matrix{T},                # in. d-by-n matrix to encode
   C::Vector{Matrix{T}},        # in. m-long vector with d-by-h codebooks
   binaries::Vector{Matrix{T}}, # in. Binary terms
   IDX::UnitRange{Int64}) where T <: AbstractFloat # in. Index to save the result
-
-  # Get unaries
-  # @Profile.profile begin
-  # unaries = get_unaries( X, C )
 
   d, n = size( X )
   _, h = size( C[1] )
@@ -259,7 +254,6 @@ function quantize_chainq_cuda!(
 
   # Forward pass
   @inbounds for i = 1:(m-1) # Loop over states
-
     @time begin
     if i > 1; CuArrays.BLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[i], 1); end
 
@@ -270,9 +264,7 @@ function quantize_chainq_cuda!(
       minidx[j,i,:] .= mini .+ one(eltype(mini))
     end
     end
-
   end
-
 
   CuArrays.BLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[m], 1)
   CudaUtilsModule.viterbi_forward(n, (1, h), d_unaries[m].buf, CuArrays.CuArray(zeros(Float32, h, h)).buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(0))
@@ -304,7 +296,8 @@ end
 function quantize_chainq(
   X::Matrix{Float32},         # d-by-n matrix. Data to encode
   C::Vector{Matrix{Float32}}, # m-long vector with d-by-h codebooks
-  use_cpp::Bool=true)
+  use_cuda::Bool=false,
+  use_cpp::Bool=false)
 
   tic()
   d, n = size( X )
@@ -315,21 +308,22 @@ function quantize_chainq(
   for i = 1:(m-1)
     binaries[i] = 2 * C[i]' * C[i+1]
   end
-  CODES = SharedArray{Int16,2}(m, n)
-  CODES[:] .= zero(Int16)
 
-  if nworkers() == 1
-    if use_cpp
-      # quantize_chainq_batched!( CODES, X, C, binaries, 1:n )
-      # quantize_chainq_cpp!(sdata(CODES), X, C, binaries, 1:n)
-      quantize_chainq_cuda!(sdata(CODES), X, C, binaries, 1:n)
-      gc()
-    else
-      quantize_chainq!( CODES, X, C, binaries, 1:n )
-      # quantize_chainq_batched!( CODES, X, C, binaries, 1:n )
+  CODES = SharedArray{Int16,2}(m, n)
+  CODES .= zero(Int16)
+
+  if use_cuda # CUDA version
+    quantize_chainq_cuda!(sdata(CODES), X, C, binaries, 1:n)
+    gc()
+  elseif nworkers() == 1
+    if use_cpp # C++ parallel version
+      quantize_chainq_cpp!(sdata(CODES), X, C, binaries, 1:n)
+      # quantize_chainq_batched!(CODES, X, C, binaries, 1:n)
+    else # Julia single-threaded version
+      quantize_chainq!(CODES, X, C, binaries, 1:n)
     end
-  else
-    paridx = splitarray( 1:n, nworkers() )
+  else # Julia-paralell version
+    paridx = splitarray(1:n, nworkers())
     @sync begin
       for (i,wpid) in enumerate(workers())
         @async begin
@@ -359,6 +353,8 @@ function train_chainq(
 
   d, n = size( X )
   obj  = zeros(T, niter+1)
+  use_cuda = true
+  use_cpp = false
 
   CB = zeros(T, size(X))
   RX = R' * X
@@ -369,18 +365,18 @@ function train_chainq(
   if V; @printf("%3d %e... %.2f secs updating C\n", -2, qerror(RX, B, C), Ctime); end
 
   # Initialize B
-  B, Btime = quantize_chainq( RX, C )
+  B, Btime = quantize_chainq(RX, C, use_cuda, use_cpp)
   if V; @printf("%3d %e... %.2f secs updating B\n", -1, qerror(RX, B, C), Btime); end
 
   for iter = 0:niter
     if V; tic(); end # Take time if asked to
 
-    obj[iter+1] = qerror( RX, B, C )
+    obj[iter+1] = qerror(RX, B, C)
     if V; @printf("%3d %e... ", iter, obj[iter+1]); end
 
     # update CB
-    CB[:] = 0
-    for i = 1:m; CB += C[i][:, vec(B[i,:]) ]; end
+    CB .= zero(T)
+    for i = 1:m; CB .+= C[i][:, vec(B[i,:])]; end
 
     # update R
     U, S, VV = svd(X * CB', thin=true)
@@ -394,7 +390,7 @@ function train_chainq(
     C, Ctime = update_codebooks_chain_bin(RX, B, h)
 
     # Update the codes with lattice search
-    B, Btime = quantize_chainq(RX, C)
+    B, Btime = quantize_chainq(RX, C, use_cuda, use_cpp)
     if V; @printf("done in %.2f secs. %.2f secs updating B with %d workers. %.2f secs updating C\n", toq(), Btime, nworkers(), Ctime); end
   end
 
@@ -419,13 +415,14 @@ function experiment_chainq(
 
   # === ChainQ train ===
   d, _ = size(Xt)
-  C, B, R, train_error = train_chainq( Xt, m, h, R, B, C, niter, V )
+  C, B, R, train_error = train_chainq_cuda(Xt, m, h, R, B, C, niter, V)
   norms_B, norms_C = get_norms_codebook(B, C)
   @printf("Error after ChainQ is %e\n", train_error[end])
 
   # === Encode the base set ===
+  use_cude = true
   RXb = R' * Xb
-  B_base, _  = quantize_chainq(RXb, C)
+  B_base, _  = quantize_chainq!(RXb, C, use_cuda)
   base_error = qerror(RXb, B_base, C)
   if V; @printf("Error in base is %e\n", base_error); end
 
@@ -441,7 +438,7 @@ function experiment_chainq(
   rec = eval_recall(gt, idx, knn)
 end
 
-
+"Train, quantize the base set and compute recall using chain quantization"
 function experiment_chainq(
   Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
   Xb::Matrix{T}, # d-by-n. Base set
