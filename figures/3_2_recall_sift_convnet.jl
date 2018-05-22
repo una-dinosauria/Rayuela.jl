@@ -282,7 +282,27 @@ function make_mnist_labelme_table(RPATH)
   for dataset_name = dnames
     meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "lsq_m$(m)_it100.h5")
     for j in [1, 2, 5]
+      @printf("& \$%.2f \\pm %.2f\$ ", 100*meanrecall[j], 100 * stdrecall[j])
+    end
+  end
+  println("\\\\")
+
+  # Load pq and opq
+  print("SR-D-8 ")
+  for dataset_name = dnames
+    meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "srd_m$(m)_it100.h5")
+    for j in [1, 2, 5]
       @printf("& \$\\mathbf{%.2f} \\pm %.2f\$ ", 100*meanrecall[j], 100 * stdrecall[j])
+    end
+  end
+  println("\\\\")
+
+  # Load pq and opq
+  print("SR-C-8 ")
+  for dataset_name = dnames
+    meanrecall, stdrecall = load_recall_curves(ntrials, toplot, dataset_name, RPATH, "src_m$(m)_it100.h5")
+    for j in [1, 2, 5]
+      @printf("& \$%.2f \\pm %.2f\$ ", 100*meanrecall[j], 100 * stdrecall[j])
     end
   end
   println("\\\\")
@@ -294,5 +314,5 @@ end
 # make_plots(RPATH, ["mnist", "labelme"])
 
 # make_sift_table(RPATH)
-# make_mnist_labelme_table(RPATH)
+make_mnist_labelme_table(RPATH)
 # make_sparse_plot(RPATH)

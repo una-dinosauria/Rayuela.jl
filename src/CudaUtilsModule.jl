@@ -14,7 +14,7 @@ function mdinit(devlist, ptxfile)
   for dev in devlist
     # device(dev)
     CuDevice(dev)
-    md = CuModuleFile( ptxfile )
+    md = CuModuleFile(ptxfile)
 
     # Utils functions
     ptxdict["setup_kernel"] = CuFunction(md, "setup_kernel")
@@ -40,12 +40,12 @@ end
 # mdclose() = (for md in mdlist; unsafe_unload!(md); end; empty!(mdlist); empty!(ptxdict))
 mdclose() = (empty!(mdlist); empty!(ptxdict))
 
-function finit( )
+function finit()
   mdclose()
 end
 
-function init( devlist, ptxfile )
-  mdinit( devlist, ptxfile )
+function init(devlist, ptxfile)
+  mdinit(devlist, ptxfile)
 end
 
 # # Accumulates binaries to unaries for icm conditioning
@@ -94,9 +94,8 @@ function condition_icm3(
   m::Cint,
   n::Cint)                        # in. size( d_ub, 2 )
 
-  fun = ptxdict["condition_icm3"];
-
-  cudacall( fun, nblocks, nthreads,
+  fun = ptxdict["condition_icm3"]
+  cudacall(fun, nblocks, nthreads,
     (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cuchar}, Cint, Cint, Cint),
     d_ub, d_bbs, d_codek, conditioning, m, n)
 
@@ -110,9 +109,9 @@ function vec_add(
   n::Cint,
   h::Cint)
 
-  fun = ptxdict["vec_add"];
-  cudacall( fun, nblocks, nthreads,
-    ( Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint ),
+  fun = ptxdict["vec_add"]
+  cudacall(fun, nblocks, nthreads,
+    (Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint),
     d_matrix, d_vec, n, h)
 end
 
@@ -124,9 +123,9 @@ function viterbi_forward(
   d_mini::CUDAdrv.Mem.Buffer,
   n::Cint, j::Cint)
 
-  fun = ptxdict["viterbi_forward"];
-  cudacall( fun, nblocks, nthreads,
-    ( Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cint}, Cint, Cint),
+  fun = ptxdict["viterbi_forward"]
+  cudacall(fun, nblocks, nthreads,
+    (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cint}, Cint, Cint),
     d_matrix, d_vec, d_minv, d_mini, n, j)
 end
 
@@ -154,11 +153,11 @@ function veccost2(
   m::Cint,
   n::Cint)
 
-  fun = ptxdict["veccost2"];
-  cudacall( fun, nblocks, nthreads,
+  fun = ptxdict["veccost2"]
+  cudacall(fun, nblocks, nthreads,
     (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cuchar}, Ptr{Cfloat}, Cint, Cint, Cint),
     d_rx, d_codebooks, d_codes, d_veccost, d, m, n,
-    shmem=Int( d*sizeof(Cfloat)) );
+    shmem=Int(d*sizeof(Cfloat)))
 end
 
 function perturb(
@@ -169,10 +168,10 @@ function perturb(
   m::Cint,
   k::Cint)
 
-  fun = ptxdict["perturb"];
+  fun = ptxdict["perturb"]
   cudacall( fun, nblocks, nthreads,
     (Ptr{Void}, Ptr{Cuchar}, Cint, Cint, Cint),
-    state, codes, n, m, k);
+    state, codes, n, m, k)
 end
 
 function setup_kernel(
@@ -180,10 +179,10 @@ function setup_kernel(
   n::Cint,
   state::CUDAdrv.Mem.Buffer)
 
-  fun = ptxdict["setup_kernel"];
-  cudacall( fun, nblocks, nthreads,
+  fun = ptxdict["setup_kernel"]
+  cudacall(fun, nblocks, nthreads,
     (Cint, Ptr{Void}),
-    n, state);
+    n, state)
 end
 
 end #cudaUtilsModule

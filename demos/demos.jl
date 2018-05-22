@@ -103,16 +103,16 @@ function run_demos(
   d, _    = size( Xt )
 
   ntrials = 10
-  # # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
+  # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
   # for trial = 1:ntrials
   #   C, B, train_error, B_base, recall = Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
   #   save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
   # end
-  # for trial = 1:ntrials
-  #   C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  #   save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
-  # end
-  #
+  for trial = 1:ntrials
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+    save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
+  end
+
   # # Cheap non-orthogonal methods: RVQ, ERVQ
   # for trial = 1:ntrials
   #   C, B, train_error, B_base, recall = Rayuela.experiment_rvq( Xt,       Xb, Xq, gt, m-1, h, niter, knn, verbose)
@@ -123,7 +123,7 @@ function run_demos(
   #   C, B, train_error, B_base, recall = Rayuela.experiment_ervq(Xt, B, C, Xb, Xq, gt, m-1, h, niter, knn, verbose)
   #   save_results_pq("./results/$(lowercase(dataset_name))/ervq_m$(m-1)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
   # end
-  #
+
   # # Precompute init for LSQ/SR
   # for trial = 1:ntrials
   #   C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
@@ -361,18 +361,18 @@ end
 
 
 # run_demos("SIFT1M", Int(1e5),  8, 256, 25)
-# for niter = [25]
-#   run_demos("SIFT1M", Int(1e5),  8, 256, niter)
-#   run_demos("SIFT1M", Int(1e5), 16, 256, niter)
-#   run_demos("Convnet1M", Int(1e5),   8, 256, niter)
-#   run_demos("Convnet1M", Int(1e5),  16, 256, niter)
-#   run_demos("Deep1M", Int(1e5),  8, 256, niter)
-#   run_demos("Deep1M", Int(1e5), 16, 256, niter)
-# end
+for niter = [10]
+  # run_demos("SIFT1M", Int(1e5),  8, 256, niter)
+  run_demos("SIFT1M", Int(1e5), 16, 256, niter)
+  # run_demos("Convnet1M", Int(1e5),   8, 256, niter)
+  # run_demos("Convnet1M", Int(1e5),  16, 256, niter)
+  # run_demos("Deep1M", Int(1e5),  8, 256, niter)
+  # run_demos("Deep1M", Int(1e5), 16, 256, niter)
+end
 
 # run_demos_query_base("MNIST",   Int(60e3), 8,  256, 5, 1)
 # run_demos_query_base("MNIST",   Int(60e3), 16, 256, 5, 1)
-run_demos_query_base("labelme", Int(20e3), 8,  256, 5, 1)
+# run_demos_query_base("labelme", Int(20e3), 8,  256, 5, 1)
 # run_demos_query_base("labelme", Int(20e3), 16, 256, 5, 1)
 
 # run_demos
