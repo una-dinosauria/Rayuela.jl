@@ -444,21 +444,21 @@ function make_plots_query_base(RPATH, dnames)
     end
 
 
-  # Put a legend below current axis
-  # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-  #         fancybox=True, shadow=True, ncol=5)
-  # legend(loc="upper center", fontsize=sz-2, bbox_to_anchor=(1.0, 1.0), ncol=1)
+    # Put a legend below current axis
+    # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+    #         fancybox=True, shadow=True, ncol=5)
+    # legend(loc="upper center", fontsize=sz-2, bbox_to_anchor=(1.0, 1.0), ncol=1)
 
-  PyPlot.tight_layout()
-  sfile = "/home/julieta/Desktop/recall_vs_time_$(dnames[1])_$(dnames[2]).pdf"
-  savefig( sfile )
+    PyPlot.tight_layout()
+    sfile = "/home/julieta/Desktop/recall_vs_time_$(dnames[1])_$(dnames[2]).pdf"
+    savefig( sfile )
 end
 
 function make_plots_train_query_base(RPATH, dnames)
-  ms      = [7, 15]
+  ms = [7, 15]
 
   # Dictionaries with time per iteration. In seconds
-  running_times_sift_train =   # encoding + codebook
+  running_times_sift_train = # encoding + codebook
     Dict("sr_64"       => 0, # fast codebook
          "sr_128"      => 0,
          "lsq_64"      => 0, # no fast codebook
@@ -467,18 +467,18 @@ function make_plots_train_query_base(RPATH, dnames)
          "sr_128_gpu"  => 0,
          "lsq_64_gpu"  => 0, # gpu, no fast codebook
          "lsq_128_gpu" => 0,
-         "chainq_sr_64"      => 0,  # fast codebook
+         "chainq_sr_64"      => 0, # fast codebook
          "chainq_sr_128"     => 0, #
          "chainq_64"         => 0, # no fast codebook no gpu
          "chainq_128"        => 0, #
-         "chainq_sr_64_gpu"  => 0,  # gpu, fast codebook
-         "chainq_sr_128_gpu" => 0,  #
-         "chainq_64_gpu"     => 0,  # gpu, no fast codebook
+         "chainq_sr_64_gpu"  => 0, # gpu, fast codebook
+         "chainq_sr_128_gpu" => 0, #
+         "chainq_64_gpu"     => 0, # gpu, no fast codebook
          "chainq_128_gpu"    => 0, #
          "cq_64"       => ,
          "cq_128"      => 13*3600 + 24*60, # 13:24:28.23 -- train on base; 2:29:34.61 -- train on learn
-         "ervq_64"     => 0,
-         "ervq_128"    => 0,
+         "ervq_64"     => 5.02,
+         "ervq_128"    => 25.28,
          "rvq_64"      => 48.3 / 10, # training
          "rvq_128"     => 98.7 / 10,
          "opq_64"      => 9.64 / 10,
@@ -486,7 +486,7 @@ function make_plots_train_query_base(RPATH, dnames)
          "pq_64"       => 7.30 / 10,
          "pq_128"      => 9.97 / 10)
 
-   running_times_sift_encode =   # encoding + codebook
+   running_times_sift_encode = # encoding + codebook
      Dict("sr_64"       => 0, # fast codebook
           "sr_128"      => 0,
           "lsq_64"      => 0, # no fast codebook
@@ -495,18 +495,18 @@ function make_plots_train_query_base(RPATH, dnames)
           "sr_128_gpu"  => 0,
           "lsq_64_gpu"  => 0, # gpu, no fast codebook
           "lsq_128_gpu" => 0,
-          "chainq_sr_64"      => 0,  # fast codebook
+          "chainq_sr_64"      => 0, # fast codebook
           "chainq_sr_128"     => 0, #
           "chainq_64"         => 0, # no fast codebook no gpu
           "chainq_128"        => 0, #
-          "chainq_sr_64_gpu"  => 0,  # gpu, fast codebook
-          "chainq_sr_128_gpu" => 0,  #
-          "chainq_64_gpu"     => 0,  # gpu, no fast codebook
+          "chainq_sr_64_gpu"  => 0, # gpu, fast codebook
+          "chainq_sr_128_gpu" => 0, #
+          "chainq_64_gpu"     => 0, # gpu, no fast codebook
           "chainq_128_gpu"    => 0, #
           "cq_64"       => 0,
           "cq_128"      => 0,
-          "ervq_64"     => 0,
-          "ervq_128"    => 0,
+          "ervq_64"     => 39.19, # encoding
+          "ervq_128"    => 150.7,
           "rvq_64"      => 39.19, # encoding
           "rvq_128"     => 150.7,
           "opq_64"      => 4.96,
