@@ -475,8 +475,8 @@ function make_plots_train_query_base(RPATH, dnames)
          "chainq_sr_128_gpu" => 0,  #
          "chainq_64_gpu"     => 0,  # gpu, no fast codebook
          "chainq_128_gpu"    => 0, #
-         "cq_64"       => 0,
-         "cq_128"      => 0,
+         "cq_64"       => ,
+         "cq_128"      => 13*3600 + 24*60, # 13:24:28.23 -- train on base; 2:29:34.61 -- train on learn
          "ervq_64"     => 0,
          "ervq_128"    => 0,
          "rvq_64"      => 48.3 / 10, # training
