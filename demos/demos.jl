@@ -108,10 +108,10 @@ function run_demos(
   #   C, B, train_error, B_base, recall = Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
   #   save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
   # end
-  for trial = 1:ntrials
-    C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-    save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
-  end
+  # for trial = 1:ntrials
+  #   C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+  #   save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
+  # end
 
   # # Cheap non-orthogonal methods: RVQ, ERVQ
   # for trial = 1:ntrials
@@ -124,7 +124,7 @@ function run_demos(
   #   save_results_pq("./results/$(lowercase(dataset_name))/ervq_m$(m-1)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
   # end
 
-  # # Precompute init for LSQ/SR
+  # Precompute init for LSQ/SR
   # for trial = 1:ntrials
   #   C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
   #   save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, ones(UInt16,1,1), [0f0])
