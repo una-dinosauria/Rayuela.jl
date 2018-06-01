@@ -311,6 +311,7 @@ function train_lsq_cuda(
     # Update the codebooks
     # C = update_codebooks( X, B, h, V, "lsqr" )
     C = update_codebooks_fast_bin( X, B, h, V )
+
     # Update the codes B
     # B = convert(Matrix{Int16}, rand(1:h, m, n))
     B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplits, V)
