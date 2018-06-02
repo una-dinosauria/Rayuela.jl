@@ -6,5 +6,6 @@
 *.remote*
 data/
 results/
+figures/
 core
 demos/core
