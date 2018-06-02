@@ -56,6 +56,9 @@ if you do.
 
 ## Version and support
 
+This is a pre-alpha release. It still contains code that I am using for my PhD thesis.
+I will make a more formal announcement when an alpha release is ready.
+
 I am committed to supporting the development of this package until Julia 1.0 comes out and is stable.
 
 ## Roadmap
