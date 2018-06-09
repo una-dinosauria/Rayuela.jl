@@ -9,7 +9,7 @@ function quantize_opq{T <: AbstractFloat}(
   V::Bool=false)
 
   # Apply rotation and quantize as in PQ
-  return quantize_pq( R'*X, C, V )
+  return quantize_pq(R'*X, C, V)
 end
 
 function train_opq{T <: AbstractFloat}(
@@ -18,7 +18,7 @@ function train_opq{T <: AbstractFloat}(
   h::Integer,        # number of entries per codebook
   niter::Integer,    # number of optimization iterations
   init::String,      # how to initialize the optimization
-  V::Bool=false )    # wheter to print progress
+  V::Bool=false)     # wheter to print progress
 
   if V; @printf("Training an optimized product quantizer\n"); end
 
@@ -112,18 +112,18 @@ function experiment_opq(
   gt::Vector{UInt32}, # ground truth
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
+  init::String="natural", # initialization method for the rotation
   niter::Integer=25, # Number of k-means iterations for training
   knn::Integer=1000,
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   # === Train ===
-  # TODO expose initialization method
-  C, B, R, train_error = train_opq(Xt, m, h, niter, "natural", V)
+  C, B, R, train_error = train_opq(Xt, m, h, niter, init, V)
   if V; @printf("Error in training is %e\n", train_error[end]); end
 
   # === Encode the base set ===
-  B_base     = quantize_opq( Xb, R, C, V )
-  base_error = qerror_opq( Xb, B_base, C, R )
+  B_base     = quantize_opq(Xb, R, C, V)
+  base_error = qerror_opq(Xb, B_base, C, R)
   if V; @printf("Error in base is %e\n", base_error); end
 
   # === Compute recall ===
@@ -132,7 +132,7 @@ function experiment_opq(
   @time dists, idx = linscan_opq(B_base, Xq, C, b, R, knn)
   if V; println("done"); end
 
-  recall = eval_recall( gt, idx, knn )
+  recall = eval_recall(gt, idx, knn)
   return C, B, R, train_error, B_base, recall
 end
 
@@ -143,13 +143,13 @@ function experiment_opq_query_base(
   gt::Vector{UInt32}, # ground truth
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
+  init::String="natural", # initialization method for the rotation
   niter::Integer=25, # Number of k-means iterations for training
   knn::Integer=1000,
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   # === Train ===
-  # TODO expose initialization method
-  C, B, R, train_error = train_opq(Xt, m, h, niter, "natural", V)
+  C, B, R, train_error = train_opq(Xt, m, h, niter, init, V)
   if V; @printf("Error in training is %e\n", train_error[end]); end
 
   # === Compute recall ===
@@ -158,6 +158,6 @@ function experiment_opq_query_base(
   @time dists, idx = linscan_opq(B, Xq, C, b, R, knn)
   if V; println("done"); end
 
-  recall = eval_recall( gt, idx, knn )
+  recall = eval_recall(gt, idx, knn)
   return C, B, R, train_error, recall
 end
