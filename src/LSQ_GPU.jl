@@ -273,11 +273,16 @@ function train_lsq_cuda(
   C::Vector{Matrix{T}}, # init codebooks
   niter::Integer,       # number of optimization iterations
   ilsiter::Integer,     # number of ILS iterations to use during encoding
-  icmiter::Integer,     # number of iterations in local search
+  icmiter::Integer,     # number of iterations of ICM
   randord::Bool,        # whether to use random order
   npert::Integer,       # The number of codes to perturb
   nsplits::Integer=1,   # The number of splits for icm encoding (for limited memory GPUs)
   V::Bool=false) where T <: AbstractFloat # whether to print progress
+
+  # Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, nsplits_train, V
+  # @show B
+  # @show size(B)
+  # @show niter, ilsiter, icmiter, randord, npert, nsplits, V
 
   if V
     println()
@@ -292,6 +297,7 @@ function train_lsq_cuda(
   RX = R' * X
   # C = update_codebooks( RX, B, h, V, "lsqr" )
   C = update_codebooks_fast_bin( RX, B, h, V )
+  # C = update_codebooks_fast( RX, B, h, V)
 
   # Apply the rotation to the codebooks
   for i = 1:m; C[i] = R * C[i]; end
@@ -332,17 +338,15 @@ function experiment_lsq_cuda(
   gt::Vector{UInt32}, # ground truth
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
-  niter::Integer=25, # Number of k-means iterations for training
+  niter::Integer=25, # Number of C-B update updates
+  ilsiter::Integer=8, # number of ILS iterations
+  icmiter::Integer=4, # number of ICM iterations
+  randord::Bool=true, # whether to explore the codes in random order
+  npert::Integer=4, # numebr of codes to perturb in each ILS iterations
   knn::Integer=1000, # Compute recall @N for this value of N
   nsplits_train::Integer=1, # Number of splits for training data so GPU does not run out of memory
   nsplits_base::Integer=1, # Number of splits for training data so GPU does not run out of memory
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
-
-  # TODO expose these parameters
-  ilsiter = 8
-  icmiter = 4
-  randord = true
-  npert   = 4
 
   # Train LSQ
   d, _ = size(Xt)
@@ -381,16 +385,14 @@ function experiment_lsq_cuda_query_base(
   gt::Vector{UInt32}, # ground truth
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
-  niter::Integer=25, # Number of k-means iterations for training
+  niter::Integer=25, # Number of C-B update updates
+  ilsiter::Integer=8, # Number of ILS iterations
+  icmiter::Integer=4, # Number of ICM iterations
+  randord::Bool=true, # Whether to explore the codes in random order
+  npert::Integer=4, # Number of codes to perturb in each ILS iterations
   knn::Integer=1000, # Compute recall @N for this value of N
   nsplits_train::Integer=1, # Number of splits for training data so GPU does not run out of memory
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
-
-  # TODO expose these parameters
-  ilsiter = 8
-  icmiter = 4
-  randord = true
-  npert   = 4
 
   # Train LSQ
   d, _ = size(Xt)
@@ -399,7 +401,7 @@ function experiment_lsq_cuda_query_base(
   if V; @printf("done\n"); end
 
   norms_B, norms_C = get_norms_codebook(B, C)
-  db_norms         = vec( norms_C[ norms_B ] )
+  db_norms         = vec(norms_C[ norms_B ])
 
   if V; print("Querying m=$m ... "); end
   @time dists, idx = linscan_lsq(B, Xq, C, db_norms, eye(Float32, d), knn)
@@ -418,7 +420,11 @@ function experiment_lsq_cuda(
   gt::Vector{UInt32}, # ground truth
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
-  niter::Integer=25, # Number of k-means iterations for training
+  niter::Integer=25, # Number of C-B update updates
+  ilsiter::Integer= 8, # number of ILS iterations
+  icmiter::Integer=4, # number of ICM iterations
+  randord::Bool=true, # whether to explore the codes in random order
+  npert::Integer=4, # numebr of codes to perturb in each ILS iterations
   knn::Integer=1000,
   nsplits_train::Integer=1, # Number of splits for training data so GPU does not run out of memory
   nsplits_base::Integer=1, # Number of splits for training data so GPU does not run out of memory
@@ -435,7 +441,7 @@ function experiment_lsq_cuda(
   # @printf("done\n")
 
   # Actual experiment
-  experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, nsplits_train, nsplits_base, V)
+  experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m, h, niter, ilsiter, icmiter, randord, npert, knn, nsplits_train, nsplits_base, V)
 end
 
 function experiment_lsq_cuda_query_base(
@@ -444,20 +450,25 @@ function experiment_lsq_cuda_query_base(
   gt::Vector{UInt32}, # ground truth
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
-  niter::Integer=25, # Number of k-means iterations for training
+  niter::Integer=25, # Number of C-B update updates
+  ilsiter::Integer= 8, # number of ILS iterations
+  icmiter::Integer= 4, # number of ICM iterations
+  randord::Bool=true, # whether to explore the codes in random order
+  npert::Integer= 4, # numebr of codes to perturb in each ILS iterations
+  init::String="natural",
+  niter_opq::Integer=25,
+  noter_chainq::Integer=25,
   knn::Integer=1000,
   nsplits_train::Integer=1, # Number of splits for training data so GPU does not run out of memory
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   # OPQ initialization
   if V; @printf("Running OPQ initialization... "); end
-  niter_opq = 25
-  C, B, R, opq_error = train_opq(Xt, m, h, niter_opq, "natural", V)
+  C, B, R, opq_error = train_opq(Xt, m, h, niter_opq, init, V)
   if V; @printf("done\n"); end
 
   # ChainQ (second initialization)
   if V; @printf("Running ChainQ initialization... "); end
-  niter_chainq = 25
   C, B, R, chainq_error = train_chainq(Xt, m, h, R, B, C, niter_chainq, V)
   if V; @printf("done\n"); end
 

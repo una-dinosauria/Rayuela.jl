@@ -19,9 +19,9 @@ function train_sr(
   V::Bool=false)              # whether to print progress
 
   if V
-  println("**********************************************************************************************");
+  println("**********************************************************************************************")
   println("Doing local search with $m codebooks, $npert perturbations, $icmiter icm iterations and random order = $randord");
-  println("**********************************************************************************************");
+  println("**********************************************************************************************")
   end
 
   if !(method in ["SR_C", "SR_D"]); error("SR method unknown"); end
@@ -305,18 +305,17 @@ function experiment_sr_cuda_query_base(
   gt::Vector{UInt32}, # ground truth
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
-  niter::Integer=25, # Number of k-means iterations for training
+  niter::Integer=25, # Number of C-B update updates
+  ilsiter::Integer=8, # number of ILS iterations
+  icmiter::Integer=4, # number of ICM iterations
+  randord::Bool=true, # whether to explore the codes in random order
+  npert::Integer=4, # number of codes to perturb in each ILS iterations
+  schedule::Integer=1, # schedule to use
+  p::T=T(0.5), # Temperature decay parameter
   knn::Integer=1000,
   nsplits_train::Integer=1,
   sr_method::String="SR_D",
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
-
-  # TODO expose these parameters
-  ilsiter = 8
-  icmiter = 4
-  randord = true
-  npert   = 4
-  p       = 0.5f0
 
   # Train LSQ
   d, _ = size(Xt)

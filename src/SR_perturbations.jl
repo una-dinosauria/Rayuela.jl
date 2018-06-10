@@ -2,12 +2,25 @@
 
 # Scales the standard deviation according to the passed schedule
 function apply_schedule(
-  stdev::Vector{Float32},     # Standard deviation
+  stdev::Vector{T},      # Standard deviation
   iter::Integer,              # Iteration number
   niter::Integer,             # Total number of iterations
-  p::Float32)
+  schedule::Integer=1,          # Schedule to use
+  p::T=0.5) where T <: AbstractFloat
 
-  stdev = stdev * (1 - (iter/niter)).^p
+  # stdev = stdev * (1 - (iter/niter)).^p
+
+  if schedule == 1 # Schedule 1
+    stdev = stdev * (1 - (iter/niter)).^p
+  elseif schedule == 2 # Schedule 2
+    stdev = stdev / ((1 + iter).^p)
+  elseif schedule == 3 # Schedule 3
+    stdev = stdev * p^(iter/2)
+  else
+    error("Schedule unknown: ", schedule )
+  end
+
+return stdev
 
   return stdev
 end
