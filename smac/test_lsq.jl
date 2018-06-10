@@ -89,56 +89,64 @@ end
 # === demos query base ===
 function run_demos_query_base(
   dataset_name="labelme",
-  sr_method::String="LSQ",
-  ntrain::Integer=Int(20e3),
-  m::Integer=8, h::Integer=256, niter::Integer=25)
+  m::Integer=8,
+  h::Integer=256,
+  niter::Integer=5,
+  sr_method::String="SR_D",
+  ilsiter::Integer=8,
+  icmiter::Integer=4,
+  randord::Bool=true,
+  npert::Integer=4,
+  schedule::Integer=1,
+  p::Float64=0.5)
 
   if !(sr_method in ["LSQ", "SR_D", "SR_C"])
     error("Unknown sr_method $sr_method")
   end
 
+  randord = true
+
   nquery, nbase, knn = 0, 0, 0
   if dataset_name == "MNIST"
-    nquery, nbase, knn = Int(10e3), Int(60e3), Int(1e3)
+    ntrain, nquery, nbase, knn = Int(60e3), Int(10e3), Int(60e3), Int(1e3)
   elseif dataset_name == "labelme"
-    nquery, nbase, knn = Int(2e3), Int(20019), Int(1e3)
+    ntrain, nquery, nbase, knn = Int(20e3), Int(2e3), Int(20019), Int(1e3)
   else
     error("dataset unknown")
   end
-  @show nquery, nbase, knn
+  # @show ntrain, nquery, nbase, knn
 
   verbose = true
 
   Xt, Xb, Xq, gt = load_experiment_data(dataset_name, ntrain, nbase, nquery, verbose)
-  d, _ = size( Xt )
+  d, _ = size(Xt)
 
   nsplits_train = 1
 
-  ilsiter = 8
-  icmiter = 4
-  randord = true
-  npert = 4
-
-  C, B, R, train_error, recall = 0, 0, 0, 0, [0]
+  recall = [0]
   # trial = rand(1:10, 1)[1]
   trial = 1
   if sr_method == "LSQ"
     C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, recall = Rayuela.experiment_lsq_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter, icmiter, randord, npert, knn, nsplits_train, verbose)
+    C, B, R, train_error, recall = Rayuela.experiment_lsq_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
+        icmiter, randord, npert, knn, nsplits_train, verbose)
     # save_results_lsq_query_base("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
 
   elseif sr_method == "SR_D"
     C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter, icmiter, randord, npert, knn, nsplits_train, sr_method, verbose)
-    # save_results_lsq_query_base("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
+        icmiter, randord, npert, knn, nsplits_train, sr_method, schedule, p, verbose)
+    # # save_results_lsq_query_base("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
 
   elseif sr_method == "SR_C"
     C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter, icmiter, randord, npert, knn, nsplits_train, sr_method, verbose)
+    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
+        icmiter, randord, npert, knn, nsplits_train, sr_method, schedule, p, verbose)
     # save_results_lsq_query_base("./results/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
   end
 
-  recall[1]
+  gc()
+  recall
 end
 
 # run_demos_query_base("MNIST",   Int(60e3), 8,  256, 5, 1)
