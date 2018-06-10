@@ -53,10 +53,10 @@ include("CompetitiveQ.jl") # Slow version
 # === LSQ Quantizer ===
 include("LSQ.jl") # Local search quantization
 include("SR_perturbations.jl") # Utils for SR
-include("SR.jl")  # Stochastic relaxations
 
 # === CUDA ports ===
 include("CudaUtilsModule.jl")
+include("SR.jl")  # Stochastic relaxations
 include("LSQ_GPU.jl") # Local search quantization
 
 end # module

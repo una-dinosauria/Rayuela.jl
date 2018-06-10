@@ -6,7 +6,7 @@ function apply_schedule(
   iter::Integer,              # Iteration number
   niter::Integer,             # Total number of iterations
   schedule::Integer=1,          # Schedule to use
-  p::T=0.5) where T <: AbstractFloat
+  p::AbstractFloat=0.5) where T <: AbstractFloat
 
   # stdev = stdev * (1 - (iter/niter)).^p
 
@@ -20,8 +20,6 @@ function apply_schedule(
     error("Schedule unknown: ", schedule )
   end
 
-return stdev
-
   return stdev
 end
 
@@ -30,14 +28,15 @@ function SR_D_perturb(
   C::Vector{Matrix{Float32}}, # The codebooks
   iter::Integer,              # Iteration number
   niter::Integer,             # Total number of iterations
-  p::Float32=0.5)             # Power parameter in equation (18)
+  schedule::Integer=1,        # Schedule to use
+  p::AbstractFloat=0.5)             # Power parameter in equation (18)
 
   m = length( C )
   d, h = size( C[1] )
 
   # Compute the standard deviation
   stdc = std( cat(2, C...), 2 ) ./ m
-  stdc = apply_schedule( stdc[:], iter, niter, p )
+  stdc = apply_schedule( stdc[:], iter, niter, schedule, p )
 
   for i = 1:m # Loop through each codebook
     for j = 1:d # Loop through each dimension
@@ -54,13 +53,14 @@ function SR_C_perturb(
   X::Matrix{Float32},         # d-by-n matrix of data points to train on.
   iter::Integer,              # Iteration number
   niter::Integer,             # Total number of iterations
-  p::Float32=0.5)             # Power parameter in equation (18)
+  schedule::Integer=1,        # Schedule to use
+  p::AbstractFloat=0.5)             # Power parameter in equation (18)
 
   d, n = size( X )
 
   # Compute the standard deviation
   stdx = std( X, 2 )
-  stdx = apply_schedule( stdx[:], iter, niter, p )
+  stdx = apply_schedule( stdx[:], iter, niter, schedule, p )
 
   Y = zeros(Float32,size(X))
 

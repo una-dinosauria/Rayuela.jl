@@ -229,9 +229,8 @@ function encode_icm_cuda(
 
   # TODO check that splits >= 1
   if nsplits == 1
-    aa, bb =  encode_icm_cuda_single(RX, B, C, ilsiters, icmiter, npert, randord, V)
-    gc()
-    return aa, bb
+    Bs, objs =  encode_icm_cuda_single(RX, B, C, ilsiters, icmiter, npert, randord, V)
+    return Bs, objs
   end
 
   # Split the data
@@ -248,7 +247,6 @@ function encode_icm_cuda(
   # Run encoding in the GPU for each split
   for i = 1:nsplits
     aaBs, _ = encode_icm_cuda_single(RX[:,splits[i]], B[:,splits[i]], C, ilsiters, icmiter, npert, randord, V)
-    gc()
     for j = 1:nr
       # Save the codes
       Bs[j][:,splits[i]] = aaBs[j]
