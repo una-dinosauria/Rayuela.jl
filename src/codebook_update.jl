@@ -78,7 +78,7 @@ function update_codebooks_fast(
   BTB = B_ok'*B_ok
   BTB = convert( Matrix{Float32}, full( BTB ))
 
-  BTXT = (X*B_ok)'
+  BTXT = (X * B_ok)'
 
   # Solve sub-problem to solve C
   A = BTB+rho*I
@@ -141,7 +141,7 @@ function fast_bin_matmul(
 
   BXT = Vector{Matrix{Float64}}(m)
   @inbounds for i=1:m
-    BXTi = zeros( Float32, d, h)
+    BXTi = zeros(Float64, d, h)
     Bmi = Bm[i]
     for j=1:n
       Bmij = Bmi[j]
