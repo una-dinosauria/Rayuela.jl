@@ -3,7 +3,7 @@ module smac_util
 using Rayuela
 using HDF5
 
-export run_demos_query_base
+export run_demos_query_base, run_demos_train_query_base
 
 # === Saving functions ===
 function save_results_pq_query_base(
@@ -130,19 +130,74 @@ function run_demos_query_base(
     C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
     C, B, R, train_error, recall = Rayuela.experiment_lsq_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
         icmiter, randord, npert, knn, nsplits_train, verbose)
-    # save_results_lsq_query_base("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
 
   elseif sr_method == "SR_D"
     C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
     C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
         icmiter, randord, npert, knn, nsplits_train, sr_method, schedule, p, verbose)
-    # # save_results_lsq_query_base("./results/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
 
   elseif sr_method == "SR_C"
     C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
     C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
         icmiter, randord, npert, knn, nsplits_train, sr_method, schedule, p, verbose)
-    # save_results_lsq_query_base("./results/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+  end
+
+  gc()
+  recall
+end
+
+function run_demos_train_query_base(
+  dataset_name="SIFT1M",
+  m::Integer=8,
+  h::Integer=256,
+  niter::Integer=5,
+  sr_method::String="SR_D",
+  ilsiter::Integer=8,
+  icmiter::Integer=4,
+  randord::Bool=true,
+  npert::Integer=4,
+  schedule::Integer=1,
+  p::Float64=0.5)
+
+  if !(sr_method in ["LSQ", "SR_D", "SR_C"])
+    error("Unknown sr_method $sr_method")
+  end
+
+  randord = true
+
+  nquery, nbase, knn = 0, 0, 0
+  if dataset_name == "SIFT1M" || dataset_name == "Deep1M" || dataset_name == "Convnet1M"
+    ntrain, nquery, nbase, knn = Int(1e5), Int(1e4), Int(1e6), Int(1e3)
+  else
+    error("dataset unknown")
+  end
+  # @show ntrain, nquery, nbase, knn
+
+  verbose = true
+
+  Xt, Xb, Xq, gt = load_experiment_data(dataset_name, ntrain, nbase, nquery, verbose)
+  d, _ = size(Xt)
+
+  nsplits_train = 1
+  nsplits_base = 4
+
+  recall = [0]
+  # trial = rand(1:10, 1)[1]
+  trial = 1
+  if sr_method == "LSQ"
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, ilsiter,
+        icmiter, randord, npert, knn, nsplits_train, nsplits_base, verbose)
+
+  elseif sr_method == "SR_D"
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, ilsiter,
+        icmiter, randord, npert, knn, nsplits_train, nsplits_base, sr_method, schedule, p, verbose)
+
+  elseif sr_method == "SR_C"
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, ilsiter,
+        icmiter, randord, npert, knn, nsplits_train, nsplits_base, sr_method, schedule, p, verbose)
   end
 
   gc()

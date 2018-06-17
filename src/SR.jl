@@ -260,6 +260,7 @@ function experiment_sr_cuda(
   npert::Integer=4, # number of codes to perturb in each ILS iterations
   knn::Integer=1000,
   nsplits_train::Integer=1,
+  nsplits_base::Integer=1, # Number of splits for training data so GPU does not run out of memory
   sr_method::String="SR_D",
   schedule::Integer=1, # schedule to use
   p::AbstractFloat=0.5, # Temperature decay parameter
@@ -274,7 +275,7 @@ function experiment_sr_cuda(
   B_base = convert(Matrix{Int16}, rand(1:h, m, size(Xb,2)))
 
   # ilsiters = [16, 32, 64, 128, 256]
-  ilsiters = [32]
+  ilsiters = [ilsiter * 4]
   Bs_base, _ = encode_icm_cuda(Xb, B_base, C, ilsiters, icmiter, npert, randord, nsplits_base, V)
 
   # for (idx, ilsiter) in enumerate(ilsiters)
@@ -287,9 +288,8 @@ function experiment_sr_cuda(
     db_norms = vec( norms_C[ B_base_norms ] )
 
     if V; print("Querying m=$m ... "); end
-    @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
-    # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
-    # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, R, knn)
+    # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
+    @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
     if V; println("done"); end
 
     recall = eval_recall(gt, idx, knn)

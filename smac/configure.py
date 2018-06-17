@@ -23,6 +23,7 @@ os.environ['CUARRAYS_MANAGED_POOL'] = 'false'
 j = julia.Julia()
 j.include("smac/test_lsq.jl")
 rdqb = j.eval("smac_util.run_demos_query_base")
+rdtqb = j.eval("smac_util.run_demos_train_query_base")
 
 
 def recall_from_cfg(cfg):
@@ -56,7 +57,8 @@ def recall_from_cfg(cfg):
 
     # Full experiment run_demos_query_base
     print(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
-    recall = rdqb(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
+    # recall = rdqb(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
+    recall = rdtqb(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
 
     return 1-recall[0]  # Minimize!
 
