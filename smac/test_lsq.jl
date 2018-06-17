@@ -104,13 +104,11 @@ function run_demos_query_base(
     error("Unknown sr_method $sr_method")
   end
 
-  randord = true
-
   nquery, nbase, knn = 0, 0, 0
   if dataset_name == "MNIST"
     ntrain, nquery, nbase, knn = Int(60e3), Int(10e3), Int(60e3), Int(1e3)
   elseif dataset_name == "labelme"
-    ntrain, nquery, nbase, knn = Int(20e3), Int(2e3), Int(20019), Int(1e3)
+    ntrain, nquery, nbase, knn = Int(20019), Int(2e3), Int(20019), Int(1e3)
   else
     error("dataset unknown")
   end
@@ -142,7 +140,7 @@ function run_demos_query_base(
         icmiter, randord, npert, knn, nsplits_train, sr_method, schedule, p, verbose)
   end
 
-  gc()
+  # gc()
   recall
 end
 
@@ -162,8 +160,6 @@ function run_demos_train_query_base(
   if !(sr_method in ["LSQ", "SR_D", "SR_C"])
     error("Unknown sr_method $sr_method")
   end
-
-  randord = true
 
   nquery, nbase, knn = 0, 0, 0
   if dataset_name == "SIFT1M" || dataset_name == "Deep1M" || dataset_name == "Convnet1M"
@@ -200,7 +196,7 @@ function run_demos_train_query_base(
         icmiter, randord, npert, knn, nsplits_train, nsplits_base, sr_method, schedule, p, verbose)
   end
 
-  gc()
+  # gc()
   recall
 end
 
