@@ -37,9 +37,6 @@ def recall_from_cfg(cfg):
     Returns:
      scores: A crossvalidated mean score for the svm on the loaded data-set.
     """
-    # For deactivated parameters, the configuration stores None-values.
-    cfg = {k: cfg[k] for k in cfg if cfg[k]}
-
     dataset = cfg["dataset"]
     m = int(cfg["m"])
     h = 256
@@ -85,7 +82,7 @@ def main():
     # SR parameters
     sr_method = CategoricalHyperparameter("SR_method", ["LSQ", "SR_C", "SR_D"], default_value="SR_D")
     schedule = CategoricalHyperparameter("schedule", ["1", "2", "3"], default_value="1")
-    p = UniformFloatHyperparameter("p", 0., 1., default_value=0.5)
+    p = UniformFloatHyperparameter("p", 0.1, 1., default_value=0.5)
 
     # Schedule and p only make sense in SR
     use_schedule = InCondition(child=schedule, parent=sr_method, values=["SR_C", "SR_D"])
