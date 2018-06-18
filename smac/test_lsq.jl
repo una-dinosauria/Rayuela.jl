@@ -108,7 +108,8 @@ function run_demos_query_base(
   if dataset_name == "MNIST"
     ntrain, nquery, nbase, knn = Int(60e3), Int(10e3), Int(60e3), Int(1e3)
   elseif dataset_name == "labelme"
-    ntrain, nquery, nbase, knn = Int(20019), Int(2e3), Int(20019), Int(1e3)
+    ntrain, nquery, nbase, knn = Int(20e3), Int(2e3), Int(20019), Int(1e3)
+    # ntrain, nquery, nbase, knn = Int(20019), Int(2e3), Int(20019), Int(1e3)
   else
     error("dataset unknown")
   end
@@ -117,6 +118,7 @@ function run_demos_query_base(
   verbose = true
 
   Xt, Xb, Xq, gt = load_experiment_data(dataset_name, ntrain, nbase, nquery, verbose)
+  @show size(Xt), size(Xb), size(Xq), size(gt)
   d, _ = size(Xt)
 
   nsplits_train = 1
@@ -200,9 +202,10 @@ function run_demos_train_query_base(
   recall
 end
 
-# run_demos_query_base("MNIST",   Int(60e3), 8,  256, 5, 1)
-# run_demos_query_base("MNIST",   Int(60e3), 16, 256, 5, 1)
-# run_demos_query_base("labelme", Int(20e3), 8,  256, 5, 1)
-# run_demos_query_base("labelme", Int(20e3), 16, 256, 5, 1)
+# run_demos_query_base("MNIST",   8,  256, 5, "SR_D", 8, 4, true, 4, 1, 0.5)
+# run_demos_query_base("MNIST",   16, 256, 5, "SR_D", 8, 4, true, 4, 1, 0.5)
+# run_demos_query_base("labelme", 8,  256, 5, "SR_D", 8, 4, true, 4, 1, 0.5)
+# run_demos_query_base("labelme", 16, 256, 5, "LSQ", 8, 4, true, 4, 1, 0.5)
+# run_demos_train_query_base("SIFT1M", 16, 256, 25, "SR_D", 8, 4, true, 4, 1, 0.5)
 
 end # module smac_util
