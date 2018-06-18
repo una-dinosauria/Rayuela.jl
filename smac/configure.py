@@ -57,9 +57,12 @@ def recall_from_cfg(cfg):
 
     # Full experiment run_demos_query_base
     print(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
-    # recall = rdqb(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
-    recall = rdtqb(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
+    if dataset == 'labelme' or dataset == 'MNIST':
+        recall = rdqb(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
+    else:
+        recall = rdtqb(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
 
+    print(recall[0])
     return 1-recall[0]  # Minimize!
 
 
