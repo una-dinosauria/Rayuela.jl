@@ -25,6 +25,8 @@ j.include("smac/test_lsq.jl")
 rdqb = j.eval("smac_util.run_demos_query_base")
 rdtqb = j.eval("smac_util.run_demos_train_query_base")
 
+# call_counter = 1
+
 
 def recall_from_cfg(cfg):
     """ Runs MCQ from julia based on the passed configuration
@@ -53,11 +55,14 @@ def recall_from_cfg(cfg):
     p = float(cfg["p"]) if "p" in cfg else float(0)
 
     # Full experiment run_demos_query_base
+    # nonlocal call_counter
+    # print(call_counter, dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
     print(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
     if dataset == 'labelme' or dataset == 'MNIST':
         recall = rdqb(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
     else:
         recall = rdtqb(dataset, m, h, niter, sr_method, ilsiter, icmiter, randord, npert, schedule, p)
+    # call_counter = call_counter + 1
 
     print(recall[0])
     return 1-recall[0]  # Minimize!

@@ -125,25 +125,25 @@ function run_demos_query_base(
 
   recall = [0]
   # trial = rand(1:10, 1)[1]
-  trial = 1
-  if sr_method == "LSQ"
-    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, recall = Rayuela.experiment_lsq_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
-        icmiter, randord, npert, knn, nsplits_train, verbose)
-
-  elseif sr_method == "SR_D"
-    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
-        icmiter, randord, npert, knn, nsplits_train, sr_method, schedule, p, verbose)
-
-  elseif sr_method == "SR_C"
-    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
-        icmiter, randord, npert, knn, nsplits_train, sr_method, schedule, p, verbose)
+  for trial = 1:10
+    if sr_method == "LSQ"
+      C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+      C, B, R, train_error, recall = Rayuela.experiment_lsq_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
+          icmiter, randord, npert, knn, nsplits_train, verbose)
+      save_results_lsq_query_base("./results/smac/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+    elseif sr_method == "SR_D"
+      C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+      C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
+          icmiter, randord, npert, knn, nsplits_train, sr_method, schedule, p, verbose)
+        save_results_lsq_query_base("./results/smac/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+    elseif sr_method == "SR_C"
+      C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+      C, B, R, train_error, recall = Rayuela.experiment_sr_cuda_query_base(Xt, B, C, R, Xq, gt, m-1, h, niter, ilsiter,
+          icmiter, randord, npert, knn, nsplits_train, sr_method, schedule, p, verbose)
+      save_results_lsq_query_base("./results/smac/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, recall)
+    end
   end
 
-  # gc()
-  recall
 end
 
 function run_demos_train_query_base(
@@ -181,31 +181,48 @@ function run_demos_train_query_base(
 
   recall = [0]
   # trial = rand(1:10, 1)[1]
-  trial = 1
-  if sr_method == "LSQ"
-    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, ilsiter,
-        icmiter, randord, npert, knn, nsplits_train, nsplits_base, verbose)
+  for trial = 1:10
+    if sr_method == "LSQ"
+      C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+      C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, ilsiter,
+          icmiter, randord, npert, knn, nsplits_train, nsplits_base, verbose)
+      save_results_lsq("./results/smac/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
 
-  elseif sr_method == "SR_D"
-    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, ilsiter,
-        icmiter, randord, npert, knn, nsplits_train, nsplits_base, sr_method, schedule, p, verbose)
+    elseif sr_method == "SR_D"
+      C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+      C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, ilsiter,
+          icmiter, randord, npert, knn, nsplits_train, nsplits_base, sr_method, schedule, p, verbose)
+      save_results_lsq("./results/smac/$(lowercase(dataset_name))/srd_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
 
-  elseif sr_method == "SR_C"
-    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, ilsiter,
-        icmiter, randord, npert, knn, nsplits_train, nsplits_base, sr_method, schedule, p, verbose)
+    elseif sr_method == "SR_C"
+      C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+      C, B, R, train_error, B_base, recall = Rayuela.experiment_sr_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, ilsiter,
+          icmiter, randord, npert, knn, nsplits_train, nsplits_base, sr_method, schedule, p, verbose)
+      save_results_lsq("./results/smac/$(lowercase(dataset_name))/src_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+    end
   end
 
-  # gc()
-  recall
 end
 
-# run_demos_query_base("MNIST",   8,  256, 5, "SR_D", 8, 4, true, 4, 1, 0.5)
-# run_demos_query_base("MNIST",   16, 256, 5, "SR_D", 8, 4, true, 4, 1, 0.5)
-# run_demos_query_base("labelme", 8,  256, 5, "SR_D", 8, 4, true, 4, 1, 0.5)
-# run_demos_query_base("labelme", 16, 256, 5, "LSQ", 8, 4, true, 4, 1, 0.5)
-# run_demos_train_query_base("SIFT1M", 16, 256, 25, "SR_D", 8, 4, true, 4, 1, 0.5)
+# Query/base datasets
+for niter = [100]
+  # run_demos_query_base("labelme", 8,  256, niter, "SR_D", 9, 3, true,  1, 1, 0.43098784299895454)
+  # # run_demos_query_base("labelme", 16, 256, niter, "SR_D", 8, 4, true,  4, 1, 0.5)  # No change here
+  # run_demos_query_base("MNIST",   8,  256, niter, "SR_D", 9, 3, false, 5, 1, 0.18979255389609623)
+  # run_demos_query_base("MNIST",   16, 256, niter, "SR_D", 8, 4, false, 4, 1, 0.8282107865533627)
+end
+
+# Train/Query/base datasets
+# TODO change the function so it savez the results
+for niter = [25, 100]
+  run_demos_train_query_base("SIFT1M",    8,  256, niter, "SR_D", 8,  4, true,  4, 1, 0.6458745069743886)
+  run_demos_train_query_base("SIFT1M",    16, 256, niter, "SR_D", 7,  4, true,  2, 1, 0.18722222602931293)
+
+  # run_demos_train_query_base("Deep1M",    8,  256, niter, "SR_D", 8,  4, true,  4, 1, 0.5) # No change here
+  run_demos_train_query_base("Deep1M",    16, 256, niter, "SR_C", 15, 2, true,  2, 1, 0.9534092523209057)
+
+  run_demos_train_query_base("Convnet1M", 8,  256, niter, "SR_C", 8,  4, true,  4, 1, 0.7134116312190524)
+  run_demos_train_query_base("Convnet1M", 16, 256, niter, "SR_C", 10, 3, false, 5, 1, 0.937363908221641)
+end
 
 end # module smac_util
