@@ -1,5 +1,7 @@
 # Rayuela.jl
 
+[![Travis](https://travis-ci.org/una-dinosauria/Rayuela.jl.svg?branch=master)](https://travis-ci.org/una-dinosauria/Rayuela.jl)
+
 [Rayuela](https://en.wikipedia.org/wiki/Hopscotch#Rayuela).jl is a package
 that implements non-orthogonal multi-codebook quantization methods (MCQ).
 These methods are useful for fast search of high-dimensional (d=100s-1000s) dense vectors.
