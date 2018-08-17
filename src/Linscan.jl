@@ -193,12 +193,9 @@ function linscan_cq(
 end
 
 # Evaluate ANN search vs ground truth. Produces a recall@N curve.
-function eval_recall{T <: Integer}(
-  ids_gnd::Vector{T},
-  ids_predicted::Matrix{T},
-  k::Integer)
+function eval_recall(ids_gnd::Vector{T}, ids_predicted::Matrix{T}, k::Integer) where T <: Integer
 
-  # Modified from Hervé Jégou's test_compute_stats.m code
+  # Modified from Hervé Jégou's test_compute_stats.m matlab code.
 
   nquery = size( ids_predicted, 2 );
   assert( nquery == length( ids_gnd) );

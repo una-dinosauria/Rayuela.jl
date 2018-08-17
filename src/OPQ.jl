@@ -2,23 +2,23 @@
 # Optimized Product Quantization. Adapted from Mohammad Norouzi's code.
 export train_opq, quantize_opq
 
-function quantize_opq{T <: AbstractFloat}(
-  X::Matrix{T}, # d-by-n matrix of data points to quantize
-  R::Matrix{T}, # d-by-d matrix. Learned rotation for X
+function quantize_opq(
+  X::Matrix{T},          # d-by-n matrix of data points to quantize
+  R::Matrix{T},          # d-by-d matrix. Learned rotation for X
   C::Vector{Matrix{T}},  # m-long array. Each entry is a d-by-h codebooks
-  V::Bool=false)
+  V::Bool=false) where T <: AbstractFloat
 
   # Apply rotation and quantize as in PQ
   return quantize_pq(R'*X, C, V)
 end
 
-function train_opq{T <: AbstractFloat}(
+function train_opq(
   X::Matrix{T},      # d-by-n matrix of data points to train on.
   m::Integer,        # number of codebooks
   h::Integer,        # number of entries per codebook
   niter::Integer,    # number of optimization iterations
   init::String,      # how to initialize the optimization
-  V::Bool=false)     # wheter to print progress
+  V::Bool=false) where T <: AbstractFloat
 
   if V; @printf("Training an optimized product quantizer\n"); end
 

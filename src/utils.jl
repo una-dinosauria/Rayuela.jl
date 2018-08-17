@@ -60,11 +60,9 @@ function quantize_norms(
 end
 
 # Compute dot products between codebooks
-function comp_prod_C{T <: AbstractFloat}(
-  C::Vector{Matrix{T}}) # codebooks
-
+function comp_prod_C(C::Vector{Matrix{T}}) where T <: AbstractFloat  # Codebooks
   m   = length(C)
-  dps = Matrix{Matrix{T}}( m, m ) # dot products
+  dps = Matrix{Matrix{T}}(m, m) # dot products
   for i = 1:m, j = (i+1):m
     dps[i,j] = 2 * C[i]' * C[j]
   end
@@ -76,9 +74,9 @@ end
 ############################################
 
 # Creates a sparse matrix out of codes
-function sparsify_codes{T <: Integer}(
+function sparsify_codes(
   B::Matrix{T}, # m-by-n matrix. Codes to sparsify
-  h::Integer)   # Number of entries per codebook
+  h::Integer) where T <: Integer # Number of entries per codebook
 
   m, n   = size( B )
   ncodes = length( B )
@@ -120,10 +118,10 @@ end
 ###########################################
 
 # Get unaries terms
-function get_unaries{T <: AbstractFloat}(
+function get_unaries(
   X::Matrix{T},         # data to get unaries from
   C::Vector{Matrix{T}}, # codebooks
-  V::Bool=false)        # whether to print progress
+  V::Bool = false) where T <: AbstractFloat
 
   d, n = size( X )
   m    = length(C)
@@ -151,8 +149,8 @@ function get_unaries{T <: AbstractFloat}(
 end
 
 # Computes all the binaries for a set of codebooks
-function get_binaries{T <: AbstractFloat}(
-  C::Vector{Matrix{T}}) # codebooks
+function get_binaries(
+  C::Vector{Matrix{T}}) where T <: AbstractFloat # codebooks
 
   m = length( C )
 

@@ -39,7 +39,7 @@ function perturb_codes!(
 end
 
 "Run iterated conditional modes on N problems"
-function iterated_conditional_modes_cpp!{T <: AbstractFloat}(
+function iterated_conditional_modes_cpp!(
   B::Matrix{UInt8},  # in/out. Initialization, and the place where the results are saved.
   unaries::Vector{Matrix{T}},     # in. Unary terms
   binaries::Vector{Matrix{T}},    # in. The binary terms
@@ -53,7 +53,7 @@ function iterated_conditional_modes_cpp!{T <: AbstractFloat}(
   IDX::UnitRange{Int64},        # in. Index to save the result
   ub::Matrix{T}, bb::Matrix{T}, # in. Preallocated memory
   h::Integer, n::Integer, m::Integer,
-  V::Bool)                      # in. whether to print progress
+  V::Bool) where T <: AbstractFloat
 
   cbpair2binaryidx = convert(Matrix{Int32}, cbpair2binaryidx.-1)
   to_condition     = convert(Matrix{Int32}, to_condition.-1)
@@ -80,7 +80,7 @@ function iterated_conditional_modes_cpp!{T <: AbstractFloat}(
 end
 
 "Run iterated conditional modes on N problems"
-function iterated_conditional_modes!{T <: AbstractFloat}(
+function iterated_conditional_modes!(
   B::Union{Matrix{Int16},SharedMatrix{Int16}},  # in/out. Initialization, and the place where the results are saved.
   unaries::Vector{Matrix{T}},     # in. Unary terms
   binaries::Vector{Matrix{T}},    # in. The binary terms
@@ -94,7 +94,7 @@ function iterated_conditional_modes!{T <: AbstractFloat}(
   IDX::UnitRange{Int64},        # in. Index to save the result
   ub::Matrix{T}, bb::Matrix{T}, # in. Preallocated memory
   h::Integer, n::Integer, m::Integer,
-  V::Bool)                      # in. whether to print progress
+  V::Bool) where T <: AbstractFloat
 
   @inbounds for i=1:icmiter # Do the number of passed iterations
 
@@ -149,7 +149,7 @@ function iterated_conditional_modes!{T <: AbstractFloat}(
 end
 
 # Encode using iterated conditional modes
-function encode_icm_fully!{T <: AbstractFloat}(
+function encode_icm_fully!(
   oldB::Matrix{Int16},  # in/out. Initialization, and the place where the results are saved.
   X::Matrix{T},                 # in. d-by-n data to encode
   C::Vector{Matrix{T}},         # in. m-long vector with d-by-h codebooks
@@ -161,7 +161,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
   npert::Integer,               # in. number of codes to perturb per iteration
   IDX::UnitRange{Int64},        # in. Index to save the result
   cpp::Bool=true,               # in. Whether to use the cpp implementation
-  V::Bool=true)                 # in. whether to print progress
+  V::Bool=true) where T <: AbstractFloat
 
   # Compute unaries
   @time begin
@@ -252,7 +252,7 @@ function encode_icm_fully!{T <: AbstractFloat}(
 end
 
 # Encode a full dataset
-function encoding_icm{T <: AbstractFloat}(
+function encoding_icm(
   X::Matrix{T},         # d-by-n matrix. Data to encode
   oldB::Matrix{Int16},  # m-by-n matrix. Previous encoding
   C::Vector{Matrix{T}}, # m-long vector with d-by-h codebooks
@@ -261,7 +261,7 @@ function encoding_icm{T <: AbstractFloat}(
   randord::Bool,        # whether to use random order
   npert::Integer,       # the number of codes to perturb
   cpp::Bool=true,        # whether to use the cpp implementation
-  V::Bool=true)        # whether to print progress
+  V::Bool=true) where T <: AbstractFloat # whether to print progress
 
   d, n =    size( X )
   m    =  length( C )
@@ -276,7 +276,7 @@ function encoding_icm{T <: AbstractFloat}(
   return B
 end
 
-function train_lsq{T <: AbstractFloat}(
+function train_lsq(
   X::Matrix{T},         # d-by-n matrix of data points to train on.
   m::Integer,           # number of codebooks
   h::Integer,           # number of entries per codebook
@@ -289,7 +289,7 @@ function train_lsq{T <: AbstractFloat}(
   randord::Bool,        # whether to use random order
   npert::Integer,       # The number of codes to perturb
   cpp::Bool=true,       # whether to use ICM's cpp implementation
-  V::Bool=true)        # whether to print progress
+  V::Bool=true) where T <: AbstractFloat
 
   # if V
   println("**********************************************************************************************");

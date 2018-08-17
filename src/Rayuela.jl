@@ -18,6 +18,14 @@ using HDF5
 # For default keyword arguments in CQ parameters
 using Parameters
 
+using Printf
+
+# For parallel CPU
+using SharedArrays
+
+# For codebook update baselines
+using SparseArrays
+
 ### Load and initialize the linscan binaries ###
 const depsfile = joinpath(dirname(@__DIR__), "deps", "deps.jl")
 if isfile(depsfile)

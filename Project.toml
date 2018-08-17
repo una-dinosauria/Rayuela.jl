@@ -1,0 +1,19 @@
+name = "Rayuela"
+uuid = "84bd14ec-51ef-568a-9c69-e494d1752004"
+author = ["Julieta Martinez <julm@cs.ubc.ca>"]
+version = "0.0.0"
+
+[deps]
+BinDeps = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
+CUDAdrv = "c5f51814-7f29-56b8-a69c-e4d8f6be1fde"
+Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
+CuArrays = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
+Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SharedArrays = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
