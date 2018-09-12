@@ -5,7 +5,7 @@ import CUDAdrv: CuModule, CuModuleFile, unsafe_unload!,
                 CuFunction, cudacall, CuDevice, CuArray, CuDim
 
 const ptxdict = Dict()
-const mdlist = Array{CuModule}(0)
+const mdlist = CuModule[]
 
 function mdinit(devlist, ptxfile)
   global ptxdict
