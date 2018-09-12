@@ -23,7 +23,7 @@ function quantize_chainq_cpp!(
   CODES2 = zeros(Cuchar, m, n)
   unaries2, binaries2 = vcat(unaries...), hcat(binaries...)
 
-  ccall(("viterbi_encoding", encode_icm_so), Void,
+  ccall(("viterbi_encoding", encode_icm_so), Nothing,
     (Ptr{Int16}, Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint),
     CODES2, unaries2, binaries2, n, m)
 

@@ -68,7 +68,7 @@ function iterated_conditional_modes_cpp!(
       # Get the unaries that we will work on
       copy!(ub, unaries[to_look[j]])
 
-      ccall(("condition", encode_icm_so), Void,
+      ccall(("condition", encode_icm_so), Nothing,
         (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
         Ptr{Cint}, Ptr{Cint}, Cint, Cint, Cint),
         B, ub, binaries, binaries_t,

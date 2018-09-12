@@ -16,7 +16,7 @@ function linscan_pq(
   dists = zeros( Cfloat, k, nq )
   res   = zeros(  Cuint, k, nq )
 
-  ccall(("linscan_aqd_query", linscan_aqd), Void,
+  ccall(("linscan_aqd_query", linscan_aqd), Nothing,
     (Ptr{Cfloat}, Ptr{Cuint}, Ptr{Cuchar}, Ptr{Cfloat},
     Ptr{Cfloat}, Cint, Cuint, Cint, Cint, Cint, Cint, Cint),
     dists, res, B, cat(3,C...), X, Cint(n), Cuint(nq),
@@ -132,7 +132,7 @@ function linscan_lsq(
   dists = zeros( Cfloat, k, nq );
   res   = zeros(  Cuint, k, nq  );
 
-  ccall(("linscan_aqd_query_extra_byte", linscan_aqd_pairwise_byte), Void,
+  ccall(("linscan_aqd_query_extra_byte", linscan_aqd_pairwise_byte), Nothing,
     (Ptr{Cfloat}, Ptr{Cint},
     Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
     Cuint, Cint, Cint, Cint, Cint, Cint),
@@ -170,7 +170,7 @@ function linscan_cq(
   dists = zeros( Cfloat, k, nq );
   res   = zeros(  Cuint, k, nq  );
 
-  ccall(("linscan_aqd_cq_query_extra_byte", linscan_aqd_pairwise_byte), Void,
+  ccall(("linscan_aqd_cq_query_extra_byte", linscan_aqd_pairwise_byte), Nothing,
     (Ptr{Cfloat}, Ptr{Cint},
     Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, #Ptr{Cfloat},
     Cuint, Cint, Cint, Cint, Cint, Cint),
