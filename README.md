@@ -34,10 +34,7 @@ The code in this package was mostly written by
 
 ## Requirements
 
-This package is written in [Julia](https://github.com/JuliaLang/julia) 0.6.2, with some extension in C++ and CUDA.
-Unfortunately, currently you need to build Julia from source to run CUDA code from Julia -- we understand that this is annoying, and it will no longer be necessary in Julia 1.0.
-So first of all, head to the [Julia](https://github.com/JuliaLang/julia) page and compile that from source.
-
+This package is written in [Julia](https://github.com/JuliaLang/julia) 1.0, with some extension in C++ and CUDA.
 You also need a CUDA-ready GPU. We have tested this code with Titan X, Titan Xp and GTX 1080 GPUs.
 
 ## Installing
@@ -74,7 +71,6 @@ I am committed to supporting the development of this package until Julia 1.0 com
 - Local Search Quantization -- [ECCV'16](https://www.cs.ubc.ca/~julm/papers/eccv16.pdf)
 - Local Search Quantization++ -- Coming up in my thesis
 - Competitive Quantization -- [TKDE'16](https://ieeexplore.ieee.org/abstract/document/7539664/)
-<!-- - Some wrapping code to call and evaluate Composite Quantization -- [ICML'14](https://arxiv.org/pdf/1712.00955.pdf), [code](https://github.com/hellozting/CompositeQuantization) -->
 - Recall evaluation code
 
 ### TODO
@@ -119,16 +115,19 @@ or
 Julieta Martinez. "Algorithms for Large-Scale Multi-Codebook Quantization".
 PhD thesis, 2018. (Coming soon)
 ```
-<!-- or
+or
 ```
-LSQ++ publication (may appear soon)
-``` -->
+Julieta Martinez, Shobhit Zakhmi, Holger H. Hoos, James J. Little. "LSQ++:
+Lower running time and higher recall in multi-codebook quantization",
+ECCV 2018.
+```
 
 ## Notes
-<!-- * † I have made more contributions to MCQ, some of which are currently not included in this library. I am not putting them here until either they get published or I defend my PhD thesis -- whatever happens first. -->
-* \* The original implementation of [Tree Quantization](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
-requires Gurobi. We implement a special version of TQ that always create a chain
-(not a general tree); thus encoding can be done with the Viterbi algorithm.
+* The original implementation of [Tree Quantization](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
+requires a mixed-integer programming solver such as [Gurobi](http://www.gurobi.com/) for updating the codebook.
+We implement a special version of TQ that always create a chain
+(not a general tree); thus encoding can be done with the Viterbi algorithm,
+and codebook update is simpler and faster.
 This method should have been a baseline in the TQ paper IMO.
 
 ## License
