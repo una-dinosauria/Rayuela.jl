@@ -53,13 +53,6 @@ julia> Pkg.clone("git@github.com:una-dinosauria/Rayuela.jl.git")
 
 if you do.
 
-## Version and support
-
-This is a pre-alpha release. It still contains code that I am using for my PhD thesis.
-I will make a more formal announcement when an alpha release is ready.
-
-I am committed to supporting the development of this package until Julia 1.0 comes out and is stable.
-
 ## Roadmap
 
 ### Implemented
@@ -93,34 +86,19 @@ I would like to implement these methods. Some of them report really good results
 - Arborescence coding -- [ICCV'17](http://sites.skoltech.ru/app/data/uploads/sites/25/2017/08/AnnArbor_ICCV17.pdf)
 
 ## Citing
-If you find this code useful, consider citing the following papers:
-
+If you find this code useful, consider citing our work:
 ```
-Julieta Martinez, Holger H. Hoos, James J. Little. "Stacked Quantizers for
-Compositional Vector Compression" Arxiv, 2014. http://arxiv.org/abs/1411.2173"
-```
-or
-```
-Julieta Martinez, Joris Clement, Holger H. Hoos, James J. Little. "Revisiting
-additive quantization", ECCV 2016.
-```
-or
-```
-Julieta Martinez, Holger H. Hoos, James J. Little. "Solving multi-codebook
-quantization in the GPU", 4th Workshop on Web-scale Vision and Social Media
-(VSM), at ECCV 2016.
+Julieta Martinez, Shobhit Zakhmi, Holger H. Hoos, James J. Little. "LSQ++:
+Lower running time and higher recall in multi-codebook quantization",
+ECCV 2018.
 ```
 or
 ```
 Julieta Martinez. "Algorithms for Large-Scale Multi-Codebook Quantization".
 PhD thesis, 2018. (Coming soon)
 ```
-or
-```
-Julieta Martinez, Shobhit Zakhmi, Holger H. Hoos, James J. Little. "LSQ++:
-Lower running time and higher recall in multi-codebook quantization",
-ECCV 2018.
-```
+
+As well as the corresponding paper of the method that you are using (see above).
 
 ## Notes
 * The original implementation of [Tree Quantization](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
