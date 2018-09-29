@@ -39,19 +39,22 @@ You also need a CUDA-ready GPU. We have tested this code with Titan X, Titan Xp 
 
 ## Installing
 
-You can install the package via
+Before all else, make sure that you have the `gcc` and `nvcc` compilers available from the command line.
+
+Then, open julia and type `]` to enter Package mode:
 
 ```julia
-julia> Pkg.clone("https://github.com/una-dinosauria/Rayuela.jl.git")
+julia>
+(v1.0) pkg>
 ```
 
-if you do not have a github account, or
+Now you can clone our repo:
 
 ```julia
-julia> Pkg.clone("git@github.com:una-dinosauria/Rayuela.jl.git")
+(v1.0) pkg> develop https://github.com/una-dinosauria/Rayuela.jl.git
 ```
 
-if you do.
+This should put our code under `~/.julia/dev/Rayuela`, and let you import rayuela with `using Rayuela`.
 
 ## Roadmap
 
