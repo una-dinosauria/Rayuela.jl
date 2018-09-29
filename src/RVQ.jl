@@ -14,10 +14,10 @@ function quantize_rvq(
   d, n = size( X )
   m    = length( C )
   h    = size( C[1], 2 )
-  B    = Vector{Vector{Int}}(m) # codes
+  B    = Vector{Vector{Int}}(undef, m) # codes
   for i = 1:m; B[i] = zeros(Int,n); end # Allocate codes
 
-  singletons = Vector{Matrix{T}}(m)
+  singletons = Vector{Matrix{T}}(undef, m)
 
   # Residual after encoding the ith codebook
   Xr = copy(X)
@@ -40,18 +40,20 @@ function quantize_rvq(
     if !isempty(unused)
       temp_codebook = similar(C[i]) # Out. The new codebooks will be added here
       Clustering.repick_unused_centers(Xr, costs, temp_codebook, unused)
-      singletons[i] = temp_codebook[:,unused]
+      singletons[i] = temp_codebook[:, unused]
     end
 
     # Update the residual
-    Xr .-= C[i][:,B[i]]
+    Xr .-= C[i][:, B[i]]
 
     if V println("done"); end
   end
 
   B = hcat(B...)
   B = convert(Matrix{Int16}, B)
-  B', singletons
+  B = collect(B')
+
+  B, singletons
 end
 
 """
@@ -68,7 +70,7 @@ function train_rvq(
 
   d, n = size( X )
 
-  C = Vector{Matrix{T}}(m) # codebooks
+  C = Vector{Matrix{T}}(undef, m) # codebooks
   B = zeros(Int16, n, m) # codes
 
   # Residual
@@ -91,7 +93,7 @@ function train_rvq(
       println("  Converged: $(cluster.converged)")
     end
   end
-  B = B'
+  B = collect(B')
   error = qerror(X, B, C)
   return C, B, error
 end
@@ -127,7 +129,7 @@ function experiment_rvq(
   # B_base_norms = convert(Vector{UInt8}, B_base_norms-1)
 
   if V; print("Querying m=$m ... "); end
-  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, Matrix{Float32}(1.0I, d, d), knn)
   if V; println("done"); end
 
   recall = eval_recall(gt, idx, knn)

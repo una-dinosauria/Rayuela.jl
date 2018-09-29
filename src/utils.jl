@@ -14,7 +14,7 @@ function get_norms_codebook(
 
   # Reconstruct the approximation and compute its norms
   CB      = reconstruct(B, C)
-  dbnorms = sum(CB.^2, 1)
+  dbnorms = sum(CB.^2, dims=1)
 
   # Quantize the norms with k-means
   dbnormsq = Clustering.kmeans(dbnorms, h)
@@ -36,9 +36,9 @@ function quantize_norms(
   d, n = size( CB )
   _, h = size( C[1] )
 
-  dbnormsB   = Vector{T1}(n)
-  dbnormsX   = Vector{T2}(n)
-  dists2norm = Vector{T2}(h)
+  dbnormsB   = Vector{T1}(undef, n)
+  dbnormsX   = Vector{T2}(undef, n)
+  dists2norm = Vector{T2}(undef, h)
 
   @inbounds for i = 1:n
     ithnorm::T2 = zero(T2)

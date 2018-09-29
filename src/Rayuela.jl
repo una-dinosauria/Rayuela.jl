@@ -14,6 +14,7 @@ using CUDAdrv
 using CuArrays
 
 using HDF5
+using LinearAlgebra
 
 # For default keyword arguments in CQ parameters
 using Parameters

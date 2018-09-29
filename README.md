@@ -39,7 +39,7 @@ You also need a CUDA-ready GPU. We have tested this code with Titan X, Titan Xp 
 
 ## Installing
 
-Before all else, make sure that you have the `gcc` and `nvcc` compilers available from the command line.
+Before all else, make sure that you have the `g++` and `nvcc` compilers available from the command line.
 
 Then, open julia and type `]` to enter Package mode:
 
@@ -54,7 +54,20 @@ Now you can clone our repo:
 (v1.0) pkg> develop https://github.com/una-dinosauria/Rayuela.jl.git
 ```
 
-This should put our code under `~/.julia/dev/Rayuela`, and let you import rayuela with `using Rayuela`.
+This should put our code under `~/.julia/dev/Rayuela`, and let you import the library with `using Rayuela`.
+
+## Demo and data
+
+You may explore the library with `SIFT1M`, a classical retrieval dataset:
+
+```bash
+mkdir data
+cd data
+wget ftp://ftp.irisa.fr/local/texmex/corpus/sift.tar.gz
+tar -xvzf sift.tar.gz
+rm sift.tar.gz
+cd ..
+```
 
 ## Roadmap
 
@@ -65,7 +78,7 @@ This should put our code under `~/.julia/dev/Rayuela`, and let you import rayuel
 - Residual Vector Quantization -- [Sensors'10](http://www.mdpi.com/1424-8220/10/12/11259/htm)
 - Stacked Quantizers (aka Enhanced Residual Vector Quantization) -- [arxiv](https://arxiv.org/abs/1411.2173)/[CBMI'14 (paywalled)](http://ieeexplore.ieee.org/abstract/document/6849842/)
 - Local Search Quantization -- [ECCV'16](https://www.cs.ubc.ca/~julm/papers/eccv16.pdf)
-- Local Search Quantization++ -- Coming up in my thesis
+- Local Search Quantization++ -- [ECCV'18](http://openaccess.thecvf.com/content_ECCV_2018/papers/Julieta_Martinez_LSQ_lower_runtime_ECCV_2018_paper.pdf)
 - Competitive Quantization -- [TKDE'16](https://ieeexplore.ieee.org/abstract/document/7539664/)
 - Recall evaluation code
 

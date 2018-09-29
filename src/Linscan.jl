@@ -125,12 +125,12 @@ function linscan_lsq(
 
   RX = R' * X;
 
-  m, n  = size( B );
-  d, nq = size( RX );
-  _, h  = size( C[1] );
+  m, n  = size(B)
+  d, nq = size(RX)
+  _, h  = size(C[1])
 
-  dists = zeros( Cfloat, k, nq );
-  res   = zeros(  Cuint, k, nq  );
+  dists = zeros(Cfloat, k, nq)
+  res   = zeros( Cuint, k, nq)
 
   ccall(("linscan_aqd_query_extra_byte", linscan_aqd_pairwise_byte), Nothing,
     (Ptr{Cfloat}, Ptr{Cint},
@@ -152,7 +152,7 @@ function linscan_lsq(
   R::Matrix{Cfloat},         # Rotation matrix
   k::Int = 10000) where T <: Integer # Number of knn results to return
 
-  B_uint8 = convert(Matrix{UInt8},B-1)
+  B_uint8 = convert(Matrix{UInt8}, B.-1)
   return linscan_lsq(B_uint8, X, C, dbnorms, R, k)
 end
 
@@ -197,36 +197,36 @@ function eval_recall(ids_gnd::Vector{T}, ids_predicted::Matrix{T}, k::Integer) w
 
   # Modified from Hervé Jégou's test_compute_stats.m matlab code.
 
-  nquery = size( ids_predicted, 2 );
-  assert( nquery == length( ids_gnd) );
+  nquery = size(ids_predicted, 2)
+  @assert nquery == length(ids_gnd)
 
-  nn_ranks = zeros( nquery );
-  hist_pqc = zeros( k+1 );
+  nn_ranks = zeros(nquery)
+  hist_pqc = zeros(k+1)
 
   for i = 1:nquery
-    gnd_ids = ids_gnd[i];
-    nn_pos = find( ids_predicted[:,i] .== gnd_ids );
+    gnd_ids = ids_gnd[i]
+    nn_pos = findall(ids_predicted[:,i] .== gnd_ids)
 
     if length(nn_pos) == 1
-      nn_ranks[i] = nn_pos[1];
+      nn_ranks[i] = nn_pos[1]
     else
-      nn_ranks[i] = k+1;
+      nn_ranks[i] = k+1
     end
   end
 
-  nn_ranks = sort( nn_ranks );
+  nn_ranks = sort(nn_ranks)
 
-  recall_at_i = zeros( k );
+  recall_at_i = zeros(k)
 
   for i = [1 2 5 10 20 50 100 200 500 1000 2000 5000 10000]
     if i <= k
-      recall_at_i[i] = length( find( (nn_ranks .<= i) .& (nn_ranks .<= k) )) ./ nquery * 100;
-      println("r@$(i) = $(recall_at_i[i])");
+      recall_at_i[i] = length(findall((nn_ranks .<= i) .& (nn_ranks .<= k) )) ./ nquery * 100
+      println("r@$(i) = $(recall_at_i[i])")
     end
   end
 
   for i = 1:k
-    recall_at_i[i] = length(find( (nn_ranks .<= i) .& (nn_ranks .<= k) )) ./ nquery;
+    recall_at_i[i] = length(findall((nn_ranks .<= i) .& (nn_ranks .<= k) )) ./ nquery
   end
 
   return recall_at_i

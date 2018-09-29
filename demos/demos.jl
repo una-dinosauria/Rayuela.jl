@@ -1,7 +1,6 @@
 using Rayuela
 using HDF5
 
-
 # === Saving functions ===
 function save_results_pq_query_base(
   bpath::String, trial::Integer, C::Vector{Matrix{Float32}}, B, train_error, recall)
@@ -103,15 +102,15 @@ function run_demos(
   d, _    = size( Xt )
 
   ntrials = 10
-  # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
-  # for trial = 1:ntrials
-  #   C, B, train_error, B_base, recall = Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  #   save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
-  # end
-  # for trial = 1:ntrials
-  #   C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  #   save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
-  # end
+  (Semi-)orthogonal methods: PQ, OPQ, ChainQ
+  for trial = 1:ntrials
+    C, B, train_error, B_base, recall = Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+    save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
+  end
+  for trial = 1:ntrials
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+    save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
+  end
 
   # Cheap non-orthogonal methods: RVQ, ERVQ
   for trial = 1:ntrials
@@ -363,10 +362,10 @@ end
 
 # run_demos("SIFT1M", Int(1e5),  8, 256, 25)
 for niter = [100]
-  # run_demos("SIFT1M", Int(1e5),  8, 256, niter)
+  run_demos("SIFT1M", Int(1e5),  8, 256, niter)
   # run_demos("SIFT1M", Int(1e5), 16, 256, niter)
-  run_demos("Convnet1M", Int(1e5),   8, 256, niter)
-  run_demos("Convnet1M", Int(1e5),  16, 256, niter)
+  # run_demos("Convnet1M", Int(1e5),   8, 256, niter)
+  # run_demos("Convnet1M", Int(1e5),  16, 256, niter)
   # run_demos("Deep1M", Int(1e5),  8, 256, niter)
   # run_demos("Deep1M", Int(1e5), 16, 256, niter)
 end
