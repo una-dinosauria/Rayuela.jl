@@ -2,12 +2,12 @@ using BinDeps
 
 @BinDeps.setup
 
-deps = [
-  cudautils   = library_dependency("cudautils")
-  linscan_aqd = library_dependency("linscan_aqd",aliases=["linscan_aqd","linscan_aqd.so"])
-  linscan_aqd_pairwise_byte = library_dependency("linscan_aqd_pairwise_byte", aliases=["linscan_aqd_pairwise_byte","linscan_aqd_pairwise_byte.so"])
-  encode_icm_so = library_dependency("encode_icm_so", aliases=["encode_icm_so", "encode_icm_so.so"])
-]
+cudautils   = library_dependency("cudautils")
+linscan_aqd = library_dependency("linscan_aqd", aliases=["linscan_aqd","linscan_aqd.so"])
+linscan_aqd_pairwise_byte = library_dependency("linscan_aqd_pairwise_byte", aliases=["linscan_aqd_pairwise_byte","linscan_aqd_pairwise_byte.so"])
+encode_icm_so = library_dependency("encode_icm_so", aliases=["encode_icm_so", "encode_icm_so.so"])
+
+deps = [cudautils, linscan_aqd, linscan_aqd_pairwise_byte, encode_icm_so]
 
 prefix=joinpath(BinDeps.depsdir(linscan_aqd))
 linscan_aqdbuilddir = joinpath(BinDeps.depsdir(linscan_aqd),"builds")
@@ -63,5 +63,5 @@ provides(BuildProcess,
 
 @BinDeps.install Dict([(:linscan_aqd, :linscan_aqd),
                       (:linscan_aqd_pairwise_byte, :linscan_aqd_pairwise_byte),
-                      (:encode_icm_so, :encode_icm_so),#])#,
-                      (:cudautils, :cudautils)]) # No GPU in this branch
+                      (:encode_icm_so, :encode_icm_so),
+                      (:cudautils, :cudautils)])
