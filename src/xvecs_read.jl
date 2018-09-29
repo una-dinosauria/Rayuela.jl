@@ -7,7 +7,7 @@
 #   v = bvecs_read (filename, n)      -> read n vectors
 #   v = bvecs_read (filename, [a b]) -> read the vectors from a to b (indices starts from 1)
 
-# TODO refactor these with metaprogrammming
+# TODO(julieta) refactor these with metaprogrammming
 
 export bvecs_read, fvecs_read, ivecs_read
 
@@ -35,7 +35,8 @@ function bvecs_read(
     skip(fid, (bounds.start - 1) * vecsizeof)
 
     # read n vectors
-    v = read(fid, UInt8, vecsizeof * n)
+    v = zeros(UInt8, vecsizeof * n)
+    read!(fid, v)
     v = reshape(v, vecsizeof, n)
 
     # Check if the first column (dimension of the vectors) is correct
@@ -69,8 +70,8 @@ function fvecs_read(
   open(filename, "r") do fid
 
     # Read the vector size
-    d = read(fid, Int32, 1)
-    @assert length(d) == 1
+    d = zeros(Int32, 1)
+    read!(fid, d)
     vecsizeof = 1 * 4 + d[1] * 4
 
     # Get the number of vectrors
@@ -83,7 +84,8 @@ function fvecs_read(
     skip(fid, (bounds.start - 1) * vecsizeof)
 
     # read n vectors
-    v = read(fid, Float32, (d[1] + 1) * n)
+    v = zeros(Float32, (d[1] + 1) * n)
+    read!(fid, v)
     v = reshape(v, d[1] + 1, n)
 
     # Check if the first column (dimension of the vectors) is correct
@@ -114,8 +116,8 @@ function ivecs_read(
   open(filename, "r") do fid
 
     # Read the vector size
-    d = read(fid, Int32, 1)
-    @assert length(d) == 1
+    d = zeros(Int32, 1)
+    read!(fid, d)
     vecsizeof = 1 * 4 + d[1] * 4
 
     # Get the number of vectrors
@@ -128,7 +130,8 @@ function ivecs_read(
     skip(fid, (bounds.start - 1) * vecsizeof)
 
     # read n vectors
-    v = read(fid, Int32, (d[1] + 1) * n)
+    v = zeros(Int32, (d[1] + 1) * n)
+    read!(fid, v)
     v = reshape(v, d[1] + 1, n)
 
     # Check if the first column (dimension of the vectors) is correct
