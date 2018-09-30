@@ -1,5 +1,6 @@
 using Rayuela
 using HDF5
+using Printf
 
 # === Saving functions ===
 function save_results_pq_query_base(
@@ -102,7 +103,7 @@ function run_demos(
   d, _    = size( Xt )
 
   ntrials = 10
-  (Semi-)orthogonal methods: PQ, OPQ, ChainQ
+  # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
   for trial = 1:ntrials
     C, B, train_error, B_base, recall = Rayuela.experiment_pq( Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
     save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
@@ -362,7 +363,7 @@ end
 
 # run_demos("SIFT1M", Int(1e5),  8, 256, 25)
 for niter = [100]
-  run_demos("SIFT1M", Int(1e5),  8, 256, niter)
+  run_demos("SIFT1M", Int(1e4),  8, 256, niter)
   # run_demos("SIFT1M", Int(1e5), 16, 256, niter)
   # run_demos("Convnet1M", Int(1e5),   8, 256, niter)
   # run_demos("Convnet1M", Int(1e5),  16, 256, niter)

@@ -11,13 +11,13 @@ function quantize_pq(
   C::Vector{Matrix{T}}, # codebooks
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
-  d, n = size( X )
-  m    = length( C )
-  h    = size( C[1], 2 )
-  B    = Vector{Vector{Int}}(m) # codes
-  for i = 1:m; B[i] = zeros(Int,n) end # Allocate codes
+  d, n = size(X)
+  m    = length(C)
+  h    = size(C[1], 2)
+  B    = Vector{Vector{Int}}(undef, m) # codes
+  for i = 1:m; B[i] = zeros(Int, n) end # Allocate codes
 
-  subdims = splitarray( 1:d, m )
+  subdims = splitarray(1:d, m)
 
   # auxiliary variables for update_assignments! function
   costs     = zeros(Float32, n)
@@ -35,7 +35,7 @@ function quantize_pq(
 
   B = hcat(B...)
   B = convert(Matrix{Int16}, B)
-  B'
+  collect(B')
 end
 
 """
@@ -50,18 +50,18 @@ function train_pq(
   niter::Integer=25, # Number of k-means iterations for training
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
-  d, n = size( X )
+  d, n = size(X)
 
-  C = Vector{Matrix{T}}(m); # codebooks
+  C = Vector{Matrix{T}}(undef, m) # codebooks
 
-  B        = zeros(Int16, n, m) # codes
-  subdims  = splitarray(1:d, m) # subspaces
+  B       = zeros(Int16, n, m) # codes
+  subdims = splitarray(1:d, m) # subspaces
 
   for i = 1:m
     if V print("Working on codebook $i / $m... "); end
     # FAISS uses 25 iterations by default
     # https://github.com/facebookresearch/faiss/blob/master/Clustering.cpp#L28
-    cluster = kmeans( X[ subdims[i],: ], h, init=:kmpp, maxiter=niter)
+    cluster = kmeans(X[ subdims[i],: ], h, init=:kmpp, maxiter=niter)
     C[i], B[:,i] = cluster.centers, cluster.assignments
 
     if V
@@ -71,7 +71,7 @@ function train_pq(
       println("  Converged: $(cluster.converged)")
     end
   end
-  B = B'
+  B = collect(B')
   error = qerror_pq(X, B, C)
   return C, B, error
 end

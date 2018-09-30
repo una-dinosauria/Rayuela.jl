@@ -1,4 +1,3 @@
-
 export qerror, qerror_pq, qerror_opq
 
 # === Functions that compute quantization error ===
@@ -87,7 +86,7 @@ function qerror_opq(
     CB[subdims[i], :] = C[i][:, vec(B[i,:]) ]
   end
 
-  mean(sum((R*CB - X).^2, 1 ))
+  mean(sum((R*CB - X).^2, dims=1))
 end
 
 "Get the total error of a PQ encoding"
@@ -95,6 +94,7 @@ function qerror_pq(
   X::Matrix{T1},
   B::Matrix{T2},
   C::Vector{Matrix{T1}}) where {T1 <: AbstractFloat, T2 <: Integer}
-  R = eye(T1, size(X,1))
+  d = size(X, 1)
+  R = Matrix{T1}(1.0I, d, d)
   qerror_opq(X, B, C, R)
 end

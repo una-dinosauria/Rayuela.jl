@@ -1,4 +1,3 @@
-
 export quantize_norms, splitarray, K2vec, quantize_norms, get_norms_codebook
 
 "Get the codebook of the norms with k-means"
@@ -181,21 +180,21 @@ function splitarray(
   nparts::Integer)             # Number of parts to split the vector on
 
   n       = length(x)
-  perpart = div( n, nparts )
-  xtra    = mod( n, nparts )
-  out     = Array{Any}(nparts)
+  perpart = div(n, nparts)
+  xtra    = mod(n, nparts)
+  out     = Array{Any}(undef, nparts)
 
   #fills the parts, which have 1 item more than the other parts,
   #so these parts have size perpart + 1
   glidx = 1
   for i = 1:xtra
-    out[i] = x[ glidx : (glidx+perpart) ]
+    out[i] = x[glidx : (glidx+perpart)]
     glidx  = glidx+perpart+1
   end
 
   #fills the parts with the normal size
   for i = (xtra+1):nparts
-    out[i] = x[ glidx : (glidx+perpart-1) ]
+    out[i] = x[glidx : (glidx+perpart-1)]
     glidx  = glidx+perpart
   end
 

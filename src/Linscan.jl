@@ -9,18 +9,18 @@ function linscan_pq(
   b:: Int,                   # Number of bits per code -- log2(h) * m
   k:: Int = 10000)           # Number of knn results to return
 
-  m, n  = size( B )
-  d, nq = size( X )
+  m, n  = size(B)
+  d, nq = size(X)
 
   @show k, nq
-  dists = zeros( Cfloat, k, nq )
-  res   = zeros(  Cuint, k, nq )
+  dists = zeros(Cfloat, k, nq)
+  res   = zeros( Cuint, k, nq)
 
   ccall(("linscan_aqd_query", linscan_aqd), Nothing,
     (Ptr{Cfloat}, Ptr{Cuint}, Ptr{Cuchar}, Ptr{Cfloat},
     Ptr{Cfloat}, Cint, Cuint, Cint, Cint, Cint, Cint, Cint),
-    dists, res, B, cat(3,C...), X, Cint(n), Cuint(nq),
-    Cint(b), Cint(k), Cint(m), Cint(d), Cint(d/m) )
+    dists, res, B, cat(C..., dims=3), X, Cint(n), Cuint(nq),
+    Cint(b), Cint(k), Cint(m), Cint(d), Cint(d/m))
 
   return dists, (res.+=1)
 end
@@ -32,7 +32,7 @@ function linscan_pq(
   b:: Int,                   # Number of bits per code -- log2(h) * m
   k:: Int = 10000)  where T <: Integer
 
-  B_uint8 = convert(Matrix{UInt8},B-1)
+  B_uint8 = convert(Matrix{UInt8}, B.-1)
   return linscan_pq(B_uint8, X, C, b, k)
 end
 
