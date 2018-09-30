@@ -110,7 +110,7 @@ function linscan_opq(
   R::Matrix{Cfloat},         # Rotation matrix
   k::Int = 10000) where T <: Integer # Number of knn results to return
 
-  B_uint8 = convert(Matrix{UInt8},B-1)
+  B_uint8 = convert(Matrix{UInt8}, B.-1)
   return linscan_opq( B_uint8, X, C, b, R, k )
 end
 

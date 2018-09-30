@@ -1,4 +1,3 @@
-
 # Optimized Product Quantization. Adapted from Mohammad Norouzi's code.
 export train_opq, quantize_opq
 
@@ -22,18 +21,18 @@ function train_opq(
 
   if V; @printf("Training an optimized product quantizer\n"); end
 
-  d, n = size( X )
+  d, n = size(X)
 
-  C = Vector{Matrix{T}}(m) # codebooks
+  C = Vector{Matrix{T}}(undef, m) # codebooks
 
-  obj = zeros( Float32, niter+1 )
+  obj = zeros(Float32, niter+1 )
 
   # Number of bits in the final codes.
   nbits = log2(h) * m
   CB    = zeros(T, size(X))
 
   if init == "natural" # Initialize R with identity
-    R = eye(T, d)
+    R = Matrix{T}(1.0I, d, d)
   elseif init == "random"
     R, _, _ = svd( randn( T, d, d ))
   else
@@ -59,7 +58,7 @@ function train_opq(
   unused     = Int[]
 
   # Initialize the codes -- B
-  B    = Vector{Vector{Int}}(m) # codes
+  B    = Vector{Vector{Int}}(undef, m) # codes
   for i = 1:m; B[i] = zeros(Int, n); end # Allocate codes
 
   for i=1:m
@@ -69,14 +68,14 @@ function train_opq(
   end
 
   for iter=0:niter
-    if V; tic(); end # Take time if asked to
+    if V; start_time = time_ns(); end # Take time if asked to
 
     # Compute objective function
     obj[iter+1] = sum( (R*CB - X).^2 ) ./ n
     if V; @printf("%3d %e... ", iter, obj[iter+1]); end
 
     # update R
-    U, S, VV = svd(X * CB', thin=true)
+    U, S, VV = svd(X * CB', full=false)
     R = U * VV'
 
     # update R*X
@@ -94,7 +93,7 @@ function train_opq(
       CB[subdims[i], :] .= C[i][:, B[i]]
     end # for i=1:m
 
-    if V; @printf("done in %.2f secs\n", toq()); end
+    if V; @printf("done in %.2f secs\n", (time_ns() - start_time)/1e9); end
   end # for iter=0:niter
 
   B = hcat(B...)
