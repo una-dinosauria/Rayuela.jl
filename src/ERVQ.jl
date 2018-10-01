@@ -1,4 +1,4 @@
-
+# Enhanced RVQ, aka Stacked Quantizers: https://arxiv.org/abs/1411.2173
 export train_ervq, quantize_ervq, experiment_ervq
 
 """
@@ -12,7 +12,7 @@ function quantize_ervq(
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   # The quantization method is the same as RVQ
-  quantize_rvq(X,C,V)
+  quantize_rvq(X, C, V)
 end
 
 """
@@ -26,7 +26,7 @@ function train_ervq(
   C::Vector{Matrix{T}}, # codebooks
   m::Integer,    # number of codebooks
   h::Integer,    # number of entries per codebook
-  niter::Integer=25, # Number of k-means iterations for training
+  niter::Integer=25, # Number of iterations for training
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
 
   B = convert(Matrix{Int}, B)
@@ -37,10 +37,10 @@ function train_ervq(
   if V print("Error after init is $error \n"); end
 
   for i = 1:niter
-    if V print("=== Iteration $i / $niter ===\n"); tic(); end
+    if V print("=== Iteration $i / $niter ===\n"); start_time = time_ns(); end
 
     # Dummy singletons
-    singletons = Vector{Matrix{T}}(m)
+    singletons = Vector{Matrix{T}}(undef, m)
 
     Xr = copy(X)
     Xd = X .- reconstruct(B[2:end,:], C[2:end])
@@ -51,13 +51,13 @@ function train_ervq(
       if j == m
         Xd = Xr .- reconstruct(B[j-1,:], C[j-1])
       elseif j > 1
-        Xd = Xr .- reconstruct( vcat(B[j-1,:]', B[j+1:end,:]), [C[j-1],C[j+1:end]...] )
+        Xd = Xr .- reconstruct(vcat(B[j-1,:]', B[j+1:end,:]), [C[j-1],C[j+1:end]...])
       end
 
       # Update the codebook C[j]
       weights = nothing  # use unweighted version of update_centers!
       to_update = zeros(Bool, h)
-      to_update[B[j,:]] = true # In. Whether a codebook entry needs update
+      to_update[B[j,:]] .= true # In. Whether a codebook entry needs update
       cweights = zeros(T, h)   # Out. Cluster weights. We do not use this.
       Clustering.update_centers!(Xd, weights, B[j,:], to_update, C[j], cweights)
 
@@ -74,7 +74,7 @@ function train_ervq(
       elseif sum(to_update) < h
         # In other cases we already have the precomputed singletons
         ii = 1
-        for idx in find(.!to_update)
+        for idx in findall(.!to_update)
           C[j][:,idx] = singletons[2][:, ii]
           ii = ii + 1
         end
@@ -96,7 +96,8 @@ function train_ervq(
 
     if V
       error = qerror(X, B, C)
-      print("Iteration $i / $niter done in $(toq()) seconds. Qerror is $error.\n");
+      time_spent = (time_ns() - start_time) / 1e9
+      print("Iteration $i / $niter done in $time_spent seconds. Qerror is $error.\n");
     end
 
   end
@@ -144,7 +145,7 @@ function experiment_ervq(
   db_norms        = vec( norms_C[ B_base_norms ] )
 
   if V; print("Querying m=$m ... "); end
-  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, Matrix{Float32}(1.0I, d, d), knn)
   if V; println("done"); end
 
   recall = eval_recall(gt, idx, knn)
