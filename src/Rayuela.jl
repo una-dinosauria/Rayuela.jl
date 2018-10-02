@@ -6,6 +6,9 @@ using Clustering, Distances
 # For LSQR
 using IterativeSolvers
 
+# For nworkers()
+using Distributed
+
 # For sampling
 using Distributions
 

@@ -1,4 +1,3 @@
-
 ### Methods for updating codebooks in ChainQ, LSQ, and LSQ++
 ### Julieta
 
@@ -102,19 +101,27 @@ function fast_bin_matmul(
   d, n = size(X)
   m, n = size(B)
 
-  Bm = Vector{Vector{Int16}}(m)
+  Bm = Vector{Vector{Int16}}(undef, m)
   for i = 1:m
     Bm[i] = B[i,:]
   end
 
-  BTB = Matrix{Matrix{Float64}}(m,m)
+  BTB = Matrix{Matrix{Float64}}(undef, m, m)
 
   # Diagonals are easy
-  hi = zeros( Float32, h )
+  hi = zeros(Float32, h)
   @inbounds for i = 1:m
-    @simd for j = 1:h; hi[j]=0; end
-    for j = 1:n; hi[ B[i,j] ] += 1; end
-    BTB[i,i] = diagm(hi)
+
+    # @simd for j = 1:h
+    for j = 1:h
+      hi[j] = zero(Float32)
+    end
+
+    for j = 1:n
+      hi[ B[i,j] ] += one(Float32)
+    end
+
+    BTB[i,i] = Matrix(Diagonal(hi))
   end
 
   # Loop on off-diagonal quadrants
@@ -127,19 +134,19 @@ function fast_bin_matmul(
       cij = zeros(Float32, h, h)
 
       for k=1:n
-        cij[ Bmj[k], Bmi[k] ] += 1
+        cij[ Bmj[k], Bmi[k] ] += one(Float32)
       end
 
       # BTB is symmetric
       BTB[i,j] = cij
-      BTB[j,i] = cij'
+      BTB[j,i] = collect(cij')
     end
   end
 
   # Concatenate into a mh x mh matrix
   BTB = hvcat(m, BTB...)
 
-  BXT = Vector{Matrix{Float64}}(m)
+  BXT = Vector{Matrix{Float64}}(undef, m)
   @inbounds for i=1:m
     BXTi = zeros(Float64, d, h)
     Bmi = Bm[i]
@@ -248,7 +255,7 @@ function get_cbdims_chain(
   m::Integer) # The number of codebooks
 
   subdims = splitarray(1:d, m-1)
-  odims = Vector{UnitRange{Integer}}(m)
+  odims = Vector{UnitRange{Integer}}(undef, m)
 
   odims[1] =  subdims[1]
   for i = 2:m-1
@@ -337,7 +344,7 @@ function update_codebooks_chain_bin(
     V::Bool=false,      # whether to print progress
     rho::Float64=1e-4)
 
-    tic()
+    start_time = time_ns()
 
     m, n = size( B )
     d, n = size( X )
@@ -349,7 +356,7 @@ function update_codebooks_chain_bin(
     # Take subdims that are adjacent and solve each one
     subdims = get_cbdims_chain(d, m)
 
-    C = Vector{Matrix{Float32}}(m)
+    C = Vector{Matrix{Float32}}(undef, m)
     for i = 1:m
         C[i] = zeros(Float32, d, h)
     end
@@ -373,5 +380,6 @@ function update_codebooks_chain_bin(
         C[i+1][d2, :] = Cblock[h+1:2*h, :]'
     end
 
-    return C, toq()
+
+    return C, (time_ns() - start_time) / 1e9
 end

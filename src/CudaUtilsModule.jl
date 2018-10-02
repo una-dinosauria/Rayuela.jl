@@ -95,9 +95,9 @@ function condition_icm3(
   n::Cint)                        # in. size( d_ub, 2 )
 
   fun = ptxdict["condition_icm3"]
-  cudacall(fun, nblocks, nthreads,
+  cudacall(fun,
     (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cuchar}, Cint, Cint, Cint),
-    d_ub, d_bbs, d_codek, conditioning, m, n)
+    d_ub, d_bbs, d_codek, conditioning, m, n; threads=(nblocks, nthreads))
 
   return nothing
 end
@@ -110,10 +110,10 @@ function vec_add(
   h::Cint)
 
   fun = ptxdict["vec_add"]
-  cudacall(fun, nblocks, nthreads,
-    (Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint),
-    d_matrix, d_vec, n, h)
-end
+  cudacall(fun,
+    Tuple{Ptr{Cfloat}, Ptr{Cfloat}, Cint, Cint},
+    d_matrix, d_vec, n, h; blocks=nblocks, threads=nthreads)
+  end
 
 function viterbi_forward(
   nblocks::CuDim, nthreads::CuDim,
@@ -124,9 +124,9 @@ function viterbi_forward(
   n::Cint, j::Cint)
 
   fun = ptxdict["viterbi_forward"]
-  cudacall(fun, nblocks, nthreads,
+  cudacall(fun,
     (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cint}, Cint, Cint),
-    d_matrix, d_vec, d_minv, d_mini, n, j)
+    d_matrix, d_vec, d_minv, d_mini, n, j; blocks=nblocks, threads=nthreads)
 end
 
 # function veccost(

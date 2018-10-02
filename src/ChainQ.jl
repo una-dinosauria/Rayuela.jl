@@ -231,8 +231,8 @@ function quantize_chainq_cuda!(
 
   # Make space for unaries
   d_X = CuArrays.CuArray(X)
-  d_unaries   = Vector{CuArrays.CuArray{T}}(m)
-  d_codebooks = Vector{CuArrays.CuArray{T}}(m)
+  d_unaries   = Vector{CuArrays.CuArray{T}}(undef, m)
+  d_codebooks = Vector{CuArrays.CuArray{T}}(undef, m)
   for j = 1:m
     d_codebooks[j] = CuArrays.CuArray(C[j])
 
@@ -241,10 +241,10 @@ function quantize_chainq_cuda!(
     d_unaries[j] = CuArrays.BLAS.gemm('T', 'N', -2.0f0, d_codebooks[j], d_X)
 
     # Add self-codebook interactions || C_{i,i} ||^2
-    CudaUtilsModule.vec_add(n, (1,h), d_unaries[j].buf, CuArrays.CuArray(sum(C[j].^2, 1)).buf, Cint(n), Cint(h))
+    CudaUtilsModule.vec_add(n, (1,h), d_unaries[j].buf, CuArrays.CuArray(sum(C[j].^2, dims=1)).buf, Cint(n), Cint(h))
   end
 
-  d_binaries = Vector{CuArrays.CuArray{T}}(length(binaries))
+  d_binaries = Vector{CuArrays.CuArray{T}}(undef, length(binaries))
   for i = 1:length(binaries)
     d_binaries[i] = CuArrays.CuArray(binaries[i])
   end
@@ -299,12 +299,12 @@ function quantize_chainq(
   use_cuda::Bool=false,
   use_cpp::Bool=false)
 
-  tic()
+  start_time = time_ns()
   d, n = size( X )
   m    = length( C )
 
   # Compute binary tables
-  binaries = Vector{Matrix{Float32}}(m-1)
+  binaries = Vector{Matrix{Float32}}(undef, m-1)
   for i = 1:(m-1)
     binaries[i] = 2 * C[i]' * C[i+1]
   end
@@ -314,7 +314,7 @@ function quantize_chainq(
 
   if use_cuda # CUDA version
     quantize_chainq_cuda!(sdata(CODES), X, C, binaries, 1:n)
-    gc()
+    # gc()
   elseif nworkers() == 1
     if use_cpp # C++ parallel version
       quantize_chainq_cpp!(sdata(CODES), X, C, binaries, 1:n)
@@ -334,7 +334,7 @@ function quantize_chainq(
     end
   end
 
-  return sdata(CODES), toq()
+  return sdata(CODES), (time_ns() - start_time)/1e9
 end
 
 
@@ -351,7 +351,7 @@ function train_chainq(
 
   if V; @printf("Training a chain quantizer\n"); end
 
-  d, n = size( X )
+  d, n = size(X)
   obj  = zeros(T, niter+1)
   use_cuda = true
   use_cpp = false
@@ -369,7 +369,7 @@ function train_chainq(
   if V; @printf("%3d %e... %.2f secs updating B\n", -1, qerror(RX, B, C), Btime); end
 
   for iter = 0:niter
-    if V; tic(); end # Take time if asked to
+    if V; start_time = time_ns(); end # Take time if asked to
 
     obj[iter+1] = qerror(RX, B, C)
     if V; @printf("%3d %e... ", iter, obj[iter+1]); end
@@ -379,7 +379,7 @@ function train_chainq(
     for i = 1:m; CB .+= C[i][:, vec(B[i,:])]; end
 
     # update R
-    U, S, VV = svd(X * CB', thin=true)
+    U, S, VV = svd(X * CB', full=false)
     R = U * VV'
 
     # update R*X
@@ -391,7 +391,7 @@ function train_chainq(
 
     # Update the codes with lattice search
     B, Btime = quantize_chainq(RX, C, use_cuda, use_cpp)
-    if V; @printf("done in %.2f secs. %.2f secs updating B with %d workers. %.2f secs updating C\n", toq(), Btime, nworkers(), Ctime); end
+    if V; @printf("done in %.2f secs. %.2f secs updating B with %d workers. %.2f secs updating C\n", (time_ns()-start_time)/1e9, Btime, nworkers(), Ctime); end
   end
 
   return C, B, R, obj
