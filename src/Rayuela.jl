@@ -24,6 +24,9 @@ using Parameters
 
 using Printf
 
+# For randperm
+using Random
+
 # For parallel CPU
 using SharedArrays
 

@@ -163,7 +163,7 @@ function fast_bin_matmul(
 
   # Solve with Cholesky
   A = BTB+rho*I
-  b = BXT
+  b = collect(BXT)
 
   return A, b
 end
@@ -198,7 +198,7 @@ function update_codebooks_fast_bin(
 
   if V @printf("done in %.3f seconds.\n", time()-st); end
 
-  return K2vec( C', m, h )
+  return K2vec(collect(C'), m, h)
 end
 
 ###############################################

@@ -66,7 +66,7 @@ function iterated_conditional_modes_cpp!(
     # for j = to_look
     for j = 1:m
       # Get the unaries that we will work on
-      copy!(ub, unaries[to_look[j]])
+      copyto!(ub, unaries[to_look[j]])
 
       ccall(("condition", encode_icm_so), Nothing,
         (Ptr{Cuchar}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat},
@@ -102,7 +102,7 @@ function iterated_conditional_modes!(
     jidx = 1;
     for j = to_look
       # Get the unaries that we will work on
-      copy!(ub, unaries[j])
+      copyto!(ub, unaries[j])
 
       # These are all the nodes that we are conditioning on (i.e., the edges to 'absorb')
       for k = to_condition[:, jidx]
@@ -165,21 +165,21 @@ function encode_icm_fully!(
 
   # Compute unaries
   @time begin
-  unaries = get_unaries( X, C, V )
+  unaries = get_unaries(X, C, V)
 
-  h, n = size( unaries[1] )
-  m, _ = size( oldB )
+  h, n = size(unaries[1])
+  m, _ = size(oldB)
 
   if cpp && h != 256
     error("The C++ implementation of ICM encoding only supports codebooks with 256 entries")
   end
 
-  ncbi = length( binaries )
+  ncbi = length(binaries)
 
   # Create a transposed copy of the binaries
-  binaries_t = similar( binaries )
+  binaries_t = similar(binaries)
   for i = 1:ncbi
-    binaries_t[i] = binaries[i]'
+    binaries_t[i] = collect(binaries[i]')
   end
 
   # Create an index from codebook pairs to indices
@@ -204,7 +204,7 @@ function encode_icm_fully!(
     else
       B = SharedArray{Int16}(m, n)
     end
-    copy!(B, oldB)
+    copyto!(B, oldB)
 
     # For codebook i, we have to condition on these codebooks
     to_look      = 1:m
@@ -245,7 +245,7 @@ function encode_icm_fully!(
     if V; @printf("%5.2f%% new codes are better.\n", 100*sum(arebetter)/n ); end
 
     B[:, .~arebetter] = oldB[:, .~arebetter]
-    copy!(oldB, B)
+    copyto!(oldB, B)
   end
 
   return B
@@ -386,7 +386,7 @@ function experiment_lsq(
   icmiter = 4
   randord = true
   npert   = 4
-  cpp     = true
+  cpp     = false
 
   # Train LSQ
   d, _ = size(Xt)

@@ -353,6 +353,8 @@ function train_chainq(
 
   d, n = size(X)
   obj  = zeros(T, niter+1)
+
+  # TODO expose these
   use_cuda = true
   use_cpp = false
 

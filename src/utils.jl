@@ -100,13 +100,13 @@ function K2vec(
   m::Integer, # Number of codebooks
   h::Integer) # Number of elements in each codebook
 
-  assert( size(K,2) == m*h )
+  @assert size(K,2) == m*h
 
-  C = Vector{Matrix{Float32}}( m )
+  C = Vector{Matrix{Float32}}(undef, m)
 
-  subdims = splitarray( 1:(h*m), m )
+  subdims = splitarray(1:(h*m), m)
   for i = 1:m
-    C[i] = sdata( K[ :, subdims[i] ] )
+    C[i] = sdata(K[ :, subdims[i] ])
   end
 
   return C
@@ -126,7 +126,7 @@ function get_unaries(
   m    = length(C)
   _, h = size( C[1] )
 
-  unaries = Vector{Matrix{T}}(m)
+  unaries = Vector{Matrix{T}}(undef, m)
   #if V print("Computing unaries... "); st=time(); end
 
 
@@ -154,7 +154,7 @@ function get_binaries(
   m = length( C )
 
   ncbi     = sum(1:(m-1)) # The number of pairwise interactions
-  binaries = Vector{Matrix{T}}( ncbi ) # We'll store the binaries here
+  binaries = Vector{Matrix{T}}(undef, ncbi) # We'll store the binaries here
   cbi      = zeros(Int32, 2, ncbi) # Store the pairwise indices here
 
   idx=1

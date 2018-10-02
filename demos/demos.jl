@@ -140,19 +140,19 @@ function run_demos(
   nsplits_base  =  m == 8 ? 2 : 4
   @show nsplits_train, nsplits_base
 
-  # for trial = 1:ntrials
-  #
-  #   # C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(25).h5", m-1, trial)
-  #   # B_base = h5read("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(25).h5", "$trial/B_base")
-  #   # B_base = convert(Matrix{Int16}, B_base) .+ 1
-  #   # @show qerror(Xt, B, C), qerror(Xb, B_base, C)
-  #
-  #   C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-  #   C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, verbose)
-  #   # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, verbose)
-  #   save_results_lsq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
-  # end
-  #
+  for trial = 1:ntrials
+
+    # C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(25).h5", m-1, trial)
+    # B_base = h5read("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(25).h5", "$trial/B_base")
+    # B_base = convert(Matrix{Int16}, B_base) .+ 1
+    # @show qerror(Xt, B, C), qerror(Xb, B_base, C)
+
+    C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, verbose)
+    # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, verbose)
+    save_results_lsq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
+  end
+
   # for trial = 1:ntrials
   #   sr_method = "SR_D"
   #   C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
