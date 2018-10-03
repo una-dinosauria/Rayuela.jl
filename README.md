@@ -78,7 +78,7 @@ mkdir -p results/sift1m
 Finally, run the demo
 
 ```julia
-julia> include("~/.julia/dev/Rayuela/demos/demos.jl"")
+julia> include("~/.julia/dev/Rayuela/demos/demos.jl")
 ```
 
 This will showcase PQ, OPQ, RVQ, ERVQ, ChainQ and LSQ on a subset of SIFT1M.
