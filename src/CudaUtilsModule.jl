@@ -97,7 +97,7 @@ function condition_icm3(
   fun = ptxdict["condition_icm3"]
   cudacall(fun,
     (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cuchar}, Cint, Cint, Cint),
-    d_ub, d_bbs, d_codek, conditioning, m, n; threads=(nblocks, nthreads))
+    d_ub, d_bbs, d_codek, conditioning, m, n; blocks=nblocks, threads=nthreads)
 
   return nothing
 end
@@ -154,9 +154,9 @@ function veccost2(
   n::Cint)
 
   fun = ptxdict["veccost2"]
-  cudacall(fun, nblocks, nthreads,
+  cudacall(fun,
     (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cuchar}, Ptr{Cfloat}, Cint, Cint, Cint),
-    d_rx, d_codebooks, d_codes, d_veccost, d, m, n,
+    d_rx, d_codebooks, d_codes, d_veccost, d, m, n; blocks=nblocks, threads=nthreads,
     shmem=Int(d*sizeof(Cfloat)))
 end
 
@@ -169,9 +169,9 @@ function perturb(
   k::Cint)
 
   fun = ptxdict["perturb"]
-  cudacall( fun, nblocks, nthreads,
-    (Ptr{Void}, Ptr{Cuchar}, Cint, Cint, Cint),
-    state, codes, n, m, k)
+  cudacall(fun,
+    (Ptr{Nothing}, Ptr{Cuchar}, Cint, Cint, Cint),
+    state, codes, n, m, k; blocks=nblocks, threads=nthreads)
 end
 
 function setup_kernel(
@@ -180,9 +180,9 @@ function setup_kernel(
   state::CUDAdrv.Mem.Buffer)
 
   fun = ptxdict["setup_kernel"]
-  cudacall(fun, nblocks, nthreads,
-    (Cint, Ptr{Void}),
-    n, state)
+  cudacall(fun,
+    (Cint, Ptr{Nothing}),
+    n, state; blocks=nblocks, threads=nthreads)
 end
 
 end #cudaUtilsModule

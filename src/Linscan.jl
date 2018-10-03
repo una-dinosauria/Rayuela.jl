@@ -138,7 +138,7 @@ function linscan_lsq(
     Cuint, Cint, Cint, Cint, Cint, Cint),
     dists, res,
     B, RX, hcat(C...), dbnorms,
-    Cint(nq), Cint(n), Cint(m), Cint(h), Cint(d), Cint(k) );
+    Cint(nq), Cint(n), Cint(m), Cint(h), Cint(d), Cint(k));
 
   return dists, res
 end

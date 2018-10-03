@@ -314,7 +314,7 @@ function quantize_chainq(
 
   if use_cuda # CUDA version
     quantize_chainq_cuda!(sdata(CODES), X, C, binaries, 1:n)
-    # gc()
+    GC.gc()
   elseif nworkers() == 1
     if use_cpp # C++ parallel version
       quantize_chainq_cpp!(sdata(CODES), X, C, binaries, 1:n)

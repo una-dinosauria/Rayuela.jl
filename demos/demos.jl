@@ -136,9 +136,18 @@ function run_demos(
     # save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
   end
 
+
   nsplits_train =  m == 8 ? 1 : 1
   nsplits_base  =  m == 8 ? 2 : 4
   @show nsplits_train, nsplits_base
+
+  ilsiter = 8
+  icmiter = 4
+  randord = true
+  npert   = 4
+
+  # Manually manage GPU memory
+  ENV["CUARRAYS_MANAGED_POOL"] = "false"
 
   for trial = 1:ntrials
 
@@ -148,8 +157,9 @@ function run_demos(
     # @show qerror(Xt, B, C), qerror(Xb, B_base, C)
 
     C, B, R, chainq_error = load_chainq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, verbose)
-    # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, nsplits_train, nsplits_base, verbose)
+    # C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq(Xt, B, C, R, Xb, Xq, gt, m-1, h, niter, knn, verbose)
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_lsq_cuda(Xt, B, C, R, Xb, Xq, gt, m-1, h,
+      niter, ilsiter, icmiter, randord, npert, knn, nsplits_train, nsplits_base, verbose)
     save_results_lsq("./results/$(lowercase(dataset_name))/lsq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, chainq_error, B_base, recall)
   end
 
