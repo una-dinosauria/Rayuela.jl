@@ -69,6 +69,18 @@ rm sift.tar.gz
 cd ..
 ```
 
+Also make space for results
+
+```
+mkdir -p results/sift1m
+```
+
+Finally, run the demo
+
+```julia
+julia> include("~/.julia/dev/Rayuela/demos/demos.jl"")
+```
+
 ## Roadmap
 
 ### Implemented
