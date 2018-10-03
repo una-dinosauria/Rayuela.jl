@@ -102,39 +102,40 @@ function run_demos(
   Xt, Xb, Xq, gt = load_experiment_data(dataset_name, ntrain, nbase, nquery, verbose)
   d, _    = size( Xt )
 
-  ntrials = 1 # Increase this to 10 to reproduce ECCV'18 results
+  ntrials = 10
   # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
   for trial = 1:ntrials
-    C, B, train_error, B_base, recall = Rayuela.experiment_pq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-    save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
+    # C, B, train_error, B_base, recall = Rayuela.experiment_pq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+    # save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
   end
   for trial = 1:ntrials
     init = "natural"
-    C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, init, niter, knn, verbose)
-    save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
+    # C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, init, niter, knn, verbose)
+    # save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
   end
 
   # Cheap non-orthogonal methods: RVQ, ERVQ
   for trial = 1:ntrials
-    C, B, train_error, B_base, recall = Rayuela.experiment_rvq( Xt,       Xb, Xq, gt, m-1, h, niter, knn, verbose)
-    save_results_pq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5",  trial, C, B, train_error, B_base, recall)
+    # C, B, train_error, B_base, recall = Rayuela.experiment_rvq( Xt,       Xb, Xq, gt, m-1, h, niter, knn, verbose)
+    # save_results_pq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5",  trial, C, B, train_error, B_base, recall)
   end
   for trial = 1:ntrials
-    C, B, train_error = load_rvq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, train_error, B_base, recall = Rayuela.experiment_ervq(Xt, B, C, Xb, Xq, gt, m-1, h, niter, knn, verbose)
-    save_results_pq("./results/$(lowercase(dataset_name))/ervq_m$(m-1)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
+    # C, B, train_error = load_rvq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5", m-1, trial)
+    # C, B, train_error, B_base, recall = Rayuela.experiment_ervq(Xt, B, C, Xb, Xq, gt, m-1, h, niter, knn, verbose)
+    # save_results_pq("./results/$(lowercase(dataset_name))/ervq_m$(m-1)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
   end
 
   # Precompute init for LSQ/SR
   for trial = 1:ntrials
-    C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
-    save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, ones(UInt16,1,1), [0f0])
+    # C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
+    # save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, ones(UInt16,1,1), [0f0])
   end
   for trial = 1:ntrials
-    C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", m-1, trial)
-    C, B, R, chainq_error = train_chainq(    Xt, m-1, h, R, B, C, niter, verbose)
-    save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
+    # C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", m-1, trial)
+    # C, B, R, chainq_error = train_chainq(    Xt, m-1, h, R, B, C, niter, verbose)
+    # save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
   end
+
 
   nsplits_train =  m == 8 ? 1 : 1
   nsplits_base  =  m == 8 ? 2 : 4
@@ -144,6 +145,9 @@ function run_demos(
   icmiter = 4
   randord = true
   npert   = 4
+
+  # Manually manage GPU memory
+  ENV["CUARRAYS_MANAGED_POOL"] = "false"
 
   for trial = 1:ntrials
 
@@ -360,15 +364,15 @@ end
 
 # high_recall_experiments("Convnet1M", "lsq", Int(1e5), 15, 256, 25)
 # for method in ["lsq", "src", "srd"], niter = [50, 100], m = [15]
-# for method in ["srd"], niter = [25], m = [15]
+for method in ["srd"], niter = [25], m = [15]
   # high_recall_experiments("SIFT1M", method, Int(1e5), m, 256, niter)
   # high_recall_experiments("Deep1M", method, Int(1e5), m, 256, niter)
   # high_recall_experiments("Convnet1M", method, Int(1e5), m, 256, niter)
-# end
+end
 
+
+# run_demos("SIFT1M", Int(1e5),  8, 256, 25)
 for niter = [25]
-  # Increase the second parameter to Int(1e5) to reproduce ECCV'18 results
-
   run_demos("SIFT1M", Int(1e4),  8, 256, niter)
   # run_demos("SIFT1M", Int(1e5), 16, 256, niter)
   # run_demos("Convnet1M", Int(1e5),   8, 256, niter)

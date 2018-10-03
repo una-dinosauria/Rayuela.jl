@@ -1,4 +1,3 @@
-time_ns
 export encode_icm_cuda, train_lsq_cuda
 
 "Encodes a database with ILS in cuda"
