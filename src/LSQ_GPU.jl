@@ -127,7 +127,7 @@ function encode_icm_cuda_single(
 
     d_newB = CuArrays.CuArray(convert(Matrix{Cuchar}, newB.-1 ))
 
-    # Perturn npert entries in each code
+    # Perturb `npert` entries in each code
     CudaUtilsModule.perturb(n, (1,m), d_state, d_newB.buf, Cint(n), Cint(m), Cint(npert))
 
     newB = Array( d_newB )
