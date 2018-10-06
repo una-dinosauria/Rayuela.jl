@@ -2,6 +2,11 @@
 
 [![Travis](https://travis-ci.org/una-dinosauria/Rayuela.jl.svg?branch=master)](https://travis-ci.org/una-dinosauria/Rayuela.jl)
 
+This is the code for the paper
+
+Julieta Martinez, Shobhit Zakhmi, Holger H. Hoos, James J. Little.
+LSQ++: Lower running time and higher recall in multi-codebook quantization. In ECCV 2018. [[CVF](http://openaccess.thecvf.com/content_ECCV_2018/html/Julieta_Martinez_LSQ_lower_runtime_ECCV_2018_paper.html)].
+
 [Rayuela](https://en.wikipedia.org/wiki/Hopscotch#Rayuela).jl is a package
 that implements non-orthogonal multi-codebook quantization methods (MCQ).
 These methods are useful for fast search of high-dimensional (d=100s-1000s) dense vectors.
@@ -9,8 +14,8 @@ Rayuela is written in [Julia](https://github.com/JuliaLang/julia).
 
 This is not a production-ready library -- if you are looking for something
 like that, maybe look at [faiss](https://github.com/facebookresearch/faiss).
-
-Do note that the methods implemented by faiss and Rayuela.jl are almost entire orthogonal, and that the libraries are distributed under different licenses.
+Do note that the methods implemented by faiss and Rayuela.jl are almost entire orthogonal,
+and that the libraries are distributed under different licenses.
 
 Rayuela implements the main contributions that I made to this problem during my
 PhD at [UBC](https://cs.ubc.ca), as well as multiple baselines for MCQ.
@@ -27,9 +32,9 @@ In the future, savvier C++ programmers may port the most useful methods to faiss
 
 ## Authors
 
-The code in this package was mostly written by
-[Julieta Martinez](https://github.com/una-dinosauria/); with help from
-[Joris Clement](https://github.com/flyingdutchman23), and
+The code in this package was written by
+[Julieta Martinez](https://github.com/una-dinosauria/), with help from
+[Joris Clement](https://github.com/flyingdutchman23) and
 [Shobhit Zakhmi](https://github.com/Shobhit31).
 
 ## Requirements

@@ -41,7 +41,8 @@ const depsfile = joinpath(dirname(@__DIR__), "deps", "deps.jl")
 if isfile(depsfile)
   include(depsfile)
 else
-  error("Rayuela is not properly installed. Please run Pkg.build(\"Rayuela\")")
+  error("Rayuela is not properly Installed.
+  Please run Pkg.build(\"Rayuela\") and make sure you have nvcc and g++ available from the command line.")
 end
 cudautilsptx = cudautils[1:end-2] * "ptx"
 
