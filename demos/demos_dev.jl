@@ -22,39 +22,39 @@ function run_demos(
   Xt, Xb, Xq, gt = load_experiment_data(dataset_name, ntrain, nbase, nquery, verbose)
   d, _    = size( Xt )
 
-  ntrials = 1
-  # # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
-  # for trial = 1:ntrials
-  #   C, B, train_error, B_base, recall = Rayuela.experiment_pq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
-  #   save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
-  # end
-  # for trial = 1:ntrials
-  #   init = "natural"
-  #   C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, init, niter, knn, verbose)
-  #   save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
-  # end
+  ntrials = 10
+  # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
+  for trial = 1:ntrials
+    C, B, train_error, B_base, recall = Rayuela.experiment_pq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
+    save_results_pq("./results/$(lowercase(dataset_name))/pq_m$(m)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
+  end
+  for trial = 1:ntrials
+    init = "natural"
+    C, B, R, train_error, B_base, recall = Rayuela.experiment_opq(Xt, Xb, Xq, gt, m, h, init, niter, knn, verbose)
+    save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m)_it$(niter).h5", trial, C, B, R, train_error, B_base, recall)
+  end
 
-  # # Cheap non-orthogonal methods: RVQ, ERVQ
-  # for trial = 1:ntrials
-  #   C, B, train_error, B_base, recall = Rayuela.experiment_rvq( Xt,       Xb, Xq, gt, m-1, h, niter, knn, verbose)
-  #   save_results_pq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5",  trial, C, B, train_error, B_base, recall)
-  # end
-  # for trial = 1:ntrials
-  #   C, B, train_error = load_rvq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5", m-1, trial)
-  #   C, B, train_error, B_base, recall = Rayuela.experiment_ervq(Xt, B, C, Xb, Xq, gt, m-1, h, niter, knn, verbose)
-  #   save_results_pq("./results/$(lowercase(dataset_name))/ervq_m$(m-1)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
-  # end
-  #
-  # # Precompute init for LSQ/SR
-  # for trial = 1:ntrials
-  #   C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
-  #   save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, ones(UInt16,1,1), [0f0])
-  # end
-  # for trial = 1:ntrials
-  #   C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", m-1, trial)
-  #   C, B, R, chainq_error = train_chainq(    Xt, m-1, h, R, B, C, niter, verbose)
-  #   save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
-  # end
+  # Cheap non-orthogonal methods: RVQ, ERVQ
+  for trial = 1:ntrials
+    C, B, train_error, B_base, recall = Rayuela.experiment_rvq( Xt,       Xb, Xq, gt, m-1, h, niter, knn, verbose)
+    save_results_pq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5",  trial, C, B, train_error, B_base, recall)
+  end
+  for trial = 1:ntrials
+    C, B, train_error = load_rvq("./results/$(lowercase(dataset_name))/rvq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, train_error, B_base, recall = Rayuela.experiment_ervq(Xt, B, C, Xb, Xq, gt, m-1, h, niter, knn, verbose)
+    save_results_pq("./results/$(lowercase(dataset_name))/ervq_m$(m-1)_it$(niter).h5", trial, C, B, train_error, B_base, recall)
+  end
+
+  # Precompute init for LSQ/SR
+  for trial = 1:ntrials
+    C, B, R, train_error = Rayuela.train_opq(Xt, m-1, h, niter, "natural", verbose)
+    save_results_opq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", trial, C, B, R, train_error, ones(UInt16,1,1), [0f0])
+  end
+  for trial = 1:ntrials
+    C, B, R, _ = load_chainq("./results/$(lowercase(dataset_name))/opq_m$(m-1)_it$(niter).h5", m-1, trial)
+    C, B, R, chainq_error = train_chainq(    Xt, m-1, h, R, B, C, niter, verbose)
+    save_results_opq("./results/$(lowercase(dataset_name))/chainq_m$(m-1)_it$(niter).h5", trial, C, B, R, chainq_error, ones(UInt16,1,1), [0f0])
+  end
 
   nsplits_train =  m == 8 ? 1 : 1
   nsplits_base  =  m == 8 ? 2 : 4

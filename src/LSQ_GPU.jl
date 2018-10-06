@@ -304,11 +304,11 @@ function train_lsq_cuda(
   obj = zeros( T, niter )
 
   for iter = 1:niter
-    obj[iter] = qerror( X, B, C )
+    obj[iter] = qerror(X, B, C)
     if V; @printf("%3d %e \n", iter, obj[iter]); end
 
     # Update the codebooks
-    C = update_codebooks(RX, B, h, V, "fastbin")
+    C = update_codebooks(X, B, h, V, "fastbin")
 
     # Update the codes B
     # B = convert(Matrix{Int16}, rand(1:h, m, n))
