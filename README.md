@@ -142,7 +142,7 @@ As well as the corresponding paper of the method that you are using (see above).
 
 ## Notes
 * The original implementation of [Tree Quantization](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
-requires a mixed-integer programming solver such as [Gurobi](http://www.gurobi.com/) for updating the codebook.
+requires a mixed-integer programming solver such as [Gurobi](http://www.gurobi.com/) for updating the codebooks.
 We implement a special version of TQ that always create a chain
 (not a general tree); thus encoding can be done with the Viterbi algorithm,
 and codebook update is simpler and faster.
