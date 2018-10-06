@@ -266,6 +266,13 @@ function experiment_sr_cuda(
   p::AbstractFloat=0.5, # Temperature decay parameter
   V::Bool=false) where {T <: AbstractFloat, T2 <: Integer} # whether to print progress
 
+  if V
+    println()
+    println("**********************************************************************************************");
+    println("Running LSQ++ ($(sr_method)) with $m codebooks, $npert perturbations, $icmiter icm iterations and random order = $randord");
+    println("**********************************************************************************************");
+  end
+
   # Train LSQ
   d, _ = size(Xt)
   C, B, train_error = train_sr_cuda(Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, sr_method, schedule, p, nsplits_train, V)
@@ -289,7 +296,7 @@ function experiment_sr_cuda(
 
   if V; print("Querying m=$m ... "); end
   # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
-  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, Matrix{Float32}(1.0*I, d, d), knn)
   if V; println("done"); end
 
   recall = eval_recall(gt, idx, knn)

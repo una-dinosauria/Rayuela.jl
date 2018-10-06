@@ -11,11 +11,11 @@ function apply_schedule(
   # stdev = stdev * (1 - (iter/niter)).^p
 
   if schedule == 1 # Schedule 1
-    stdev = stdev * (1 - (iter/niter)).^p
+    stdev = stdev .* (1 - (iter/niter)).^p
   elseif schedule == 2 # Schedule 2
-    stdev = stdev / ((1 + iter).^p)
+    stdev = stdev ./ ((1 + iter).^p)
   elseif schedule == 3 # Schedule 3
-    stdev = stdev * p^(iter/2)
+    stdev = stdev .* p^(iter/2)
   else
     error("Schedule unknown: ", schedule )
   end
@@ -35,8 +35,8 @@ function SR_D_perturb(
   d, h = size( C[1] )
 
   # Compute the standard deviation
-  stdc = std( cat(2, C...), 2 ) ./ m
-  stdc = apply_schedule( stdc[:], iter, niter, schedule, p )
+  stdc = Statistics.std(cat(C..., dims=2), dims=2) ./ m
+  stdc = apply_schedule(stdc[:], iter, niter, schedule, p)
 
   for i = 1:m # Loop through each codebook
     for j = 1:d # Loop through each dimension
@@ -56,11 +56,11 @@ function SR_C_perturb(
   schedule::Integer=1,        # Schedule to use
   p::AbstractFloat=0.5)             # Power parameter in equation (18)
 
-  d, n = size( X )
+  d, n = size(X)
 
   # Compute the standard deviation
-  stdx = std( X, 2 )
-  stdx = apply_schedule( stdx[:], iter, niter, schedule, p )
+  stdx = Statistics.std(X, dims=2)
+  stdx = apply_schedule(stdx[:], iter, niter, schedule, p)
 
   Y = zeros(Float32,size(X))
 

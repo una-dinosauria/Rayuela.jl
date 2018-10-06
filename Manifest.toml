@@ -204,10 +204,10 @@ uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.19.0"
 
 [[LLVM]]
-deps = ["InteractiveUtils", "Printf", "Test", "Unicode"]
-git-tree-sha1 = "ca92c66f3bbea27d7dc755e19719bb571ac773a9"
+deps = ["InteractiveUtils", "Libdl", "Printf", "Test", "Unicode"]
+git-tree-sha1 = "68e13858ba0601d3616e76fecb2d0c472bb9a742"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "0.9.14"
+version = "0.9.15"
 
 [[LibCURL]]
 deps = ["BinaryProvider", "Compat", "Libdl", "Pkg", "Printf"]

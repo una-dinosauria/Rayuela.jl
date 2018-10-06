@@ -293,7 +293,7 @@ function train_lsq(
 
   # if V
   println("**********************************************************************************************");
-  println("Doing local search with $m codebooks, $npert perturbations, $icmiter icm iterations and random order = $randord");
+  println("Training LSQ with $m codebooks, $npert perturbations, $icmiter icm iterations and random order = $randord");
   println("**********************************************************************************************");
   # end
 

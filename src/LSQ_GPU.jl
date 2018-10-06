@@ -279,15 +279,10 @@ function train_lsq_cuda(
   nsplits::Integer=1,   # The number of splits for icm encoding (for limited memory GPUs)
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
-  # Xt, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, nsplits_train, V
-  # @show B
-  # @show size(B)
-  # @show niter, ilsiter, icmiter, randord, npert, nsplits, V
-
   if V
     println()
     println("**********************************************************************************************");
-    println("Doing local search with $m codebooks, $npert perturbations, $icmiter icm iterations and random order = $randord");
+    println("Training LSQ GPU with $m codebooks, $npert perturbations, $icmiter icm iterations and random order = $randord");
     println("**********************************************************************************************");
   end
 

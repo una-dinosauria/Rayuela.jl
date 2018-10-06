@@ -30,6 +30,9 @@ using Random
 # For parallel CPU
 using SharedArrays
 
+# For std
+using Statistics
+
 # For codebook update baselines
 using SparseArrays
 
