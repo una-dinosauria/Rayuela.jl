@@ -77,8 +77,8 @@ function sparsify_codes(
   B::Matrix{T}, # m-by-n matrix. Codes to sparsify
   h::Integer) where T <: Integer # Number of entries per codebook
 
-  m, n   = size( B )
-  ncodes = length( B )
+  m, n   = size(B)
+  ncodes = length(B)
 
   # Storing the indices of the sparse matrix.
   I = zeros(Int32, ncodes) # row indices
@@ -86,10 +86,10 @@ function sparsify_codes(
 
   for i = 1:m
     I[ (i-1)*n+1 : i*n ] = 1:n
-    J[ (i-1)*n+1 : i*n ] = vec(B[i,:]) + (i-1)*h
+    J[ (i-1)*n+1 : i*n ] = vec(B[i,:]) .+ (i-1) * h
   end
 
-  C = sparse(I, J, ones(Float32, ncodes), n, h*m)
+  C = sparse(I, J, ones(Float32, ncodes), n, m * h)
 
   return C
 end

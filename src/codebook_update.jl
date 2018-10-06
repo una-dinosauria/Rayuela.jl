@@ -11,11 +11,11 @@ function updatecb!(
 
   if codebook_upd_method == "lsqr"
     for i = IDX
-      K[i,:] = IterativeSolvers.lsqr( C, vec(X[i, :]) )
+      K[i,:] = IterativeSolvers.lsqr(C, vec(X[i, :]))
     end
   elseif codebook_upd_method == "lsmr"
     for i = IDX
-      K[i,:] = IterativeSolvers.lsmr( C, vec(X[i, :]) )
+      K[i,:] = IterativeSolvers.lsmr(C, vec(X[i, :]))
     end
   else
     error("Codebook update method unknown: ", codebook_upd_method)
@@ -32,11 +32,11 @@ function updatecb!(
 
   if codebook_upd_method == "lsqr"
     for i = IDX
-      K[i,:] = IterativeSolvers.lsqr( C, vec(X[i, :]) )
+      K[i,:] = IterativeSolvers.lsqr(C, vec(X[i, :]))
     end
   elseif codebook_upd_method == "lsmr"
     for i = IDX
-      K[i,:] = IterativeSolvers.lsmr( C, vec(X[i, :]) )
+      K[i,:] = IterativeSolvers.lsmr(C, vec(X[i, :]))
     end
   else
     error("Codebook update method unknown: ", codebook_upd_method)
@@ -54,9 +54,9 @@ function update_codebooks_naive(
 
   m, _ = size( B )
   B_ok = sparsify_codes(B, h)
-  C = convert( Matrix{Float32}, full(B_ok) \ X')
+  C = convert(Matrix{Float32}, Matrix(B_ok) \ X')
   if V @printf("done in %.3f seconds.\n", time()-st); end
-  return K2vec( C', m, h )
+  return K2vec(collect(C'), m, h )
 end
 
 # Naive implementation of codebook update based on Cholesky decomposition
@@ -69,28 +69,30 @@ function update_codebooks_fast(
 
   if V print("Doing fast codebook update... "); st=time(); end
 
-  m, _ = size( B )
+  m, _ = size(B)
 
   # size( B_ok ) = n x mh
   B_ok = sparsify_codes(B, h)
 
-  BTB = B_ok'*B_ok
-  BTB = convert( Matrix{Float32}, full( BTB ))
+  BTB = B_ok' * B_ok
+  BTB = convert(Matrix{Float32}, Matrix( BTB ))
 
   BTXT = (X * B_ok)'
 
   # Solve sub-problem to solve C
-  A = BTB+rho*I
+  mh = size(BTB, 1)
+  A = BTB + Matrix{Float32}(rho*I, mh, mh)
   b = BTXT
 
   # size( C ) = mh x d
-  C = convert( Matrix{Float32}, A \ b )
+  C = convert(Matrix{Float32}, A \ b)
 
   if V @printf("done in %.3f seconds.\n", time()-st); end
 
-  return K2vec( C', m, h )
+  return K2vec(collect(C'), m, h)
 end
 
+# Fast matrix multiplications that take advantage of the structure of B
 function fast_bin_matmul(
   X::Matrix{Float32}, # d-by-n matrix to update codebooks on.
   B::Matrix{Int16},   # m-by-n matrix. X encoded.

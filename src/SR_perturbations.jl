@@ -31,8 +31,8 @@ function SR_D_perturb(
   schedule::Integer=1,        # Schedule to use
   p::AbstractFloat=0.5)             # Power parameter in equation (18)
 
-  m = length( C )
-  d, h = size( C[1] )
+  m = length(C)
+  d, h = size(C[1])
 
   # Compute the standard deviation
   stdc = Statistics.std(cat(C..., dims=2), dims=2) ./ m
@@ -40,8 +40,8 @@ function SR_D_perturb(
 
   for i = 1:m # Loop through each codebook
     for j = 1:d # Loop through each dimension
-      noise = randn(h,1)*(stdc[j])
-      C[i][j,:] = C[i][j,:] + noise
+      noise = randn(h, 1) .* stdc[j]
+      C[i][j,:] = C[i][j,:] .+ noise
     end
   end
 
@@ -65,8 +65,8 @@ function SR_C_perturb(
   Y = zeros(Float32,size(X))
 
   for i = 1:d # Loop through each dimension
-    noise = randn(n,1)*(stdx[i])
-    Y[i,:] = X[i,:] + noise
+    noise = randn(n, 1) .* stdx[i]
+    Y[i,:] = X[i,:] .+ noise
   end
 
   return Y
