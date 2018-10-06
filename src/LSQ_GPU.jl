@@ -301,7 +301,7 @@ function train_lsq_cuda(
   B    = B[end]
   if V; @printf("%3d %e \n", -1, qerror(X, B, C)); end
 
-  obj = zeros( T, niter )
+  obj = zeros(T, niter)
 
   for iter = 1:niter
     obj[iter] = qerror(X, B, C)
@@ -311,7 +311,6 @@ function train_lsq_cuda(
     C = update_codebooks(X, B, h, V, "fastbin")
 
     # Update the codes B
-    # B = convert(Matrix{Int16}, rand(1:h, m, n))
     B, _ = encode_icm_cuda(X, B, C, [ilsiter], icmiter, npert, randord, nsplits, V)
     B    = B[end]
   end

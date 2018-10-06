@@ -301,8 +301,7 @@ function train_lsq(
 
   # Initialize C
   RX = R' * X
-  C = update_codebooks_fast_bin( RX, B, h, V )
-  # C = update_codebooks( RX, B, h, V, "lsqr" )
+  C = update_codebooks(RX, B, h, V, "fastbin")
 
   # Apply the rotation to the codebooks
   for i = 1:m; C[i] = R * C[i]; end
@@ -312,15 +311,14 @@ function train_lsq(
   @time B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)
   @printf("%3d %e \n", -1, qerror( X, B, C ))
 
-  obj = zeros( Float32, niter )
+  obj = zeros(T, niter)
 
   for iter = 1:niter
-    obj[iter] = qerror( X, B, C )
+    obj[iter] = qerror(X, B, C)
     @printf("%3d %e \n", iter, obj[iter])
 
     # Update the codebooks C
-    C = update_codebooks_fast_bin( X, B, h, V )
-    # C = update_codebooks(X, B, h, V, "lsqr")
+    C = update_codebooks(X, B, h, V, "fastbin")
 
     # Update the codes B
     @time B = encoding_icm(X, B, C, ilsiter, icmiter, randord, npert, cpp, V)

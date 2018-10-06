@@ -118,10 +118,10 @@ function train_sr_cuda(
   if method == "SR_C"
     # In SR-C we add noise to X
     RX_noisy = SR_C_perturb(RX, 0, niter, schedule, p)
-    C = update_codebooks_fast_bin(RX_noisy, B, h, V)
+    C = update_codebooks(RX_noisy, B, h, V, "fastbin")
   else
     # In SR-D we add noise to C
-    C = update_codebooks_fast_bin(RX, B, h, V)
+    C = update_codebooks(RX, B, h, V, "fastbin")
     obj = qerror(RX, B, C)
     if V; @printf("%3d %e \n", -1, obj); end
     C = SR_D_perturb(C, 1, niter, schedule, p)
@@ -134,7 +134,7 @@ function train_sr_cuda(
   @time B, _ = encode_icm_cuda(RX, B, C, [ilsiter], icmiter, npert, randord, nsplits, V)
   # gc()
   B = B[end]
-  obj = qerror( RX, B, C )
+  obj = qerror(RX, B, C)
   @printf("%3d %e \n", -1, obj)
 
   obj     = Inf
@@ -149,11 +149,12 @@ function train_sr_cuda(
     if V; @printf("%3d %e (%e better) \n", iter, obj, objlast - obj); end
 
     if method == "SR_C"
-      # In SR-C we add noise to X
+      # In SR-C we add noise to X before updating C
       RX_noisy = SR_C_perturb(RX, iter, niter, schedule, p)
-      C = update_codebooks_fast_bin(RX_noisy, B, h, V)
+      C = update_codebooks(RX_noisy, B, h, V, "fastbin")
     else
-      C = update_codebooks_fast_bin(RX, B, h, V)
+      # In SR-D we add noise to C before updating B
+      C = update_codebooks(RX, B, h, V, "fastbin")
       C = SR_D_perturb(C, iter, niter, schedule, p)
     end
 
@@ -162,7 +163,7 @@ function train_sr_cuda(
     # gc()
     B = B[end]
 
-    C = update_codebooks_fast_bin(RX, B, h, V)
+    C = update_codebooks(RX, B, h, V, "fastbin")
   end
 
   objarray[niter+1] = qerror(RX, B, C)
@@ -236,7 +237,7 @@ function experiment_sr(
   C, B, R, _ = train_opq(Xt, m, h, niter, "natural", V)
 
   # ChainQ (second initialization)
-  # C, B, R, train_error = train_chainq(Xt, m, h, R, B, C, niter, V)
+  C, B, R, train_error = train_chainq(Xt, m, h, R, B, C, niter, V)
 
   # Actual experiment
   experiment_sr(Xt, B, C, R, Xb, Xq, gt, m, h, niter, knn, V)
@@ -292,7 +293,7 @@ function experiment_sr_cuda(
 
   # Compute and quantize the database norms
   B_base_norms, db_norms_X = quantize_norms(B_base, C, norms_C)
-  db_norms = vec( norms_C[ B_base_norms ] )
+  db_norms = vec(norms_C[ B_base_norms ])
 
   if V; print("Querying m=$m ... "); end
   # @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms_X, eye(Float32, d), knn)
