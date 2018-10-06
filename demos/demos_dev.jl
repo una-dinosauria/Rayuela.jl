@@ -1,6 +1,7 @@
 using Rayuela
 using Printf
 
+# Load utilities for saving experimental results
 include("experiment_utils.jl")
 
 # === experiment functions ===
