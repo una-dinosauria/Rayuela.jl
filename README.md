@@ -54,7 +54,15 @@ Now you can clone our repo:
 (v1.0) pkg> develop https://github.com/una-dinosauria/Rayuela.jl.git
 ```
 
-This should put our code under `~/.julia/dev/Rayuela`, and let you import the library with `using Rayuela`.
+This should put our code under `~/.julia/dev/Rayuela`.
+
+Due to an [open bug](https://github.com/JuliaLang/Pkg.jl/issues/465,) with the package manager, you have to manually
+pull the latest changes:
+
+```bash
+cd ~/.julia/dev/Rayuela
+git pull
+```
 
 ## Demo and data
 
@@ -82,6 +90,8 @@ julia> include("~/.julia/dev/Rayuela/demos/demos.jl")
 ```
 
 This will showcase PQ, OPQ, RVQ, ERVQ, ChainQ and LSQ on a subset of SIFT1M.
+
+The rest of the datasets used in our ECCV'18 publication can be found on [gdrive](https://drive.google.com/drive/folders/1MnJLHpg5LP6pPQxQuL0VjnM03vHPvgP1?usp=sharing).
 
 ## Roadmap
 
