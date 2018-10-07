@@ -1,7 +1,6 @@
 # Rayuela.jl
 
 [![Travis](https://travis-ci.org/una-dinosauria/Rayuela.jl.svg?branch=master)](https://travis-ci.org/una-dinosauria/Rayuela.jl)
-<!-- TODO(julieta) add codecoverage -->
 [![][docs-latest-img]][docs-latest-url]
 
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
