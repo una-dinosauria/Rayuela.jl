@@ -100,7 +100,7 @@ function train_opq(
   B = convert(Matrix{Int16}, B)
   C = convert(Vector{Matrix{T}}, C)
 
-  return C, B', R, obj
+  return C, collect(B'), R, obj
 end
 
 

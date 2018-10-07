@@ -215,7 +215,7 @@ function experiment_sr(
   db_norms     = vec( norms_C[ B_base_norms ] )
 
   if V; print("Querying m=$m ... "); end
-  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, eye(Float32, d), knn)
+  @time dists, idx = linscan_lsq(B_base, Xq, C, db_norms, Matrix{Float32}(1.0*I, d, d), knn)
   if V; println("done"); end
 
   rec = eval_recall(gt, idx, knn)
@@ -336,7 +336,7 @@ function experiment_sr_cuda_query_base(
   db_norms         = vec(norms_C[norms_B])
 
   if V; print("Querying m=$m ... "); end
-  @time dists, idx = linscan_lsq(B, Xq, C, db_norms, eye(Float32, d), knn)
+  @time dists, idx = linscan_lsq(B, Xq, C, db_norms, Matrix{Float32}(1.0*I, d, d), knn)
   if V; println("done"); end
 
   recall = eval_recall(gt, idx, knn)

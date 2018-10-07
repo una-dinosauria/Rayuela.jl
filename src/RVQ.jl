@@ -157,7 +157,7 @@ function experiment_rvq_query_base(
   # B_base       = convert(Matrix{UInt8}, B_base-1)
   # B_base_norms = convert(Vector{UInt8}, B_base_norms-1)
   if V; print("Querying m=$m ... "); end
-  @time dists, idx = linscan_lsq(B, Xq, C, db_norms, eye(Float32, d), knn)
+  @time dists, idx = linscan_lsq(B, Xq, C, db_norms, Matrix{Float32}(1.0I, d, d), knn)
   if V; println("done"); end
 
   recall = eval_recall(gt, idx, knn)
