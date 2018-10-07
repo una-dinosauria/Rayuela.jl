@@ -40,7 +40,7 @@ The code in this package was written by
 ## Requirements
 
 This package is written in [Julia](https://github.com/JuliaLang/julia) 1.0, with some extension in C++ and CUDA.
-You also need a CUDA-ready GPU. We have tested this code with Titan X, Titan Xp and GTX 1080 GPUs.
+You also need a CUDA-ready GPU. We have tested this code on an Nvidia Titan Xp GPU.
 
 ## Installing
 
@@ -88,13 +88,21 @@ Also make a directory for the results
 mkdir -p results/sift1m
 ```
 
-Finally, run the demo
+Finally, run the demo:
 
 ```julia
-julia> include("~/.julia/dev/Rayuela/demos/demos.jl")
+julia> include("~/.julia/dev/Rayuela/demos/demos_train_query_base.jl")
 ```
 
-This will showcase PQ, OPQ, RVQ, ERVQ, ChainQ and LSQ on a subset of SIFT1M.
+For query/base/protocol (example by default runs on SIFT1M), or
+
+```
+julia> include("~/.julia/dev/Rayuela/demos/demos_query_base.jl")
+```
+
+For query/base protocol (example by default runs on LabelMe22K)
+
+This will showcase PQ, OPQ, RVQ, ERVQ, ChainQ and LSQ/LSQ++ (SR-C and SR-D).
 
 The rest of the datasets used in our ECCV'18 publication can be found on [gdrive](https://drive.google.com/drive/folders/1MnJLHpg5LP6pPQxQuL0VjnM03vHPvgP1?usp=sharing).
 
