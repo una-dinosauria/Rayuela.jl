@@ -2,14 +2,22 @@
 export train_pq, quantize_pq
 
 """
-    quantize_pq(X::Matrix{T}, C::Vector{Matrix{T}}, V::Bool=false) where T <: AbstractFloat
+    quantize_pq(X, C, V=false) -> B
 
-Quantize using PQ codebooks.
+Given data and PQ codeboks, quantize.
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a PQ codebook.
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes that approximate `X`
 """
 function quantize_pq(
-  X::Matrix{T},         # d-by-n. Data to encode
-  C::Vector{Matrix{T}}, # codebooks
-  V::Bool=false) where T <: AbstractFloat # whether to print progress
+  X::Matrix{T},
+  C::Vector{Matrix{T}},
+  V::Bool=false) where T <: AbstractFloat
 
   d, n = size(X)
   m    = length(C)
@@ -39,16 +47,28 @@ function quantize_pq(
 end
 
 """
-    train_pq(X::Matrix{T}, m::Integer, h::Integer, V::Bool=false) where T <: AbstractFloat
+    train_pq(X, m, h, niter=25, V=false) -> C, B, error
 
 Trains a product quantizer.
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `m::Integer`: Number of codebooks
+- `h::Integer`: Number of entries in each codebook (typically 256)
+- `niter::Integer`: Number of k-means iterations to use
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook of size approximately `d/m`-by-`h`.
+- `error::T`: The quantization error after training
 """
 function train_pq(
-  X::Matrix{T},  # d-by-n. Data to learn codebooks from
-  m::Integer,    # number of codebooks
-  h::Integer,    # number of entries per codebook
-  niter::Integer=25, # Number of k-means iterations for training
-  V::Bool=false) where T <: AbstractFloat # whether to print progress
+  X::Matrix{T},
+  m::Integer,
+  h::Integer,
+  niter::Integer=25,
+  V::Bool=false) where T <: AbstractFloat
 
   d, n = size(X)
 

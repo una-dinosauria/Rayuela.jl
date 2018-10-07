@@ -1,19 +1,17 @@
 using Documenter, Rayuela
 
-# makedocs()
 makedocs(
-    modules = [Rayuela],
     format = :html,
     sitename = "Rayuela.jl",
+    modules = [Rayuela],
     pages = [
         "Home"    => "index.md",
         # "Manual"  => [
         #     "man/usage.md"
         # ],
-        # "Library" => [
-        #     "lib/api.md",
-        #     "lib/array.md"
-        # ]
+        "Library" => [
+            "PQ.md"
+        ]
     ]
     # doctest = test
 )
