@@ -61,7 +61,7 @@ Now you can clone our repo:
 
 This should put our code under `~/.julia/dev/Rayuela`.
 
-Due to an [open bug](https://github.com/JuliaLang/Pkg.jl/issues/465,) with the package manager, you have to manually
+Due to an [open bug](https://github.com/JuliaLang/Pkg.jl/issues/465) with the package manager, you have to manually
 pull the latest changes:
 
 ```bash
