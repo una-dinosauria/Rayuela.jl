@@ -26,8 +26,9 @@ branches:
 # uncomment the following lines to override the default test script
 #script:
 #  - julia -e 'Pkg.clone(pwd()); Pkg.build("Rayuela"); Pkg.test("Rayuela"; coverage=true)'
-after_success:
   # Push docs
+after_script:
+  # after_success:
   - julia -e 'Pkg.add("Documenter")'
   - julia -e 'cd(Pkg.dir("Rayuela")); include(joinpath("docs", "make.jl"))'
   # # push coverage results to Coveralls
