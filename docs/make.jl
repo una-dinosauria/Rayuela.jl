@@ -20,7 +20,7 @@ deploydocs(
 	repo = "github.com/una-dinosauria/Rayuela.jl.git",
 	target = "build",
 	osname = "linux",
-	julia  = "1.0",
+	julia  = "0.7",
 	deps = nothing,
 	make = nothing,
 )
