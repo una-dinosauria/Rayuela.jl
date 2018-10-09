@@ -1,6 +1,6 @@
 # PQ
 
-Product quantization is awesome
+Product quantization is awesome!
 
 ```@docs
 quantize_pq(X::Matrix{T}, C::Vector{Matrix{T}}, V::Bool=false) where T <: AbstractFloat

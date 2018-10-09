@@ -1,6 +1,7 @@
 
 export train_pq, quantize_pq
 
+
 """
     quantize_pq(X, C, V=false) -> B
 
@@ -45,6 +46,7 @@ function quantize_pq(
   B = convert(Matrix{Int16}, B)
   collect(B')
 end
+
 
 """
     train_pq(X, m, h, niter=25, V=false) -> C, B, error

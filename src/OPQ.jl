@@ -1,6 +1,21 @@
 # Optimized Product Quantization. Adapted from Mohammad Norouzi's code.
 export train_opq, quantize_opq
 
+
+"""
+    quantize_opq(X, R, C, V=false) -> B
+
+Given data and PQ/OPQ codeboks, quantize.
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `R::Matrix{T}`: `d`-by-`d` rotation to apply to the data before quantizing
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a PQ codebook.
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes that approximate `X`
+"""
 function quantize_opq(
   X::Matrix{T},          # d-by-n matrix of data points to quantize
   R::Matrix{T},          # d-by-d matrix. Learned rotation for X
@@ -11,6 +26,26 @@ function quantize_opq(
   return quantize_pq(R'*X, C, V)
 end
 
+
+"""
+    train_opq(X, m, h, niter, init, V=false) -> C, B, R, error
+
+Trains a product quantizer.
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `m::Integer`: Number of codebooks
+- `h::Integer`: Number of entries in each codebook (typically 256)
+- `niter::Integer`: Number of iterations to use
+- `init::String`: Method used to intiialize `R`, either `"natural"` (identity) or `"random"`.
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook of size approximately `d/m`-by-`h`.
+- `R::Matrix{T}`: `d`-by-`d` learned rotation for the data
+- `obj::Vector{T}`: The quantization error each iteration
+"""
 function train_opq(
   X::Matrix{T},      # d-by-n matrix of data points to train on.
   m::Integer,        # number of codebooks

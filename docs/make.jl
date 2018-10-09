@@ -10,7 +10,8 @@ makedocs(
         #     "man/usage.md"
         # ],
         "Library" => [
-            "PQ.md"
+            "PQ.md",
+            "OPQ.md"
         ]
     ]
     # doctest = test
