@@ -94,11 +94,11 @@ end
 
 # Fast matrix multiplications that take advantage of the structure of B
 function fast_bin_matmul(
-  X::Matrix{Float32}, # d-by-n matrix to update codebooks on.
+  X::Matrix{T}, # d-by-n matrix to update codebooks on.
   B::Matrix{Int16},   # m-by-n matrix. X encoded.
   h::Integer,         # number of entries per codebook.
   V::Bool=false,      # whether to print progress
-  rho::Float64=1e-4) # regularization
+  rho::Float64=1e-4) where T <: AbstractFloat # regularization
 
   d, n = size(X)
   m, n = size(B)
@@ -164,7 +164,7 @@ function fast_bin_matmul(
   BXT = hcat( BXT... )'
 
   # Solve with Cholesky
-  A = BTB+rho*I
+  A = BTB + rho*I
   b = collect(BXT)
 
   return A, b
@@ -270,49 +270,49 @@ end
 
 # Update a dimension of a codebook using LSQR
 function updatecb_struct!(
-  K::SharedMatrix{Float32},
-  C::SparseMatrixCSC{Float32,Int32},
-  X::Matrix{Float32},
+  K::SharedMatrix{T},
+  C::SparseMatrixCSC{T, Int32},
+  X::Matrix{T},
   dim2C, #::Vector{Bool},
   subcbs,
-  IDX::UnitRange{Int64} )
+  IDX::UnitRange{Int64}) where T <: AbstractFloat
 
   for i = IDX
-    rcbs      = cat( 1, subcbs[find(dim2C[i,:])]... )
-    K[i,rcbs] = IterativeSolvers.lsqr( C[:,rcbs], vec(X[i, :]) )
+    rcbs      = cat(subcbs[findall(dim2C[i,:])]..., dims=1)
+    K[i,rcbs] = IterativeSolvers.lsqr(C[:,rcbs], vec(X[i, :]))
   end
 end
 
 function update_codebooks_generic(
-  X::Matrix{Float32},  # d-by-n. The data that was encoded.
+  X::Matrix{T},  # d-by-n. The data that was encoded.
   B::Union{Matrix{Int16},SharedArray{Int16,2}}, # d-by-m. X encoded.
   h::Integer,          # number of entries per codebooks
   odimsfunc::Function, # Function that says which dimensions each codebook has
-  V::Bool=false)       # whether to print progress
+  V::Bool=false) where T <: AbstractFloat      # whether to print progress
 
   if V print("Doing LSQR codebook update... "); st=time(); end
 
   d, n   = size( X )
   m, _   = size( B )
-  C = sparsify_codes( B, h )
+  C = sparsify_codes(B, h, T)
 
   odims = odimsfunc(d, m)
 
   # Make a map of dimensions to codebooks
   dim2C = zeros(Bool, d, m)
-  for i = 1:m; dim2C[ odims[i], i ] = true; end
+  for i = 1:m; dim2C[odims[i], i] .= true; end
 
-  K = SharedArray{Float32,2}((d, h*m))
+  K = SharedArray{T,2}((d, h*m))
   subcbs = splitarray(1:(h*m), m)
 
   if nworkers() == 1
-    updatecb_struct!( K, C, X, dim2C, subcbs, 1:d )
+    updatecb_struct!(K, C, X, dim2C, subcbs, 1:d)
   else
-    paridx = splitarray( 1:d, nworkers() )
+    paridx = splitarray(1:d, nworkers())
     @sync begin
-      for (i, wpid) in enumerate( workers() )
+      for (i, wpid) in enumerate(workers())
         @async begin
-          remotecall_wait(updatecb_struct!, wpid, K, C, X, dim2C, subcbs, paridx[i] )
+          remotecall_wait(updatecb_struct!, wpid, K, C, X, dim2C, subcbs, paridx[i])
         end #@async
       end #for
     end #@sync
@@ -326,25 +326,25 @@ end
 
 # Update codebooks in a chain
 function update_codebooks_chain(
-  X::Matrix{Float32}, # d-by-n. The data that was encoded.
+  X::Matrix{T}, # d-by-n. The data that was encoded.
   B::Union{Matrix{Int16},SharedArray{Int16,2}}, # d-by-m. X encoded.
   h::Integer,         # number of entries per codebook.
-  V::Bool=false)      # whether to print progress
+  V::Bool=false) where T <: AbstractFloat # whether to print progress
 
-  tic()
+  st = time()
   C = update_codebooks_generic(X, B, h, get_cbdims_chain, V)
 
-  return C, toq()
+  return C, (time() - st)
 end
 
 
 # Fast version of the function above
 function update_codebooks_chain_bin(
-    X::Matrix{Float32}, # d-by-n. The data that was encoded.
+    X::Matrix{T}, # d-by-n. The data that was encoded.
     B::Matrix{Int16}, # d-by-m. X encoded.
     h::Integer,         # number of entries per codebook.
     V::Bool=false,      # whether to print progress
-    rho::Float64=1e-4)
+    rho::Float64=1e-4) where T <: AbstractFloat
 
     start_time = time_ns()
 

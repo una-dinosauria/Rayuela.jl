@@ -1,13 +1,13 @@
 
 using Rayuela
-using Base.Test
+using Test
 
 # Generate random data for tests. d is the size of the dataset.
 function generate_random_dataset(T1, T2, d, n, m, h)
-  X = rand(T1, d, n)
-  C = Vector{Matrix{T1}}(m)
-  for i=1:m; C[i]=rand(T1,d,h); end
-  B = convert(Matrix{T2},rand(1:h,m,n))
+  X = rand(T1, d, n) * 10
+  C = Vector{Matrix{T1}}(undef, m)
+  for i=1:m; C[i]=rand(T1, d, h); end
+  B = convert(Matrix{T2},rand(1:h, m, n))
   X, C, B
 end
 
@@ -42,9 +42,10 @@ end
 
 # Make sure the fast version of codebook update is still okay
 @testset "Chain codebook update" begin
-  d, n, m, h, V, rho = 32, 10_000, 4, 256, false, 1e-3
-  X, _, B = generate_random_dataset(Float32, Int16, d, n, m, h)
+  d, n, m, h, V, rho = 32, 10_000, 4, 256, false, 1e-4
+  X, _, B = generate_random_dataset(Float64, Int16, d, n, m, h)
   C1, _ = Rayuela.update_codebooks_chain(X, B, h, V)
-  C2 =    Rayuela.update_codebooks_chain_bin(X, B, h, V, rho)
-  @test isapprox(C1, C2, atol=1e-3)
+  C2, _ = Rayuela.update_codebooks_chain_bin(X, B, h, V, rho)
+
+  @test isapprox(C1, C2)
 end

@@ -75,7 +75,8 @@ end
 # Creates a sparse matrix out of codes
 function sparsify_codes(
   B::Matrix{T}, # m-by-n matrix. Codes to sparsify
-  h::Integer) where T <: Integer # Number of entries per codebook
+  h::Integer,
+  T2=Float32) where T <: Integer # Number of entries per codebook
 
   m, n   = size(B)
   ncodes = length(B)
@@ -89,20 +90,20 @@ function sparsify_codes(
     J[ (i-1)*n+1 : i*n ] = vec(B[i,:]) .+ (i-1) * h
   end
 
-  C = sparse(I, J, ones(Float32, ncodes), n, m * h)
+  C = sparse(I, J, ones(T2, ncodes), n, m * h)
 
   return C
 end
 
 # Transform the output of LSQR/SPGL1 into a vector of matrices again
 function K2vec(
-  K::Union{SharedMatrix{Float32}, Matrix{Float32}}, # d-by-(h*m) matrix with the new codebooks
+  K::Union{SharedMatrix{T}, Matrix{T}}, # d-by-(h*m) matrix with the new codebooks
   m::Integer, # Number of codebooks
-  h::Integer) # Number of elements in each codebook
+  h::Integer) where T <: AbstractFloat # Number of elements in each codebook
 
   @assert size(K,2) == m*h
 
-  C = Vector{Matrix{Float32}}(undef, m)
+  C = Vector{Matrix{T}}(undef, m)
 
   subdims = splitarray(1:(h*m), m)
   for i = 1:m
