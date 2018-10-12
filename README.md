@@ -1,7 +1,9 @@
 # Rayuela.jl
 
-[![Travis](https://travis-ci.org/una-dinosauria/Rayuela.jl.svg?branch=master)](https://travis-ci.org/una-dinosauria/Rayuela.jl)
-[![][docs-latest-img]][docs-latest-url]
+[![][gitlab-img]][gitlab-url][![][docs-latest-img]][docs-latest-url]
+
+[gitlab-img]: https://gitlab.com/JuliaGPU/CUDAnative.jl/badges/master/pipeline.svg
+[gitlab-url]: https://gitlab.com/JuliaGPU/Rayuela.jl/pipelines
 
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
 [docs-latest-url]: http://una-dinosauria.github.io/Rayuela.jl/latest
