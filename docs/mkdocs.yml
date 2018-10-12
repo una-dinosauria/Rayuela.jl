@@ -25,7 +25,7 @@ extra_javascript:
 
 docs_dir: 'build'
 
-pages:
+nav:
 - Home: index.html
 - Library:
   - PQ.html

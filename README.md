@@ -5,8 +5,8 @@
 [gitlab-img]: https://gitlab.com/JuliaGPU/CUDAnative.jl/badges/master/pipeline.svg
 [gitlab-url]: https://gitlab.com/JuliaGPU/Rayuela.jl/pipelines
 
-[docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-latest-url]: http://una-dinosauria.github.io/Rayuela.jl/latest
+[docs-latest-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-latest-url]: http://una-dinosauria.github.io/Rayuela.jl
 
 This is the code for the paper
 
