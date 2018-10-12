@@ -16,8 +16,8 @@ Given data and PQ codeboks, quantize.
 - `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes that approximate `X`
 """
 function quantize_pq(
-  X::Matrix{T},
-  C::Vector{Matrix{T}},
+  X::Matrix{T},             # d-by-n matrix of data points to quantize
+  C::Vector{Matrix{T}},     # m-long array. Each entry is a d-by-h codebooks
   V::Bool=false) where T <: AbstractFloat
 
   d, n = size(X)
@@ -66,10 +66,10 @@ Trains a product quantizer.
 - `error::T`: The quantization error after training
 """
 function train_pq(
-  X::Matrix{T},
-  m::Integer,
-  h::Integer,
-  niter::Integer=25,
+  X::Matrix{T},         # d-by-n matrix of data points to train on.
+  m::Integer,           # number of codebooks
+  h::Integer,           # number of entries per codebook
+  niter::Integer=25,    # number of optimization iterations
   V::Bool=false) where T <: AbstractFloat
 
   d, n = size(X)
