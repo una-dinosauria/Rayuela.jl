@@ -1,6 +1,6 @@
 # Rayuela.jl
 
-[![][gitlab-img]][gitlab-url][![][docs-latest-img]][docs-latest-url]
+[![][gitlab-img]][gitlab-url] [![][docs-latest-img]][docs-latest-url]
 
 [gitlab-img]: https://gitlab.com/JuliaGPU/CUDAnative.jl/badges/master/pipeline.svg
 [gitlab-url]: https://gitlab.com/JuliaGPU/Rayuela.jl/pipelines
