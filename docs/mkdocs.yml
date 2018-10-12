@@ -1,0 +1,32 @@
+site_name:        Rayuela.jl
+repo_url:         https://github.com/una-dinosauria/Rayuela.jl
+site_description: Julia package for multi codebook quantization.
+site_author:      una-dinosauria
+
+theme: readthedocs
+
+extra:
+  palette:
+    primary: 'indigo'
+    accent:  'blue'
+
+extra_css:
+  - assets/documenter.css
+
+markdown_extensions:
+  - codehilite
+  - extra
+  - tables
+  - fenced_code
+
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML
+  - assets/mathjaxhelper.js
+
+docs_dir: 'build'
+
+pages:
+- Home: index.html
+- Library:
+  - PQ.html
+  - OPQ.html
