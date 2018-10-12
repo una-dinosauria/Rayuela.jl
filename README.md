@@ -102,7 +102,7 @@ julia> include("~/.julia/dev/Rayuela/demos/demos_train_query_base.jl")
 
 For query/base/protocol (example by default runs on SIFT1M), or
 
-```
+```julia
 julia> include("~/.julia/dev/Rayuela/demos/demos_query_base.jl")
 ```
 
