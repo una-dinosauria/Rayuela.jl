@@ -55,8 +55,8 @@ provides(BuildProcess,
         @build_steps begin
             ChangeDirectory(linscan_aqdbuilddir)
             FileRule(joinpath(prefix,"builds","cudautils.so"),@build_steps begin
-                `nvcc -ptx ../src/cudautils.cu -o cudautils.ptx -arch=compute_35`
-                `nvcc --shared -Xcompiler -fPIC -shared ../src/cudautils.cu -o cudautils.so -arch=compute_35`
+                `/usr/local/cuda/bin/nvcc -ptx ../src/cudautils.cu -o cudautils.ptx -arch=compute_35`
+                `/usr/local/cuda/bin/nvcc --shared -Xcompiler -fPIC -shared ../src/cudautils.cu -o cudautils.so -arch=compute_35`
             end)
         end
     end),cudautils, os = :Unix, installed_libpath=joinpath(prefix,"builds"))
