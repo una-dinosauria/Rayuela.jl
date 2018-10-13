@@ -2,9 +2,19 @@
 export train_ervq, quantize_ervq, experiment_ervq
 
 """
-    quantize_ervq(X::Matrix{T}, C::Vector{Matrix{T}}, V::Bool=false) where T <: AbstractFloat
+    quantize_ervq(X, C, V=false) -> B, singletons
 
-Quantize using a residual quantizer
+Given data and full-dimensional codebooks, quantize.
+This methods is identical to [`quantize_rvq`](@ref)
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook.
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `B::Matrix{Int16}`: `m`-by-`n` codes that approximate `X`
+- `singletons::Vector{Matrix{T}}`: `m` matrices with unused codebook entries
 """
 function quantize_ervq(
   X::Matrix{T},         # d-by-n. Data to encode
@@ -15,10 +25,26 @@ function quantize_ervq(
   quantize_rvq(X, C, V)
 end
 
-"""
-    train_ervq(X::Matrix{T}, m::Integer, h::Integer, V::Bool=false) where T <: AbstractFloat
 
-Trains an enhanced residual quantizer.
+"""
+    train_ervq(X, m, h, V=false) -> C, B, error
+
+Train an enhanced residual quantizer / stacked quantizer.
+This method is typically initialized by [Residual vector quantization (RVQ)](@ref)
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with pre-trained codes
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrices. Each matrix is a pretrained codebook of size approximately `d`-by-`h`.
+- `m::Integer`: Number of codebooks
+- `h::Integer`: Number of entries in each codebook (typically 256)
+- `niter::Integer`: Number of iterations to use
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook of size approximately `d`-by-`h`.
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes
+- `error::T`: The quantization error after training
 """
 function train_ervq(
   X::Matrix{T},  # d-by-n. Data to learn codebooks from
@@ -101,8 +127,11 @@ function train_ervq(
     end
 
   end
-  return C, B, qerror(X, B, C)
+
+  error = qerror(X, B, C)
+  C, B, qerror(X, B, C)
 end
+
 
 function train_ervq(
   X::Matrix{T},  # d-by-n. Data to learn codebooks from
@@ -152,6 +181,7 @@ function experiment_ervq(
   return C, B, train_error, B_base, recall
 end
 
+
 function experiment_ervq_query_base(
   Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
   B::Matrix{T2}, # codes
@@ -178,6 +208,7 @@ function experiment_ervq_query_base(
   return C, B, train_error, recall
 end
 
+
 function experiment_ervq(
   Xt::Matrix{T}, # d-by-n. Data to learn codebooks from
   Xb::Matrix{T}, # d-by-n. Base set
@@ -192,6 +223,7 @@ function experiment_ervq(
   C, B, _ = Rayuela.train_rvq(Xt, m, h, niter, V)
   experiment_ervq(Xt, B, C, Xb, Xq, gt, m, h, niter, knn, V)
 end
+
 
 function experiment_ervq_query_base(
   Xt::Matrix{T}, # d-by-n. Data to learn codebooks from

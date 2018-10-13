@@ -10,7 +10,7 @@ Given data and PQ/OPQ codeboks, quantize.
 # Arguments
 - `X::Matrix{T}`: `d`-by-`n` data to quantize
 - `R::Matrix{T}`: `d`-by-`d` rotation to apply to the data before quantizing
-- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a PQ codebook.
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d/m`-by-`h` matrix entries. Each matrix is a (O)PQ codebook.
 - `V::Bool`: Whether to print progress
 
 # Returns
@@ -30,7 +30,7 @@ end
 """
     train_opq(X, m, h, niter, init, V=false) -> C, B, R, error
 
-Trains a product quantizer.
+Trains an optimized product quantizer.
 
 # Arguments
 - `X::Matrix{T}`: `d`-by-`n` data to quantize

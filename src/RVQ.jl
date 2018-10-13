@@ -2,9 +2,18 @@
 export train_rvq, quantize_rvq, experiment_rvq
 
 """
-    quantize_rq(X::Matrix{T}, C::Vector{Matrix{T}}, V::Bool=false) where T <: AbstractFloat
+    quantize_rvq(X, C, V=false) -> B, singletons
 
-Quantize using a residual quantizer
+Given data and full-dimensional codebooks, quantize.
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook.
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `B::Matrix{Int16}`: `m`-by-`n` codes that approximate `X`
+- `singletons::Vector{Matrix{T}}`: `m` matrices with unused codebook entries
 """
 function quantize_rvq(
   X::Matrix{T},         # d-by-n. Data to encode
@@ -34,7 +43,7 @@ function quantize_rvq(
     to_update = ones(Bool, h)  # Out. Whether this centre needs update
     unused    = Vector{Int}()  # Out. Indices of centres that have no assignments
 
-    Clustering.update_assignments!( dmat, true, B[i], costs, counts, to_update, unused )
+    Clustering.update_assignments!(dmat, true, B[i], costs, counts, to_update, unused)
 
     # Create new codebook entries that we are missing
     if !isempty(unused)
@@ -57,15 +66,27 @@ function quantize_rvq(
 end
 
 """
-    train_rq(X::Matrix{T}, m::Integer, h::Integer, V::Bool=false) where T <: AbstractFloat
+    train_rvq(X, m, h, niter, V=false) -> C, B, error
 
-Trains a residual quantizer.
+Train a residual quantizer.
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `m::Integer`: Number of codebooks
+- `h::Integer`: Number of entries in each codebook (typically 256)
+- `niter::Integer`: Number of iterations to use
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook of size approximately `d/m`-by-`h`.
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes
+- `error::T`: The quantization error after training
 """
 function train_rvq(
-  X::Matrix{T},  # d-by-n. Data to learn codebooks from
-  m::Integer,    # number of codebooks
-  h::Integer,    # number of entries per codebook
-  niter::Integer=25, # Number of k-means iterations for training
+  X::Matrix{T},       # d-by-n. Data to learn codebooks from
+  m::Integer,         # number of codebooks
+  h::Integer,         # number of entries per codebook
+  niter::Integer=25,  # Number of k-means iterations for training
   V::Bool=false) where T <: AbstractFloat # whether to print progress
 
   d, n = size( X )
@@ -93,9 +114,11 @@ function train_rvq(
       println("  Converged: $(cluster.converged)")
     end
   end
+
   B = collect(B')
   error = qerror(X, B, C)
-  return C, B, error
+
+  C, B, error
 end
 
 
@@ -121,8 +144,8 @@ function experiment_rvq(
   if V; @printf("Error in base is %e\n", base_error); end
 
   # Compute and quantize the database norms
-  B_base_norms, _ = quantize_norms( B_base, C, norms_C )
-  db_norms        = vec( norms_C[ B_base_norms ] )
+  B_base_norms, _ = quantize_norms(B_base, C, norms_C)
+  db_norms        = vec(norms_C[ B_base_norms ])
 
   # === Compute recall ===
   # B_base       = convert(Matrix{UInt8}, B_base-1)
@@ -151,7 +174,7 @@ function experiment_rvq_query_base(
   d, _ = size(Xt)
   C, B, train_error = Rayuela.train_rvq(Xt, m, h, niter, V)
 	norms_B, norms_C = get_norms_codebook(B, C)
-  db_norms     = vec( norms_C[ norms_B ] )
+  db_norms     = vec(norms_C[ norms_B ])
 
   # === Compute recall ===
   # B_base       = convert(Matrix{UInt8}, B_base-1)

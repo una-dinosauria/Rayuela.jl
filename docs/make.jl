@@ -11,7 +11,9 @@ makedocs(
         # ],
         "Library" => [
             "PQ.md",
-            "OPQ.md"
+            "OPQ.md",
+            "RVQ.md",
+            "ERVQ.md"
         ]
     ]
     # doctest = test

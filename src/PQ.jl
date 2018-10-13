@@ -9,7 +9,7 @@ Given data and PQ codeboks, quantize.
 
 # Arguments
 - `X::Matrix{T}`: `d`-by-`n` data to quantize
-- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a PQ codebook.
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d/m`-by-`h` matrix entries. Each matrix is a PQ codebook.
 - `V::Bool`: Whether to print progress
 
 # Returns
