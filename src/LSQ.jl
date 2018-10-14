@@ -251,7 +251,24 @@ function encode_icm_fully!(
   return B
 end
 
-# Encode a full dataset
+"""
+    encoding_icm(X, oldB, C, ilsiter, icmiter, randord, npert, cpp=true, V=false) -> B
+
+Given data and chain codebooks, find codes using iterated local search with ICM.
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `OldB::Matrix{Int16}`: `m`-by-`n` initial set of codes
+- `ilsiter::Integer`: Number of iterated local search (ILS) iterations
+- `icmiter::Integer`: Number of iterated conditional modes (ICM) iterations
+- `randord::Bool`: Whether to use random order
+- `npert::Integer`: Number of codes to perturb
+- `cpp::Bool=true`: Whether to use the c++ implementation
+- `V::Bool=false`: Whehter to print progress
+
+# Returns
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the new codes
+"""
 function encoding_icm(
   X::Matrix{T},         # d-by-n matrix. Data to encode
   oldB::Matrix{Int16},  # m-by-n matrix. Previous encoding
@@ -276,6 +293,33 @@ function encoding_icm(
   return B
 end
 
+
+"""
+    train_lsq(X, m, h, R, B, C, niter, ilsiter, icmiter, randord, npert, cpp=true, V=false) -> C, B, obj
+
+Train a local-search quantizer.
+This method is typically initialized by [Chain quantization (ChainQ)](@ref)
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `m::Integer`: Number of codebooks
+- `h::Integer`: Number of entries in each codebook (typically 256)
+- `R::Matrix{T}`: `d`-by-`d` rotation matrix for initialization
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with pre-trained codes for initialization
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrices. Each matrix is a pretrained codebook of size approximately `d`-by-`h`
+- `niter::Integer`: Number of iterations to use
+- `ilster::Integer`: Number of iterated local search (ILS) iterations
+- `icmiter::Integer`: Number of iterated conditional modes (ICM) iterations
+- `randord::Bool`: Whether to visit the nodes in a random order in ICM
+- `npert::Integer`: Number of codes to perturb
+- `cpp::Bool`: Whether to use a c++ implementation for encoding
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook of size approximately `d`-by-`h`
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes
+- `obj::Vector{T}`: `niter`-long vector with the quantization error after each iteration
+"""
 function train_lsq(
   X::Matrix{T},         # d-by-n matrix of data points to train on.
   m::Integer,           # number of codebooks

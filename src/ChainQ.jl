@@ -254,7 +254,6 @@ function quantize_chainq_cuda!(
 
   # Forward pass
   @inbounds for i = 1:(m-1) # Loop over states
-    @time begin
     if i > 1; CuArrays.BLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[i], 1); end
 
     for j = 1:h # Loop over the cost of going to j
@@ -262,7 +261,6 @@ function quantize_chainq_cuda!(
 
       Mem.download!(mini, d_mini.buf)
       minidx[j,i,:] .= mini .+ one(eltype(mini))
-    end
     end
   end
 
@@ -272,7 +270,6 @@ function quantize_chainq_cuda!(
   mini .+= one(eltype(mini))
 
   # Backward trace
-  @time begin
   @inbounds for idx = IDX # Loop over the datapoints
 
     backpath = [ mini[idx] ]
@@ -282,7 +279,6 @@ function quantize_chainq_cuda!(
 
     # Save the inferred code
     CODES[:, idx] .= reverse!( backpath )
-  end
   end
 
   CudaUtilsModule.finit()
@@ -303,7 +299,7 @@ Given data and chain codebooks, find codes using the Viterbi algorithm chain qua
 - `use_cuda::Bool`: whether to use a CUDA implementation
 - `use_cpp::Bool`: whether to use a c++ implementation
 
-If both `use_cuda` and `use_cpp` are `true`, the CUDA implementation is used. 
+If both `use_cuda` and `use_cpp` are `true`, the CUDA implementation is used.
 
 # Returns
 - `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes

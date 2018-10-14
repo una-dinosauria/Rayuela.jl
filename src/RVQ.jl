@@ -66,7 +66,7 @@ function quantize_rvq(
 end
 
 """
-    train_rvq(X, m, h, niter, V=false) -> C, B, error
+    train_rvq(X, m, h, niter=25, V=false) -> C, B, error
 
 Train a residual quantizer.
 

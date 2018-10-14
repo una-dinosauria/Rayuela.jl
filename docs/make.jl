@@ -14,7 +14,8 @@ makedocs(
             "OPQ.md",
             "RVQ.md",
             "ERVQ.md",
-            "ChainQ.md"
+            "ChainQ.md",
+            "LSQ.md"
         ]
     ]
     # doctest = test
