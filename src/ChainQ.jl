@@ -292,7 +292,23 @@ function quantize_chainq_cuda!(
 end
 
 
-"Function to call that encodes a dataset using the Viterbi algorithm"
+"""
+    quantize_chainq(X, C, use_cuda=false, use_cpp=false) -> B, ellapsed
+
+Given data and chain codebooks, find codes using the Viterbi algorithm chain quantizer.
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrices. Each matrix is a pretrained codebook of size approximately `d`-by-`h`.
+- `use_cuda::Bool`: whether to use a CUDA implementation
+- `use_cpp::Bool`: whether to use a c++ implementation
+
+If both `use_cuda` and `use_cpp` are `true`, the CUDA implementation is used. 
+
+# Returns
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes
+- `ellapsed::Float64`: The time spent encoding
+"""
 function quantize_chainq(
   X::Matrix{Float32},         # d-by-n matrix. Data to encode
   C::Vector{Matrix{Float32}}, # m-long vector with d-by-h codebooks
@@ -300,8 +316,8 @@ function quantize_chainq(
   use_cpp::Bool=false)
 
   start_time = time_ns()
-  d, n = size( X )
-  m    = length( C )
+  d, n = size(X)
+  m    = length(C)
 
   # Compute binary tables
   binaries = Vector{Matrix{Float32}}(undef, m-1)
@@ -334,11 +350,33 @@ function quantize_chainq(
     end
   end
 
-  return sdata(CODES), (time_ns() - start_time)/1e9
+  B = sdata(CODES)
+  B, (time_ns() - start_time)/1e9
 end
 
 
-"Train a chain quantizer with the Viterbi algorithm"
+"""
+    train_chainq(X, m, h, R, B, C, niter, V=false) -> C, B, R, error
+
+Train a chain quantizer.
+This method is typically initialized by [Optimized product quantization (OPQ)](@ref)
+
+# Arguments
+- `X::Matrix{T}`: `d`-by-`n` data to quantize
+- `m::Integer`: Number of codebooks
+- `h::Integer`: Number of entries in each codebook (typically 256)
+- `R::Matrix{T}`: `d`-by-`d` rotation matrix for initialization
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with pre-trained codes for initialization
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrices. Each matrix is a pretrained codebook of size approximately `d`-by-`h`.
+- `niter::Integer`: Number of iterations to use
+- `V::Bool`: Whether to print progress
+
+# Returns
+- `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook of size approximately `d`-by-`h`.
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes
+- `R::Matrix{T}`: `d`-by-`d` optimized rotation matrix
+- `error::T`: The quantization error after training
+"""
 function train_chainq(
   X::Matrix{T},             # d-by-n matrix of data points to train on.
   m::Integer,               # number of codebooks

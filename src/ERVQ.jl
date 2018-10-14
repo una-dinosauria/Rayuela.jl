@@ -27,19 +27,21 @@ end
 
 
 """
-    train_ervq(X, m, h, V=false) -> C, B, error
+    train_ervq(X, B, C, m, h, niter, V=false) -> C, B, error
 
 Train an enhanced residual quantizer / stacked quantizer.
 This method is typically initialized by [Residual vector quantization (RVQ)](@ref)
 
 # Arguments
 - `X::Matrix{T}`: `d`-by-`n` data to quantize
-- `B::Matrix{Int16}`: `m`-by-`n` matrix with pre-trained codes
+- `B::Matrix{T2}`: `m`-by-`n` matrix with pre-trained codes
 - `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrices. Each matrix is a pretrained codebook of size approximately `d`-by-`h`.
 - `m::Integer`: Number of codebooks
 - `h::Integer`: Number of entries in each codebook (typically 256)
 - `niter::Integer`: Number of iterations to use
 - `V::Bool`: Whether to print progress
+
+`T <: AbstractFloat` and `T2 <: Integer`
 
 # Returns
 - `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook of size approximately `d`-by-`h`.

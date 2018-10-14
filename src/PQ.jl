@@ -61,8 +61,8 @@ Trains a product quantizer.
 - `V::Bool`: Whether to print progress
 
 # Returns
-- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes
 - `C::Vector{Matrix{T}}`: `m`-long vector with `d`-by-`h` matrix entries. Each matrix is a codebook of size approximately `d/m`-by-`h`.
+- `B::Matrix{Int16}`: `m`-by-`n` matrix with the codes
 - `error::T`: The quantization error after training
 """
 function train_pq(
