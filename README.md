@@ -2,7 +2,7 @@
 
 [![][gitlab-img]][gitlab-url] [![][docs-latest-img]][docs-latest-url]
 
-[gitlab-img]: https://gitlab.com/JuliaGPU/CUDAnative.jl/badges/master/pipeline.svg
+[gitlab-img]: https://gitlab.com/JuliaGPU/Rayuela.jl/badges/master/pipeline.svg
 [gitlab-url]: https://gitlab.com/JuliaGPU/Rayuela.jl/pipelines
 
 [docs-latest-img]: https://img.shields.io/badge/docs-dev-blue.svg
