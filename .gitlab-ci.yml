@@ -38,7 +38,7 @@ documentation:
 
     - apt install -y openssh-client && mkdir /root/.ssh
     - julia --project -e 'using Pkg;
-                          Pkg.add("Documenter")'
+                          ps=PackageSpec(name="Documenter", version="0.19"); Pkg.add(ps); Pkg.pin(ps)'
     - julia --project -e 'using Pkg;
                           Pkg.build("Rayuela")'
     - julia --project docs/make.jl
