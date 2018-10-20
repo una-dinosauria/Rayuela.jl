@@ -40,5 +40,5 @@ documentation:
     - julia --project -e 'using Pkg;
                           Pkg.add("Documenter")'
     - julia --project -e 'using Pkg;
-                          Pkg.add("https://github.com/una-dinosauria/Rayuela.jl.git")'
+                          Pkg.add(PackageSpec(url="https://github.com/una-dinosauria/Rayuela.jl.git", rev="master"))'
     - julia --project docs/make.jl
