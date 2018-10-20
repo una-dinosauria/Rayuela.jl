@@ -23,9 +23,10 @@ makedocs(
 
 deploydocs(
 	repo = "github.com/una-dinosauria/Rayuela.jl.git",
+  julia  = "",
+  osname = "",
+  # no need to build anything here, re-use output of `makedocs`
 	target = "build",
-	osname = "linux",
-	julia  = "0.7",
 	deps = nothing,
 	make = nothing,
 )
