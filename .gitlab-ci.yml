@@ -39,4 +39,6 @@ documentation:
     - apt install -y openssh-client && mkdir /root/.ssh
     - julia --project -e 'using Pkg;
                           Pkg.add("Documenter")'
+    - julia --project -e 'using Pkg;
+                          Pkg.add("https://github.com/una-dinosauria/Rayuela.jl")'
     - julia --project docs/make.jl
