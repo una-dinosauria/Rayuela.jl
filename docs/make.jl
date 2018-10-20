@@ -21,7 +21,7 @@ makedocs(
     # doctest = test
 )
 
-# Borrowing from CUDAdrv.jl
+# Borrowing from CUDAnative.jl
 deploydocs(
 	repo = "github.com/una-dinosauria/Rayuela.jl.git",
   julia  = "",
