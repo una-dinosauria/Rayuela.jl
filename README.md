@@ -117,7 +117,7 @@ The rest of the datasets used in our ECCV'18 publication can be found on [gdrive
 ### Implemented
 - Product Quantization -- [TPAMI'11](https://hal.archives-ouvertes.fr/file/index/docid/514462/filename/paper_hal.pdf)
 - Optimized Product Quantization / Cartesian K-means. [CVPR'13](http://www.cv-foundation.org/openaccess/content_cvpr_2013/papers/Norouzi_Cartesian_K-Means_2013_CVPR_paper.pdf), [CVPR'13](http://www.cv-foundation.org/openaccess/content_cvpr_2013/papers/Ge_Optimized_Product_Quantization_2013_CVPR_paper.pdf), [TPAMI'14](https://www.microsoft.com/en-us/research/wp-content/uploads/2013/11/pami13opq.pdf)
-- Tree Quantization -- [CVPR'15](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
+- Tree Quantization<sup>[1](#ft1)</sup> -- [CVPR'15](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
 - Residual Vector Quantization -- [Sensors'10](http://www.mdpi.com/1424-8220/10/12/11259/htm)
 - Stacked Quantizers (aka Enhanced Residual Vector Quantization) -- [arxiv](https://arxiv.org/abs/1411.2173)/[CBMI'14 (paywalled)](http://ieeexplore.ieee.org/abstract/document/6849842/)
 - Local Search Quantization -- [ECCV'16](https://www.cs.ubc.ca/~julm/papers/eccv16.pdf)
@@ -160,7 +160,7 @@ PhD thesis, 2018. (Coming soon)
 As well as the corresponding paper of the method that you are using (see above).
 
 ## Notes
-* The original implementation of [Tree Quantization](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
+<a id="ft1">1</a>: The original implementation of [Tree Quantization](http://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Babenko_Tree_Quantization_for_2015_CVPR_paper.pdf)
 requires a mixed-integer programming solver such as [Gurobi](http://www.gurobi.com/) for updating the codebooks.
 We implement a special version of TQ that always create a chain
 (not a general tree); thus encoding can be done with the Viterbi algorithm,
