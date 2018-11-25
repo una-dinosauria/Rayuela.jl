@@ -1,4 +1,15 @@
 
+@testset "Full codebook update" begin
+
+  d, n, m, h, V, rho = 32, 10_000, 4, 256, false, 1e-4
+  X, _, B = generate_random_dataset(Float32, Int16, d, n, m, h)
+
+  C1 = Rayuela.update_codebooks_fast_bin(X, B, h, V, rho)
+  C2 = Rayuela.update_codebooks_fast_bin2(X, B, h, V, rho)
+  @test isapprox(C1, C2)
+
+end
+
 
 # Make sure the fast version of codebook update is still okay
 @testset "Chain codebook update" begin

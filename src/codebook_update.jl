@@ -203,6 +203,31 @@ function update_codebooks_fast_bin(
   return K2vec(collect(C'), m, h)
 end
 
+# Same as above but matrix multiplications are accelerated by taking advantage
+# of the binary structure of B
+function update_codebooks_fast_bin2(
+  X::Matrix{Float32}, # d-by-n matrix to update codebooks on.
+  B::Matrix{Int16},   # m-by-n matrix. X encoded.
+  h::Integer,         # number of entries per codebook.
+  V::Bool=false,      # whether to print progress
+  rho::Float64=1e-4) # regularization
+
+  if V print("Doing fast bin codebook update... "); st=time(); end
+
+  m, n = size( B )
+  d, n = size( X )
+
+  A, b = fast_bin_matmul(X, B, h, V, rho)
+
+  # Slightly more naive way to do it
+  # C = A \ b
+
+  Ainv = inv(A)
+
+  C = convert(Matrix{Float32}, Ainv * b)
+  return K2vec(collect(C'), m, h)
+end
+
 ###############################################
 ## Codebook update for a fully-connected MRF ##
 ###############################################
