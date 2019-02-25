@@ -87,7 +87,7 @@ function train_opq(
   # Variables needed for methods in Clustering.kmeans
   costs      = zeros(Float32, n)
   counts     = zeros(Int, h)
-  cweights   = zeros(Float32, h)
+  cweights   = zeros(Float64, h)
   to_update  = zeros(Bool, h)
   to_update2 = ones(Bool, h)
   unused     = Int[]

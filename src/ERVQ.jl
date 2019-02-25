@@ -86,7 +86,7 @@ function train_ervq(
       weights = nothing  # use unweighted version of update_centers!
       to_update = zeros(Bool, h)
       to_update[B[j,:]] .= true # In. Whether a codebook entry needs update
-      cweights = zeros(T, h)   # Out. Cluster weights. We do not use this.
+      cweights = zeros(Float64, h)   # Out. Cluster weights. We do not use this.
       Clustering.update_centers!(Xd, weights, B[j,:], to_update, C[j], cweights)
 
       # Check if some centres are unasigned
