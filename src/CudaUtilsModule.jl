@@ -2,7 +2,7 @@ module CudaUtilsModule
 
 import CUDAdrv
 import CUDAdrv: CuModule, CuModuleFile, unsafe_unload!,
-                CuFunction, cudacall, CuDevice, CuArray, CuDim
+                CuFunction, cudacall, CuDevice, CuDim
 
 const ptxdict = Dict()
 const mdlist = CuModule[]
@@ -10,6 +10,7 @@ const mdlist = CuModule[]
 function mdinit(devlist, ptxfile)
   global ptxdict
   global mdlist
+
   # isempty(mdlist) || error("mdlist is not empty")
   for dev in devlist
     # device(dev)
@@ -19,7 +20,6 @@ function mdinit(devlist, ptxfile)
     # Utils functions
     ptxdict["setup_kernel"] = CuFunction(md, "setup_kernel")
     ptxdict["perturb"]      = CuFunction(md, "perturb")
-    # ptxdict["veccost"]      = CuFunction(md, "veccost")
     ptxdict["veccost2"]     = CuFunction(md, "veccost2")
 
     # Add vector to matrix
@@ -29,9 +29,7 @@ function mdinit(devlist, ptxfile)
     ptxdict["viterbi_forward"] = CuFunction(md, "viterbi_forward")
 
     # ICM functions
-    # ptxdict["condition_icm"]  = CuFunction(md, "condition_icm");
-    # ptxdict["condition_icm2"] = CuFunction(md, "condition_icm2");
-    ptxdict["condition_icm3"] = CuFunction(md, "condition_icm3");
+    ptxdict["condition_icm3"] = CuFunction(md, "condition_icm3")
 
     push!(mdlist, md)
   end
@@ -48,45 +46,9 @@ function init(devlist, ptxfile)
   mdinit(devlist, ptxfile)
 end
 
-# # Accumulates binaries to unaries for icm conditioning
-# function condition_icm(
-#   nblocks::Integer, nthreads::Integer,
-#   d_ub::CuArray{Cfloat, 2},     # in/out. h-by-n. where we accumulate
-#   d_bb::CuArray{Cfloat, 2},     # in. binaries
-#   d_codek::CuArray{Cuchar, 1},  # in. n-long. indices into d_bb
-#   n::Cint,                        # in. size( d_ub, 2 )
-#   h::Cint)                        # in. size( d_ub, 1 )
-#
-#   fun = ptxdict["condition_icm"];
-#
-#   cudacall( fun, nblocks, nthreads,
-#     (d_ub, d_bb, d_codek, n, h));
-#
-#   return nothing
-# end
-
-# function condition_icm2(
-#   nblocks::Integer, nthreads::CuDim,
-#   d_ub::CuArray{Cfloat, 2},     # in/out. h-by-n. where we accumulate
-#   d_bb::CuArray{Cfloat, 2},     # in. binaries
-#   d_codek::CuArray{Cuchar, 1},  # in. n-long. indices into d_bb
-#   n::Cint,                        # in. size( d_ub, 2 )
-#   h::Cint)                        # in. size( d_ub, 1 )
-#
-#   fun = ptxdict["condition_icm2")];
-#
-#   cudacall( fun, nblocks, nthreads,
-#     (d_ub, d_bb, d_codek, n, h));
-#
-#   return nothing
-# end
-
 # CUDAdrv.Mem.Buffer
 function condition_icm3(
   nblocks::Integer, nthreads::CuDim,
-  # d_ub::CuArray{Cfloat, 2},     # in/out. h-by-n. where we accumulate
-  # d_bbs::CuArray{Cfloat, 2},     # in. binaries
-  # d_codek::CuArray{Cuchar, 2},  # in. n-long. indices into d_bb
   d_ub::CUDAdrv.Mem.Buffer,     # in/out. h-by-n. where we accumulate
   d_bbs::CUDAdrv.Mem.Buffer,     # in. binaries
   d_codek::CUDAdrv.Mem.Buffer,  # in. n-long. indices into d_bb
@@ -128,20 +90,6 @@ function viterbi_forward(
     (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cint}, Cint, Cint),
     d_matrix, d_vec, d_minv, d_mini, n, j; blocks=nblocks, threads=nthreads)
 end
-
-# function veccost(
-#   nblocks::CuDim, nthreads::CuDim,
-#   d_rx::CuArray{Cfloat},
-#   d_codebooks::CuArray{Cfloat},
-#   d_codes::CuArray{Cuchar},
-#   d_veccost::CuArray{Cfloat}, # out.
-#   m::Cint,
-#   n::Cint)
-#
-#   fun = ptxdict["veccost"];
-#   cudacall( fun, nblocks, nthreads,
-#     ( d_rx, d_codebooks, d_codes, d_veccost, m, n ));
-# end
 
 function veccost2(
   nblocks::CuDim, nthreads::CuDim,

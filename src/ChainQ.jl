@@ -236,7 +236,7 @@ function quantize_chainq_cuda!(
 
     # -2 * C' * X
     # d_unaries[j] = -2.0f0 * d_codebooks[j]' * d_RX <-- thus runs out of memory real fast
-    d_unaries[j] = CuArrays.CUBLAS.gemm('T', 'N', -2.0f0, d_codebooks[j], d_X)
+    d_unaries[j] = CuArrays.BLAS.gemm('T', 'N', -2.0f0, d_codebooks[j], d_X)
 
     # Add self-codebook interactions || C_{i,i} ||^2
     CudaUtilsModule.vec_add(n, (1,h), d_unaries[j].buf, CuArrays.CuArray(sum(C[j].^2, dims=1)).buf, Cint(n), Cint(h))
@@ -252,7 +252,7 @@ function quantize_chainq_cuda!(
 
   # Forward pass
   @inbounds for i = 1:(m-1) # Loop over states
-    if i > 1; CuArrays.CUBLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[i], 1); end
+    if i > 1; CuArrays.BLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[i], 1); end
 
     for j = 1:h # Loop over the cost of going to j
       CudaUtilsModule.viterbi_forward(n, (1, h), d_unaries[i].buf, d_binaries[i].buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(j-1))
@@ -262,7 +262,7 @@ function quantize_chainq_cuda!(
     end
   end
 
-  CuArrays.CUBLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[m], 1)
+  CuArrays.BLAS.axpy!(n * h, 1.0f0, d_mincost, 1, d_unaries[m], 1)
   CudaUtilsModule.viterbi_forward(n, (1, h), d_unaries[m].buf, CuArrays.CuArray(zeros(Float32, h, h)).buf, d_mincost.buf, d_mini.buf, Cint(n), Cint(0))
   Mem.download!(mini, d_mini.buf)
   mini .+= one(eltype(mini))
