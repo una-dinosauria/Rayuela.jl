@@ -21,7 +21,8 @@ Rayuela is written in [Julia](https://github.com/JuliaLang/julia).
 This is not a production-ready library -- if you are looking for something
 like that, maybe look at [faiss](https://github.com/facebookresearch/faiss).
 Do note that the methods implemented by faiss and Rayuela.jl are almost entire orthogonal,
-and that the libraries are distributed under different licenses.
+~~and that the libraries are distributed under different licenses~~
+as of May 27 2019, FAISS is MIT licensed.
 
 Rayuela implements the main contributions that I made to this problem during my
 PhD at [UBC](https://cs.ubc.ca), as well as multiple baselines for MCQ.
