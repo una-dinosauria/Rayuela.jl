@@ -51,7 +51,7 @@ You also need a CUDA-ready GPU. We have tested this code on an Nvidia Titan Xp G
 
 ## Installing
 
-Before all else, make sure that you have the `g++` and `nvcc` compilers available from the command line.
+Before all else, make sure that you have the `g++` compiler available from the command line, and the `nvcc` compiler availible at path `/usr/local/cuda/bin/nvcc`.
 
 Then, open julia and type `]` to enter Package mode:
 
