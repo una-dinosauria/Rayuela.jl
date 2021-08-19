@@ -48,7 +48,7 @@ function quantize_rvq(
     # Create new codebook entries that we are missing
     if !isempty(unused)
       temp_codebook = similar(C[i]) # Out. The new codebooks will be added here
-      Clustering.repick_unused_centers(Xr, costs, temp_codebook, unused)
+      Clustering.repick_unused_centers(Xr, costs, temp_codebook, unused, Distances.SqEuclidean())
       singletons[i] = temp_codebook[:, unused]
     end
 
