@@ -24,7 +24,7 @@ function run_demos(
   Xt, Xb, Xq, gt = load_experiment_data(dataset_name, ntrain, nbase, nquery, verbose)
   d, _    = size( Xt )
 
-  ntrials = 10
+  ntrials = 1
   # (Semi-)orthogonal methods: PQ, OPQ, ChainQ
   for trial = 1:ntrials
     C, B, train_error, B_base, recall = Rayuela.experiment_pq(Xt, Xb, Xq, gt, m, h, niter, knn, verbose)
