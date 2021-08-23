@@ -8,7 +8,7 @@ include("experiment_utils.jl")
 # === experiment functions ===
 function run_demos(
   dataset_name="SIFT1M",
-  ntrain::Integer=Int(1e5),
+  ntrain::Integer=Int(1e4),
   m::Integer=8, h::Integer=256, niter::Integer=25)
 
   nquery, nbase, knn = 0, 0, 0
