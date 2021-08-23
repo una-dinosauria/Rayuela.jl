@@ -13,8 +13,8 @@ using Distributed
 using Distributions
 
 # For LSQ encoding in the GPU
-using CUDAdrv
-using CuArrays
+# using CUDAdrv
+# using CuArrays
 
 using HDF5
 using LinearAlgebra
@@ -38,13 +38,13 @@ using SparseArrays
 
 ### Load and initialize the linscan binaries ###
 const depsfile = joinpath(dirname(@__DIR__), "deps", "deps.jl")
-if isfile(depsfile)
-  include(depsfile)
-else
-  error("Rayuela is not properly Installed.
-  Please run Pkg.build(\"Rayuela\") and make sure you have nvcc and g++ available from the command line.")
-end
-cudautilsptx = cudautils[1:end-2] * "ptx"
+#if isfile(depsfile)
+#  include(depsfile)
+#else
+#  error("Rayuela is not properly Installed.
+#  Please run Pkg.build(\"Rayuela\") and make sure you have nvcc and g++ available from the command line.")
+#end
+#cudautilsptx = cudautils[1:end-2] * "ptx"
 
 # === Functions to read data ===
 include("xvecs_read.jl")
@@ -74,8 +74,8 @@ include("LSQ.jl") # Local search quantization
 include("SR_perturbations.jl") # Utils for SR
 
 # === CUDA ports ===
-include("CudaUtilsModule.jl")
-include("SR.jl")  # Stochastic relaxations
-include("LSQ_GPU.jl") # Local search quantization
+# include("CudaUtilsModule.jl")
+# include("SR.jl")  # Stochastic relaxations
+# include("LSQ_GPU.jl") # Local search quantization
 
 end # module
