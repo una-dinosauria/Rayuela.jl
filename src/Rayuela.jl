@@ -38,13 +38,13 @@ using SparseArrays
 
 ### Load and initialize the linscan binaries ###
 const depsfile = joinpath(dirname(@__DIR__), "deps", "deps.jl")
-#if isfile(depsfile)
-#  include(depsfile)
-#else
-#  error("Rayuela is not properly Installed.
-#  Please run Pkg.build(\"Rayuela\") and make sure you have nvcc and g++ available from the command line.")
-#end
-#cudautilsptx = cudautils[1:end-2] * "ptx"
+if isfile(depsfile)
+  include(depsfile)
+else
+  error("Rayuela is not properly Installed.
+  Please run Pkg.build(\"Rayuela\") and make sure you have nvcc and g++ available from the command line.")
+end
+# cudautilsptx = cudautils[1:end-2] * "ptx"
 
 # === Functions to read data ===
 include("xvecs_read.jl")

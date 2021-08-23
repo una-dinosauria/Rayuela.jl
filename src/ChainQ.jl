@@ -386,7 +386,7 @@ function train_chainq(
   obj  = zeros(T, niter+1)
 
   # TODO expose these
-  use_cuda = true
+  use_cuda = false
   use_cpp = false
 
   CB = zeros(T, size(X))

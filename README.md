@@ -46,37 +46,10 @@ The code in this package was written by
 
 ## Requirements
 
-This package is written in [Julia](https://github.com/JuliaLang/julia) 1.0, with some extension in C++ and CUDA.
+This package is written in [Julia](https://github.com/JuliaLang/julia) 1.6, with some extension in C++ and CUDA.
 You also need a CUDA-ready GPU. We have tested this code on an Nvidia Titan Xp GPU.
 
-## Installing
-
-Before all else, make sure that you have the `g++` compiler available from the command line, and the `nvcc` compiler availible at path `/usr/local/cuda/bin/nvcc`.
-
-Then, open julia and type `]` to enter Package mode:
-
-```julia
-julia>
-(v1.0) pkg>
-```
-
-Now you can clone our repo:
-
-```julia
-(v1.0) pkg> develop https://github.com/una-dinosauria/Rayuela.jl.git
-```
-
-This should put our code under `~/.julia/dev/Rayuela`.
-
-Due to an [open bug](https://github.com/JuliaLang/Pkg.jl/issues/465) with the package manager, you have to manually
-pull the latest changes:
-
-```bash
-cd ~/.julia/dev/Rayuela
-git pull
-```
-
-## Demo and data
+## Data and experiment setup
 
 You may explore the library with `SIFT1M`, a classical retrieval dataset:
 
@@ -94,24 +67,48 @@ Also make a directory for the results
 ```
 mkdir -p results/sift1m
 ```
+## Installing
 
-Finally, run the demo:
+Before all else, make sure that you have the `g++` compiler available from the command line, and the `nvcc` compiler availible at path `/usr/local/cuda/bin/nvcc`.
+
+Clone this repo
+```bash
+git clone git@github.com:una-dinosauria/Rayuela.jl.git
+```
+
+Then, open julia and type `]` to enter Package mode:
 
 ```julia
-julia> include("~/.julia/dev/Rayuela/demos/demos_train_query_base.jl")
+julia>
+(@v1.6) pkg>
+```
+
+Now you can activate this repo:
+
+```julia
+(@v1.6) pkg> activate .
+(Rayuela) pkg>
+```
+
+This should load the relevant dependencies into your environment
+
+Now you can run the demo:
+
+```julia
+julia> include("./demos/demos_train_query_base.jl")
 ```
 
 For query/base/protocol (example by default runs on SIFT1M), or
 
 ```julia
-julia> include("~/.julia/dev/Rayuela/demos/demos_query_base.jl")
+julia> include("./demos/demos_query_base.jl")
 ```
 
 For query/base protocol (example by default runs on LabelMe22K)
 
 This will showcase PQ, OPQ, RVQ, ERVQ, ChainQ and LSQ/LSQ++ (SR-C and SR-D).
 
-The rest of the datasets used in our ECCV'18 publication can be found on [gdrive](https://drive.google.com/drive/folders/1MnJLHpg5LP6pPQxQuL0VjnM03vHPvgP1?usp=sharing).
+The rest of the datasets used in our ECCV'18 publication can be found at [gdrive](https://drive.google.com/drive/folders/1MnJLHpg5LP6pPQxQuL0VjnM03vHPvgP1?usp=sharing).
 
 ## Roadmap
 
